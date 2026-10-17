@@ -634,3 +634,14 @@ Priorité : poursuivre les contrôles et corriger les défauts reproduits, conse
 et distinguer tests locaux, tests navigateur et connexions réelles. L’objectif de fiabilité
 ne constitue pas une garantie d’absence absolue de bugs. Les vérifications bloquées doivent
 rester visibles, sans déclarer l’application complète validée.
+
+## 22. Branche principale et accompagnement — 17 octobre 2026
+
+« Et je veux que tu mette le site sur main sur github ».
+
+« Je veux que les indications a me donner pour lee trucs que je dois faire moi je veux que tu le dise ici etape par etape pour que ce soit simple pour moi de deployer ».
+
+Conserver les sources sur main du dépôt privé Atelier, sans écraser des modifications
+concurrentes. Donner les étapes utilisateur directement dans la conversation, en français
+simple ; les documents du dépôt complètent ces explications. Les valeurs des secrets
+sont saisies dans les paramètres sécurisés, jamais dans la conversation.

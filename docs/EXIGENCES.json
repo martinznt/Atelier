@@ -3158,5 +3158,21 @@
     "statut": "réalisé",
     "preuve": "docs/VALIDATION.md ; docs/AVANCEMENT.md",
     "limite": "Blocages et portée des tests explicités ; typage/build/navigateur/fournisseurs toujours non validés."
+  },
+  {
+    "id": "REQ-22-001",
+    "section": 22,
+    "exigence": "Conserver les sources du site sur main du dépôt GitHub Atelier.",
+    "statut": "vérifié",
+    "preuve": "GitHub main ecc78e892ffdef9103a5f371d0be1d9052ebe098 ; 106 fichiers comparés au commit local 3d49fd6 ; docs/VALIDATION.md",
+    "limite": "Le transfert des sources ne valide ni le fonctionnement complet ni le déploiement."
+  },
+  {
+    "id": "REQ-22-002",
+    "section": 22,
+    "exigence": "Donner directement dans la conversation des instructions simples, étape par étape, pour les manipulations que le propriétaire doit effectuer.",
+    "statut": "réalisé",
+    "preuve": "Conversation du 17 octobre 2026 ; docs/INSTALLATION_CLOUDFLARE.md",
+    "limite": "Configuration réelle des secrets et déploiement toujours à vérifier ; ne pas transmettre de clés dans le chat."
   }
 ]

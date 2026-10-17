@@ -1,3 +1,27 @@
+# Sources sur GitHub main — 17 octobre 2026
+
+Le propriétaire a explicitement demandé le transfert du site sur `main` et des
+instructions de configuration simples, étape par étape, directement dans la conversation.
+La copie applicative locale `3d49fd6` est maintenant conservée sur GitHub au commit
+`ecc78e892ffdef9103a5f371d0be1d9052ebe098`, enfant du README initial `60f9b7fe`.
+Les 106 fichiers distants ont été relus : chemins, modes et empreintes des blobs
+identiques à la copie locale ; aucune entrée tronquée ou manquante. La mise à jour
+n’a pas forcé la branche et protégeait le SHA attendu. Le dépôt reste privé.
+Les constats « README uniquement » ci-dessous sont donc désormais historiques.
+
+Le transfert ne constitue pas un déploiement ni une validation de production.
+Les accès Cloudflare, l’installation des dépendances, le typage, le build, les tests
+navigateur et les fonctions encore ouvertes restent à traiter. La compilation n’a
+pas été relancée pour ce transfert de sources. Le terminal ne joint toujours pas
+le proxy ; le connecteur GitHub a, lui, confirmé les écritures.
+
+Prochaine étape : accompagner la configuration sécurisée de CLOUDFLARE_API_TOKEN
+et CLOUDFLARE_ACCOUNT_ID, puis reprendre les validations dès que les accès nécessaires
+sont réellement disponibles. Donner les consignes dans le chat, sans renvoyer le
+propriétaire à la seule lecture des documents et sans demander d’envoyer un secret.
+
+---
+
 # Déploiement — reprise du 17 octobre 2026
 
 La demande de mise en ligne complète est conservée. Le contrôle local

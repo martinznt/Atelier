@@ -1,3 +1,18 @@
+# Vérification du transfert GitHub — 17 octobre 2026
+
+- Dépôt privé `martinznt/Atelier`, branche `main`, commit `ecc78e892ffdef9103a5f371d0be1d9052ebe098`.
+- Arbre source distant `d8911bc17b18cf127dad656df428e83304c7cff4`, identique à celui du commit local `3d49fd6`.
+- Les 106 chemins, modes et SHA de fichiers ont été comparés à la réponse récursive
+  GitHub : aucune différence, aucune troncature. Lecture supplémentaire de `server/index.ts` réussie.
+- Aucune clé réelle détectée par le contrôle des fichiers suivis ; fichiers de tests
+  identifiés comme fixtures. Ce contrôle n’est pas une garantie absolue d’absence de secret.
+- Workflow existant manuel, sans déclencheur push ni déploiement. Mise à jour main
+  sans force, avec vérification du commit précédent attendu.
+- Aucun nouveau test applicatif exécuté : ce lot transfère les sources et documente
+  l’accès. Les limites de compilation, navigateur et hébergement ci-dessous subsistent.
+
+---
+
 # Contrôle de préparation du déploiement — 17 octobre 2026
 
 `node tests/deploy-check.test.mjs` : **4 tests réussis**. Ils vérifient le refus de

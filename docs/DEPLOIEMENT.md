@@ -3,6 +3,14 @@
 La publication de l’application complète est autorisée. Aucun frais supplémentaire
 n’est autorisé implicitement. Aucun site complet n’a encore été publié.
 
+## Sources disponibles sur GitHub
+
+Le 17 octobre, le transfert sur `main` a réussi : commit `ecc78e892ffdef9103a5f371d0be1d9052ebe098`.
+Les 106 fichiers applicatifs ont été comparés à la copie locale `3d49fd6` et correspondent.
+Cette sauvegarde de code ne publie pas le site. Les accès Cloudflare ne sont pas encore configurés.
+Les explications destinées au propriétaire doivent aussi être fournies directement dans le chat,
+par petites étapes. Ne jamais demander la valeur d’un jeton dans un message.
+
 ## Contrôles effectués après la demande de mise en ligne
 
 - Sources conservées : branche `feat/passerelle-mcp`, commit applicatif `ab8f896`.
