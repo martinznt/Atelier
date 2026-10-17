@@ -1,0 +1,18 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "atelier",
+  "main": "server/index.ts",
+  "compatibility_date": "2025-10-24",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "assets": { "directory": "./dist", "binding": "ASSETS", "not_found_handling": "single-page-application", "run_worker_first": ["/api/*", "/mcp", "/oauth/*", "/.well-known/*"] },
+  "d1_databases": [{ "binding": "DB", "database_name": "atelier-db", "database_id": "00000000-0000-0000-0000-000000000000", "migrations_dir": "migrations" }],
+  "r2_buckets": [{ "binding": "FILES", "bucket_name": "atelier-private-files" }],
+  "queues": {
+    "producers": [{ "binding": "TASKS", "queue": "atelier-tasks" }],
+    "consumers": [{ "queue": "atelier-tasks", "max_batch_size": 1, "max_batch_timeout": 1, "max_retries": 0 }]
+  },
+  "triggers": { "crons": ["*/5 * * * *"] },
+  "vars": { "APP_ORIGIN": "http://localhost:8787", "ALLOW_REGISTRATION": "true", "STORAGE_LIMIT_MB": "512", "MAX_FILE_MB": "20" },
+  "observability": { "enabled": false }
+}

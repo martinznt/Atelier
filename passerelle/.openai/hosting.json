@@ -1,0 +1,11 @@
+{
+  "project_id": "appgprj_6acfeb7b61988191a0e2e0f632486116",
+  "d1": {
+    "binding": "DB",
+    "migrations_dir": "migrations"
+  },
+  "r2": null,
+  "capabilities": [
+    "mcp"
+  ]
+}

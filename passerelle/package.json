@@ -1,0 +1,11 @@
+{
+  "name": "atelier-passerelle",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "test": "node tests/importers.test.mjs && node tests/http.test.mjs && node tests/oauth.test.mjs",
+    "check": "node --check server/app.mjs && node --check server/mcp.mjs && node --check server/oauth.mjs && node --check public/importers.mjs"
+  }
+}

@@ -1,0 +1,2 @@
+# npm run setup génère une clé locale. Ne pas réutiliser en production.
+MASTER_KEY=

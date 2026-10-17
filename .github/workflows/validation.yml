@@ -1,0 +1,30 @@
+name: Vérifications Atelier (manuelles)
+# Aucun déploiement et aucune exécution automatique sur push.
+# Vérifier le quota GitHub Actions avant de lancer ce workflow privé.
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install --no-audit --no-fund
+      - run: npm run test:core
+      - run: npm run test:bridge
+      - run: npm run test:regressions
+      - run: npm run check
+      - run: npm test
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rapport-validation
+          path: test-results/
+          retention-days: 7

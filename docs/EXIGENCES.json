@@ -1,0 +1,3162 @@
+[
+  {
+    "id": "REQ-00-001",
+    "section": 0,
+    "exigence": "Reçu le 12 octobre 2026. Ce document conserve les exigences ; leur état individuel est suivi dans `EXIGENCES.json` et `AVANCEMENT.md`. Les statuts autorisés sont « à faire », « réalisé », « vérifié », « bloqué ». « Réalisé » n'implique pas une validation réelle chez un fournisseur.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": "Exigence conservée ; consulter AVANCEMENT.md pour le travail restant."
+  },
+  {
+    "id": "REQ-00-002",
+    "section": 0,
+    "exigence": "Tu dois concevoir et développer une véritable application web personnelle et multi-utilisateur pour centraliser les projets de développement, les assistants IA, les dépôts GitHub, les fichiers produits et les déploiements.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": "Exigence conservée ; consulter AVANCEMENT.md pour le travail restant."
+  },
+  {
+    "id": "REQ-00-003",
+    "section": 0,
+    "exigence": "Je veux une application fonctionnelle, pratique, rapide sur téléphone et réellement connectée aux services. Ne t’arrête pas à une maquette, un plan ou des boutons sans fonctionnement.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": "Exigence conservée ; consulter AVANCEMENT.md pour le travail restant."
+  },
+  {
+    "id": "REQ-00-004",
+    "section": 0,
+    "exigence": "Lis ce cahier des charges entièrement avant de commencer. Garde toutes ses exigences dans le dépôt et suis leur réalisation.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": "Exigence conservée ; consulter AVANCEMENT.md pour le travail restant."
+  },
+  {
+    "id": "REQ-01-001",
+    "section": 1,
+    "exigence": "Je travaille principalement sur un Samsung Galaxy A05s. Les longues conversations deviennent difficiles à ouvrir, et changer constamment entre Codex, Claude Code, GitHub et Cloudflare est pénible.",
+    "statut": "à faire",
+    "preuve": "web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-01-002",
+    "section": 1,
+    "exigence": "L’application doit permettre de :",
+    "statut": "à faire",
+    "preuve": "web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-01-003",
+    "section": 1,
+    "exigence": "- gérer plusieurs projets ;",
+    "statut": "à faire",
+    "preuve": "web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-01-004",
+    "section": 1,
+    "exigence": "- connecter plusieurs assistants IA ;",
+    "statut": "à faire",
+    "preuve": "web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-01-005",
+    "section": 1,
+    "exigence": "- discuter avec un assistant ou organiser leur collaboration ;",
+    "statut": "à faire",
+    "preuve": "web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-01-006",
+    "section": 1,
+    "exigence": "- conserver les consignes, décisions et résultats ;",
+    "statut": "à faire",
+    "preuve": "web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-01-007",
+    "section": 1,
+    "exigence": "- reprendre un travail dans une nouvelle conversation ;",
+    "statut": "à faire",
+    "preuve": "web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-01-008",
+    "section": 1,
+    "exigence": "- retrouver et télécharger tous les fichiers conservés ;",
+    "statut": "à faire",
+    "preuve": "web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-01-009",
+    "section": 1,
+    "exigence": "- consulter les dépôts, branches, modifications, tests et déploiements ;",
+    "statut": "à faire",
+    "preuve": "web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-01-010",
+    "section": 1,
+    "exigence": "- consulter les données synchronisées hors connexion ;",
+    "statut": "à faire",
+    "preuve": "web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-01-011",
+    "section": 1,
+    "exigence": "- installer l’application sur le téléphone.",
+    "statut": "à faire",
+    "preuve": "web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-01-012",
+    "section": 1,
+    "exigence": "L’interface doit rester simple, en français, accessible et adaptée aux utilisateurs sans connaissances techniques.",
+    "statut": "à faire",
+    "preuve": "web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-01-013",
+    "section": 1,
+    "exigence": "Ne promets jamais :",
+    "statut": "à faire",
+    "preuve": "web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-01-014",
+    "section": 1,
+    "exigence": "- zéro erreur ;",
+    "statut": "à faire",
+    "preuve": "web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-01-015",
+    "section": 1,
+    "exigence": "- une mémoire illimitée ;",
+    "statut": "à faire",
+    "preuve": "web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-01-016",
+    "section": 1,
+    "exigence": "- l’accès automatique à toutes les anciennes conversations privées ;",
+    "statut": "à faire",
+    "preuve": "web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-01-017",
+    "section": 1,
+    "exigence": "- des quotas indisponibles ;",
+    "statut": "à faire",
+    "preuve": "web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-01-018",
+    "section": 1,
+    "exigence": "- une IA distante utilisable hors connexion ;",
+    "statut": "à faire",
+    "preuve": "web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-01-019",
+    "section": 1,
+    "exigence": "- un fonctionnement gratuit si des services payants sont nécessaires.",
+    "statut": "à faire",
+    "preuve": "web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-02-001",
+    "section": 2,
+    "exigence": "Commence par examiner le dépôt, ses instructions, son architecture et ses éventuelles modifications non sauvegardées. Préserve le travail existant.",
+    "statut": "vérifié",
+    "preuve": "Inspection initiale et documents suivis dans le dépôt dédié ; docs/VALIDATION.md.",
+    "limite": "Les fonctionnalités elles-mêmes conservent leurs statuts distincts."
+  },
+  {
+    "id": "REQ-02-002",
+    "section": 2,
+    "exigence": "Si ce projet est nouveau, crée une base dédiée. Ne transforme pas un autre site, notamment le site Sport, en cette application sans instruction explicite.",
+    "statut": "vérifié",
+    "preuve": "Inspection initiale et documents suivis dans le dépôt dédié ; docs/VALIDATION.md.",
+    "limite": "Les fonctionnalités elles-mêmes conservent leurs statuts distincts."
+  },
+  {
+    "id": "REQ-02-003",
+    "section": 2,
+    "exigence": "Crée et maintiens :",
+    "statut": "vérifié",
+    "preuve": "Inspection initiale et documents suivis dans le dépôt dédié ; docs/VALIDATION.md.",
+    "limite": "Les fonctionnalités elles-mêmes conservent leurs statuts distincts."
+  },
+  {
+    "id": "REQ-02-004",
+    "section": 2,
+    "exigence": "- docs/CAHIER_DES_CHARGES.md : exigences complètes ;",
+    "statut": "vérifié",
+    "preuve": "Inspection initiale et documents suivis dans le dépôt dédié ; docs/VALIDATION.md.",
+    "limite": "Les fonctionnalités elles-mêmes conservent leurs statuts distincts."
+  },
+  {
+    "id": "REQ-02-005",
+    "section": 2,
+    "exigence": "- docs/AVANCEMENT.md : terminé, en cours, restant, blocages et prochaine étape ;",
+    "statut": "vérifié",
+    "preuve": "Inspection initiale et documents suivis dans le dépôt dédié ; docs/VALIDATION.md.",
+    "limite": "Les fonctionnalités elles-mêmes conservent leurs statuts distincts."
+  },
+  {
+    "id": "REQ-02-006",
+    "section": 2,
+    "exigence": "- docs/ARCHITECTURE.md : composants et décisions ;",
+    "statut": "vérifié",
+    "preuve": "Inspection initiale et documents suivis dans le dépôt dédié ; docs/VALIDATION.md.",
+    "limite": "Les fonctionnalités elles-mêmes conservent leurs statuts distincts."
+  },
+  {
+    "id": "REQ-02-007",
+    "section": 2,
+    "exigence": "- docs/CONNECTEURS.md : services, authentification, capacités et limites vérifiées ;",
+    "statut": "vérifié",
+    "preuve": "Inspection initiale et documents suivis dans le dépôt dédié ; docs/VALIDATION.md.",
+    "limite": "Les fonctionnalités elles-mêmes conservent leurs statuts distincts."
+  },
+  {
+    "id": "REQ-02-008",
+    "section": 2,
+    "exigence": "- docs/VALIDATION.md : tests réellement effectués et résultats.",
+    "statut": "vérifié",
+    "preuve": "Inspection initiale et documents suivis dans le dépôt dédié ; docs/VALIDATION.md.",
+    "limite": "Les fonctionnalités elles-mêmes conservent leurs statuts distincts."
+  },
+  {
+    "id": "REQ-02-009",
+    "section": 2,
+    "exigence": "Complète AGENTS.md et CLAUDE.md sans écraser leurs instructions existantes. Fais-les renvoyer vers les mêmes documents de référence pour que Codex et Claude Code puissent reprendre le projet.",
+    "statut": "vérifié",
+    "preuve": "Inspection initiale et documents suivis dans le dépôt dédié ; docs/VALIDATION.md.",
+    "limite": "Les fonctionnalités elles-mêmes conservent leurs statuts distincts."
+  },
+  {
+    "id": "REQ-02-010",
+    "section": 2,
+    "exigence": "Associe chaque exigence à un statut : à faire, réalisé, vérifié ou bloqué. Un résultat simulé n’est pas une intégration vérifiée.",
+    "statut": "vérifié",
+    "preuve": "Inspection initiale et documents suivis dans le dépôt dédié ; docs/VALIDATION.md.",
+    "limite": "Les fonctionnalités elles-mêmes conservent leurs statuts distincts."
+  },
+  {
+    "id": "REQ-02-011",
+    "section": 2,
+    "exigence": "Travaille par lots cohérents, avec des commits compréhensibles. Continue les travaux réalisables sans demander une confirmation pour chaque choix réversible.",
+    "statut": "vérifié",
+    "preuve": "Inspection initiale et documents suivis dans le dépôt dédié ; docs/VALIDATION.md.",
+    "limite": "Les fonctionnalités elles-mêmes conservent leurs statuts distincts."
+  },
+  {
+    "id": "REQ-02-012",
+    "section": 2,
+    "exigence": "Avant de demander une information, vérifie si elle existe déjà dans le dépôt, l’environnement ou les documents accessibles.",
+    "statut": "vérifié",
+    "preuve": "Inspection initiale et documents suivis dans le dépôt dédié ; docs/VALIDATION.md.",
+    "limite": "Les fonctionnalités elles-mêmes conservent leurs statuts distincts."
+  },
+  {
+    "id": "REQ-02-013",
+    "section": 2,
+    "exigence": "N’invente aucune clé, aucun accès et aucune réussite. Ne contourne pas les limites ou les restrictions des fournisseurs.",
+    "statut": "vérifié",
+    "preuve": "Inspection initiale et documents suivis dans le dépôt dédié ; docs/VALIDATION.md.",
+    "limite": "Les fonctionnalités elles-mêmes conservent leurs statuts distincts."
+  },
+  {
+    "id": "REQ-03-001",
+    "section": 3,
+    "exigence": "Choisis une architecture maintenable, adaptée au budget et à une PWA mobile.",
+    "statut": "réalisé",
+    "preuve": "docs/ARCHITECTURE.md, wrangler.jsonc, server/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-03-002",
+    "section": 3,
+    "exigence": "Prévois :",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": "Exigence conservée ; consulter AVANCEMENT.md pour le travail restant."
+  },
+  {
+    "id": "REQ-03-003",
+    "section": 3,
+    "exigence": "- interface web ;",
+    "statut": "réalisé",
+    "preuve": "docs/ARCHITECTURE.md, wrangler.jsonc, server/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-03-004",
+    "section": 3,
+    "exigence": "- serveur authentifié ;",
+    "statut": "réalisé",
+    "preuve": "docs/ARCHITECTURE.md, wrangler.jsonc, server/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-03-005",
+    "section": 3,
+    "exigence": "- base de données persistante ;",
+    "statut": "réalisé",
+    "preuve": "docs/ARCHITECTURE.md, wrangler.jsonc, server/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-03-006",
+    "section": 3,
+    "exigence": "- stockage privé des fichiers ;",
+    "statut": "réalisé",
+    "preuve": "docs/ARCHITECTURE.md, wrangler.jsonc, server/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-03-007",
+    "section": 3,
+    "exigence": "- système de tâches et d’événements ;",
+    "statut": "réalisé",
+    "preuve": "docs/ARCHITECTURE.md, wrangler.jsonc, server/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-03-008",
+    "section": 3,
+    "exigence": "- environnement isolé pour les agents qui exécutent du code ;",
+    "statut": "bloqué",
+    "preuve": "docs/ARCHITECTURE.md, docs/CONNECTEURS.md, server/connectors/catalog.ts",
+    "limite": "Service isolé Codex App Server / Claude Agent SDK absent. Pas d’exécution de code, pas de substitution par une API non consentie."
+  },
+  {
+    "id": "REQ-03-009",
+    "section": 3,
+    "exigence": "- connecteurs indépendants pour les différents services.",
+    "statut": "réalisé",
+    "preuve": "docs/ARCHITECTURE.md, wrangler.jsonc, server/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-03-010",
+    "section": 3,
+    "exigence": "Explique brièvement les choix et les coûts possibles.",
+    "statut": "réalisé",
+    "preuve": "docs/ARCHITECTURE.md, wrangler.jsonc, server/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-03-011",
+    "section": 3,
+    "exigence": "Ne prétends pas faire fonctionner des agents de développement persistants dans un simple site statique. Si des machines ou conteneurs d’exécution sont nécessaires, prévois explicitement leur hébergement et leur cycle de vie.",
+    "statut": "réalisé",
+    "preuve": "docs/ARCHITECTURE.md, wrangler.jsonc, server/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-03-012",
+    "section": 3,
+    "exigence": "Les tâches longues doivent s’exécuter côté serveur et pouvoir continuer après la fermeture du téléphone, lorsque l’infrastructure le permet. La conversation doit retrouver leur résultat à la réouverture.",
+    "statut": "réalisé",
+    "preuve": "docs/ARCHITECTURE.md, wrangler.jsonc, server/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-03-013",
+    "section": 3,
+    "exigence": "Prévois les redémarrages, reprises après erreur, annulations et interruptions. Ne relance pas deux fois une modification, un paiement ou un déploiement après une reconnexion.",
+    "statut": "réalisé",
+    "preuve": "server/task-persistence.ts ; tests/task-persistence.test.mjs ; web/submission.ts",
+    "limite": "Création et reprises locales idempotentes vérifiées ; effets externes et crash Cloudflare non testés."
+  },
+  {
+    "id": "REQ-04-001",
+    "section": 4,
+    "exigence": "Chaque personne doit avoir son propre compte et ses propres :",
+    "statut": "réalisé",
+    "preuve": "server/auth.ts, server/password.ts, server/routes/account.ts",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-04-002",
+    "section": 4,
+    "exigence": "- connexions IA ;",
+    "statut": "réalisé",
+    "preuve": "server/auth.ts, server/password.ts, server/routes/account.ts",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-04-003",
+    "section": 4,
+    "exigence": "- dépôts et branches ;",
+    "statut": "réalisé",
+    "preuve": "server/auth.ts, server/password.ts, server/routes/account.ts",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-04-004",
+    "section": 4,
+    "exigence": "- projets ;",
+    "statut": "réalisé",
+    "preuve": "server/auth.ts, server/password.ts, server/routes/account.ts",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-04-005",
+    "section": 4,
+    "exigence": "- conversations et mémoire ;",
+    "statut": "réalisé",
+    "preuve": "server/auth.ts, server/password.ts, server/routes/account.ts",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-04-006",
+    "section": 4,
+    "exigence": "- fichiers et versions ;",
+    "statut": "réalisé",
+    "preuve": "server/auth.ts, server/password.ts, server/routes/account.ts",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-04-007",
+    "section": 4,
+    "exigence": "- quotas et budgets ;",
+    "statut": "à faire",
+    "preuve": "server/auth.ts, server/password.ts, server/routes/account.ts",
+    "limite": "Partiellement implémenté ; la totalité de cette exigence et sa validation restent à compléter. Voir AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-04-008",
+    "section": 4,
+    "exigence": "- déploiements.",
+    "statut": "réalisé",
+    "preuve": "server/auth.ts, server/password.ts, server/routes/account.ts",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-04-009",
+    "section": 4,
+    "exigence": "Inscription simple avec identifiant et mot de passe, sans email obligatoire et sans validation par email. Une passkey peut être proposée en complément si son implémentation reste fiable.",
+    "statut": "réalisé",
+    "preuve": "server/auth.ts, server/password.ts, server/routes/account.ts",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-04-010",
+    "section": 4,
+    "exigence": "Prévois :",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": "Exigence conservée ; consulter AVANCEMENT.md pour le travail restant."
+  },
+  {
+    "id": "REQ-04-011",
+    "section": 4,
+    "exigence": "- connexion et déconnexion ;",
+    "statut": "réalisé",
+    "preuve": "server/auth.ts, server/password.ts, server/routes/account.ts",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-04-012",
+    "section": 4,
+    "exigence": "- mots de passe correctement hachés par une bibliothèque éprouvée ;",
+    "statut": "réalisé",
+    "preuve": "server/auth.ts, server/password.ts, server/routes/account.ts",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-04-013",
+    "section": 4,
+    "exigence": "- protection contre les tentatives répétées ;",
+    "statut": "réalisé",
+    "preuve": "server/auth.ts, server/password.ts, server/routes/account.ts",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-04-014",
+    "section": 4,
+    "exigence": "- sessions sécurisées et révocables ;",
+    "statut": "réalisé",
+    "preuve": "server/auth.ts ; server/auth-store.ts ; tests/auth-store.test.mjs",
+    "limite": "Transactions SQLite, révocation et divergence du compte vérifiées localement ; Hono/cookies navigateur et scrypt restent à tester."
+  },
+  {
+    "id": "REQ-04-015",
+    "section": 4,
+    "exigence": "- modification du mot de passe ;",
+    "statut": "réalisé",
+    "preuve": "server/auth.ts, server/password.ts, server/routes/account.ts",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-04-016",
+    "section": 4,
+    "exigence": "- codes de récupération affichés une fois et stockés sous forme non réversible ;",
+    "statut": "réalisé",
+    "preuve": "server/auth-store.ts ; tests/auth-store.test.mjs",
+    "limite": "Consommation atomique et refus de réutilisation vérifiés ; affichage navigateur non testé."
+  },
+  {
+    "id": "REQ-04-017",
+    "section": 4,
+    "exigence": "- explication claire : sans moyen de récupération conservé, un compte peut devenir irrécupérable.",
+    "statut": "réalisé",
+    "preuve": "server/auth.ts, server/password.ts, server/routes/account.ts",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-04-018",
+    "section": 4,
+    "exigence": "N’utilise jamais une adresse email non vérifiée comme preuve d’identité, moyen automatique de fusion de comptes ou récupération de compte.",
+    "statut": "réalisé",
+    "preuve": "server/auth.ts, server/password.ts, server/routes/account.ts",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-04-019",
+    "section": 4,
+    "exigence": "L’absence de vérification d’email ne doit pas réduire l’isolation des utilisateurs.",
+    "statut": "réalisé",
+    "preuve": "server/auth.ts, server/password.ts, server/routes/account.ts",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-04-020",
+    "section": 4,
+    "exigence": "Contrôle les permissions côté serveur sur chaque ressource : fichiers, téléchargements, conversations, connexions, événements en direct, tâches et dépôts.",
+    "statut": "réalisé",
+    "preuve": "server/auth.ts requireAuth ; tests/integration.test.ts ; tests/auth-store.test.mjs",
+    "limite": "Tests SQLite/propriétaires et contrôleurs passerelle exécutés ; matrice HTTP complète non exécutée. Le compte attendu n’autorise jamais une opération."
+  },
+  {
+    "id": "REQ-04-021",
+    "section": 4,
+    "exigence": "Ne fais jamais confiance à un identifiant utilisateur envoyé par le navigateur pour autoriser une opération.",
+    "statut": "réalisé",
+    "preuve": "server/auth.ts, server/password.ts, server/routes/account.ts",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-04-022",
+    "section": 4,
+    "exigence": "Teste explicitement qu’un utilisateur A ne peut pas accéder aux données de B en changeant un identifiant ou une URL.",
+    "statut": "bloqué",
+    "preuve": "tests/integration.test.ts, tests/schema_test.py",
+    "limite": "Filtre propriétaire SQL testé ; scénarios HTTP A/B écrits mais non exécutés. Aucune preuve d’isolation de bout en bout."
+  },
+  {
+    "id": "REQ-04-023",
+    "section": 4,
+    "exigence": "Prévois export des données et suppression du compte, avec information sur ce qui sera effectivement supprimé.",
+    "statut": "réalisé",
+    "preuve": "server/auth.ts, server/password.ts, server/routes/account.ts",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-05-001",
+    "section": 5,
+    "exigence": "Prévois un espace « Connexions » et un bouton « Ajouter ».",
+    "statut": "réalisé",
+    "preuve": "server/connectors/, server/routes/connections.ts, web/Settings.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-05-002",
+    "section": 5,
+    "exigence": "Parcours :\nchoisir un service → se connecter → choisir les accès autorisés → tester → terminer.",
+    "statut": "réalisé",
+    "preuve": "server/connectors/, server/routes/connections.ts, web/Settings.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-05-003",
+    "section": 5,
+    "exigence": "Services prioritaires :",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": "Exigence conservée ; consulter AVANCEMENT.md pour le travail restant."
+  },
+  {
+    "id": "REQ-05-004",
+    "section": 5,
+    "exigence": "- GitHub ;",
+    "statut": "réalisé",
+    "preuve": "server/connectors/, server/routes/connections.ts, web/Settings.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-05-005",
+    "section": 5,
+    "exigence": "- Codex ;",
+    "statut": "bloqué",
+    "preuve": "docs/ARCHITECTURE.md, docs/CONNECTEURS.md, server/connectors/catalog.ts",
+    "limite": "Service isolé Codex App Server / Claude Agent SDK absent. Pas d’exécution de code, pas de substitution par une API non consentie."
+  },
+  {
+    "id": "REQ-05-006",
+    "section": 5,
+    "exigence": "- Claude Code ;",
+    "statut": "bloqué",
+    "preuve": "docs/ARCHITECTURE.md, docs/CONNECTEURS.md, server/connectors/catalog.ts",
+    "limite": "Service isolé Codex App Server / Claude Agent SDK absent. Pas d’exécution de code, pas de substitution par une API non consentie."
+  },
+  {
+    "id": "REQ-05-007",
+    "section": 5,
+    "exigence": "- Gemini ;",
+    "statut": "réalisé",
+    "preuve": "server/connectors/, server/routes/connections.ts, web/Settings.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-05-008",
+    "section": 5,
+    "exigence": "- Cloudflare.",
+    "statut": "réalisé",
+    "preuve": "server/connectors/, server/routes/connections.ts, web/Settings.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-05-009",
+    "section": 5,
+    "exigence": "Prévois aussi une architecture permettant d’ajouter d’autres IA et hébergeurs sans réécrire le cœur de l’application. Réalise au moins un connecteur de déploiement supplémentaire, choisi selon sa documentation et sa compatibilité avec le projet.",
+    "statut": "réalisé",
+    "preuve": "server/connectors/, server/routes/connections.ts, web/Settings.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-05-010",
+    "section": 5,
+    "exigence": "Chaque connecteur doit déclarer ce qu’il sait réellement faire :",
+    "statut": "réalisé",
+    "preuve": "server/connectors/, server/routes/connections.ts, web/Settings.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-05-011",
+    "section": 5,
+    "exigence": "- authentification ;",
+    "statut": "réalisé",
+    "preuve": "server/connectors/, server/routes/connections.ts, web/Settings.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-05-012",
+    "section": 5,
+    "exigence": "- modèles ;",
+    "statut": "réalisé",
+    "preuve": "server/connectors/, server/routes/connections.ts, web/Settings.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-05-013",
+    "section": 5,
+    "exigence": "- conversation et reprise ;",
+    "statut": "réalisé",
+    "preuve": "server/connectors/, server/routes/connections.ts, web/Settings.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-05-014",
+    "section": 5,
+    "exigence": "- fichiers ;",
+    "statut": "réalisé",
+    "preuve": "server/connectors/, server/routes/connections.ts, web/Settings.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-05-015",
+    "section": 5,
+    "exigence": "- outils et exécution ;",
+    "statut": "réalisé",
+    "preuve": "server/connectors/, server/routes/connections.ts, web/Settings.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-05-016",
+    "section": 5,
+    "exigence": "- quotas ;",
+    "statut": "réalisé",
+    "preuve": "server/connectors/, server/routes/connections.ts, web/Settings.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-05-017",
+    "section": 5,
+    "exigence": "- déploiement ;",
+    "statut": "réalisé",
+    "preuve": "server/connectors/, server/routes/connections.ts, web/Settings.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-05-018",
+    "section": 5,
+    "exigence": "- suivi des tâches ;",
+    "statut": "réalisé",
+    "preuve": "server/connectors/, server/routes/connections.ts, web/Settings.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-05-019",
+    "section": 5,
+    "exigence": "- annulation.",
+    "statut": "réalisé",
+    "preuve": "server/connectors/, server/routes/connections.ts, web/Settings.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-05-020",
+    "section": 5,
+    "exigence": "Un service non pris en charge doit être clairement identifié. Ne le présente pas comme connecté si seul un lien externe existe.",
+    "statut": "réalisé",
+    "preuve": "server/connectors/, server/routes/connections.ts, web/Settings.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-05-021",
+    "section": 5,
+    "exigence": "Privilégie les méthodes officielles. Vérifie les conditions d’usage et les possibilités actuelles d’utilisation des abonnements.",
+    "statut": "réalisé",
+    "preuve": "server/connectors/, server/routes/connections.ts, web/Settings.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-05-022",
+    "section": 5,
+    "exigence": "Distingue :",
+    "statut": "réalisé",
+    "preuve": "server/connectors/, server/routes/connections.ts, web/Settings.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-05-023",
+    "section": 5,
+    "exigence": "- abonnement utilisateur ;",
+    "statut": "réalisé",
+    "preuve": "server/connectors/, server/routes/connections.ts, web/Settings.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-05-024",
+    "section": 5,
+    "exigence": "- API facturée séparément ;",
+    "statut": "réalisé",
+    "preuve": "server/connectors/, server/routes/connections.ts, web/Settings.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-05-025",
+    "section": 5,
+    "exigence": "- crédits disponibles ;",
+    "statut": "réalisé",
+    "preuve": "server/connectors/, server/routes/connections.ts, web/Settings.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-05-026",
+    "section": 5,
+    "exigence": "- coût d’hébergement.",
+    "statut": "réalisé",
+    "preuve": "server/connectors/, server/routes/connections.ts, web/Settings.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-05-027",
+    "section": 5,
+    "exigence": "N’assimile pas une connexion API à l’accès aux conversations ou à l’abonnement de l’application grand public.",
+    "statut": "réalisé",
+    "preuve": "server/connectors/, server/routes/connections.ts, web/Settings.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-05-028",
+    "section": 5,
+    "exigence": "Les secrets et jetons doivent être protégés côté serveur, exclus des journaux, du dépôt, des exports ordinaires et du cache hors ligne. Prévois déconnexion, révocation, expiration et renouvellement.",
+    "statut": "à faire",
+    "preuve": "server/connectors/, server/routes/connections.ts, web/Settings.tsx",
+    "limite": "Partiellement implémenté ; la totalité de cette exigence et sa validation restent à compléter. Voir AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-05-029",
+    "section": 5,
+    "exigence": "Ne demande jamais à l’utilisateur de coller ses cookies de session.",
+    "statut": "réalisé",
+    "preuve": "server/connectors/, server/routes/connections.ts, web/Settings.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-06-001",
+    "section": 6,
+    "exigence": "Créer, renommer, rechercher, archiver et supprimer un projet.",
+    "statut": "réalisé",
+    "preuve": "server/routes/projects.ts, server/routes/github.ts, web/Services.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-06-002",
+    "section": 6,
+    "exigence": "Associer à un projet :",
+    "statut": "réalisé",
+    "preuve": "server/routes/projects.ts, server/routes/github.ts, web/Services.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-06-003",
+    "section": 6,
+    "exigence": "- un ou plusieurs dépôts ;",
+    "statut": "réalisé",
+    "preuve": "server/routes/projects.ts, server/routes/github.ts, web/Services.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-06-004",
+    "section": 6,
+    "exigence": "- des branches ;",
+    "statut": "réalisé",
+    "preuve": "server/routes/projects.ts, server/routes/github.ts, web/Services.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-06-005",
+    "section": 6,
+    "exigence": "- des assistants ;",
+    "statut": "réalisé",
+    "preuve": "server/routes/projects.ts, server/routes/github.ts, web/Services.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-06-006",
+    "section": 6,
+    "exigence": "- des conversations ;",
+    "statut": "réalisé",
+    "preuve": "server/routes/projects.ts, server/routes/github.ts, web/Services.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-06-007",
+    "section": 6,
+    "exigence": "- des fichiers ;",
+    "statut": "réalisé",
+    "preuve": "server/routes/projects.ts, server/routes/github.ts, web/Services.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-06-008",
+    "section": 6,
+    "exigence": "- des environnements de test et de production ;",
+    "statut": "réalisé",
+    "preuve": "server/routes/projects.ts, server/routes/github.ts, web/Services.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-06-009",
+    "section": 6,
+    "exigence": "- ses consignes et décisions.",
+    "statut": "réalisé",
+    "preuve": "server/routes/projects.ts, server/routes/github.ts, web/Services.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-06-010",
+    "section": 6,
+    "exigence": "Pour GitHub :",
+    "statut": "réalisé",
+    "preuve": "server/routes/projects.ts, server/routes/github.ts, web/Services.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-06-011",
+    "section": 6,
+    "exigence": "- lister les dépôts réellement autorisés, y compris privés ;",
+    "statut": "réalisé",
+    "preuve": "server/routes/projects.ts, server/routes/github.ts, web/Services.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-06-012",
+    "section": 6,
+    "exigence": "- choisir ou créer une branche ;",
+    "statut": "réalisé",
+    "preuve": "server/routes/projects.ts, server/routes/github.ts, web/Services.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-06-013",
+    "section": 6,
+    "exigence": "- consulter fichiers, commits et différences ;",
+    "statut": "à faire",
+    "preuve": "server/routes/projects.ts, server/routes/github.ts, web/Services.tsx",
+    "limite": "Partiellement implémenté ; la totalité de cette exigence et sa validation restent à compléter. Voir AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-06-014",
+    "section": 6,
+    "exigence": "- sauvegarder les modifications ;",
+    "statut": "réalisé",
+    "preuve": "server/routes/projects.ts, server/routes/github.ts, web/Services.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-06-015",
+    "section": 6,
+    "exigence": "- créer et suivre les pull requests ;",
+    "statut": "réalisé",
+    "preuve": "server/routes/projects.ts, server/routes/github.ts, web/Services.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-06-016",
+    "section": 6,
+    "exigence": "- consulter les contrôles et résultats de tests ;",
+    "statut": "réalisé",
+    "preuve": "server/routes/projects.ts, server/routes/github.ts, web/Services.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-06-017",
+    "section": 6,
+    "exigence": "- gérer la pagination pour éviter les listes tronquées.",
+    "statut": "réalisé",
+    "preuve": "server/routes/projects.ts, server/routes/github.ts, web/Services.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-06-018",
+    "section": 6,
+    "exigence": "Toujours afficher clairement le dépôt et la branche utilisés par une tâche.",
+    "statut": "réalisé",
+    "preuve": "server/routes/projects.ts, server/routes/github.ts, web/Services.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-06-019",
+    "section": 6,
+    "exigence": "Ne mélange pas les modifications de branches différentes. Détecte les changements distants et les conflits.",
+    "statut": "à faire",
+    "preuve": "server/routes/projects.ts, server/routes/github.ts, web/Services.tsx",
+    "limite": "Partiellement implémenté ; la totalité de cette exigence et sa validation restent à compléter. Voir AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-06-020",
+    "section": 6,
+    "exigence": "Si plusieurs agents travaillent, utilise des espaces de travail isolés. Évite qu’ils modifient simultanément les mêmes fichiers sans coordination.",
+    "statut": "bloqué",
+    "preuve": "docs/ARCHITECTURE.md, docs/CONNECTEURS.md, server/connectors/catalog.ts",
+    "limite": "Service isolé Codex App Server / Claude Agent SDK absent. Pas d’exécution de code, pas de substitution par une API non consentie."
+  },
+  {
+    "id": "REQ-06-021",
+    "section": 6,
+    "exigence": "Ne fusionne pas et ne déploie pas automatiquement par défaut. Une sauvegarde sur une branche peut déclencher un déploiement chez certains hébergeurs : vérifie ce comportement.",
+    "statut": "réalisé",
+    "preuve": "server/routes/projects.ts, server/routes/github.ts, web/Services.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-07-001",
+    "section": 7,
+    "exigence": "Une interface commune permet de :",
+    "statut": "réalisé",
+    "preuve": "server/context.ts, server/worker.ts, server/routes/tasks.ts, web/Chat.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-07-002",
+    "section": 7,
+    "exigence": "- parler à Codex ;",
+    "statut": "bloqué",
+    "preuve": "docs/ARCHITECTURE.md, docs/CONNECTEURS.md, server/connectors/catalog.ts",
+    "limite": "Service isolé Codex App Server / Claude Agent SDK absent. Pas d’exécution de code, pas de substitution par une API non consentie."
+  },
+  {
+    "id": "REQ-07-003",
+    "section": 7,
+    "exigence": "- parler à Claude Code ;",
+    "statut": "bloqué",
+    "preuve": "docs/ARCHITECTURE.md, docs/CONNECTEURS.md, server/connectors/catalog.ts",
+    "limite": "Service isolé Codex App Server / Claude Agent SDK absent. Pas d’exécution de code, pas de substitution par une API non consentie."
+  },
+  {
+    "id": "REQ-07-004",
+    "section": 7,
+    "exigence": "- parler à Gemini ;",
+    "statut": "réalisé",
+    "preuve": "server/context.ts, server/worker.ts, server/routes/tasks.ts, web/Chat.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-07-005",
+    "section": 7,
+    "exigence": "- sélectionner plusieurs assistants ;",
+    "statut": "réalisé",
+    "preuve": "server/context.ts, server/worker.ts, server/routes/tasks.ts, web/Chat.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-07-006",
+    "section": 7,
+    "exigence": "- demander une seconde opinion ;",
+    "statut": "réalisé",
+    "preuve": "server/context.ts, server/worker.ts, server/routes/tasks.ts, web/Chat.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-07-007",
+    "section": 7,
+    "exigence": "- passer le relais à un autre assistant.",
+    "statut": "réalisé",
+    "preuve": "server/context.ts, server/worker.ts, server/routes/tasks.ts, web/Chat.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-07-008",
+    "section": 7,
+    "exigence": "Afficher l’identité de l’assistant et le modèle réellement utilisé pour chaque réponse.",
+    "statut": "réalisé",
+    "preuve": "server/context.ts, server/worker.ts, server/routes/tasks.ts, web/Chat.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-07-009",
+    "section": 7,
+    "exigence": "Modes utiles :",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": "Exigence conservée ; consulter AVANCEMENT.md pour le travail restant."
+  },
+  {
+    "id": "REQ-07-010",
+    "section": 7,
+    "exigence": "- réponse individuelle ;",
+    "statut": "réalisé",
+    "preuve": "server/context.ts, server/worker.ts, server/routes/tasks.ts, web/Chat.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-07-011",
+    "section": 7,
+    "exigence": "- comparaison de propositions ;",
+    "statut": "réalisé",
+    "preuve": "server/context.ts, server/worker.ts, server/routes/tasks.ts, web/Chat.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-07-012",
+    "section": 7,
+    "exigence": "- un assistant réalise, un autre vérifie ;",
+    "statut": "réalisé",
+    "preuve": "server/context.ts, server/worker.ts, server/routes/tasks.ts, web/Chat.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-07-013",
+    "section": 7,
+    "exigence": "- collaboration avec un nombre limité de tours ;",
+    "statut": "réalisé",
+    "preuve": "server/context.ts, server/worker.ts, server/routes/tasks.ts, web/Chat.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-07-014",
+    "section": 7,
+    "exigence": "- reprise par un autre assistant lorsqu’un quota est atteint.",
+    "statut": "réalisé",
+    "preuve": "server/context.ts, server/worker.ts, server/routes/tasks.ts, web/Chat.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-07-015",
+    "section": 7,
+    "exigence": "La transmission doit inclure les éléments utiles : objectif, contraintes, décisions, fichiers, commit concerné, changements et résultats de tests.",
+    "statut": "réalisé",
+    "preuve": "server/context.ts, server/worker.ts, server/routes/tasks.ts, web/Chat.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-07-016",
+    "section": 7,
+    "exigence": "Ne prétends pas partager les raisonnements internes privés des modèles.",
+    "statut": "réalisé",
+    "preuve": "server/context.ts, server/worker.ts, server/routes/tasks.ts, web/Chat.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-07-017",
+    "section": 7,
+    "exigence": "Garde les désaccords visibles. Un accord entre deux IA ne constitue pas une preuve de justesse.",
+    "statut": "réalisé",
+    "preuve": "server/context.ts, server/worker.ts, server/routes/tasks.ts, web/Chat.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-07-018",
+    "section": 7,
+    "exigence": "Pour les travaux de code, exige des vérifications exécutées, pas seulement une relecture par une autre IA.",
+    "statut": "bloqué",
+    "preuve": "docs/ARCHITECTURE.md, docs/CONNECTEURS.md, server/connectors/catalog.ts",
+    "limite": "Service isolé Codex App Server / Claude Agent SDK absent. Pas d’exécution de code, pas de substitution par une API non consentie."
+  },
+  {
+    "id": "REQ-07-019",
+    "section": 7,
+    "exigence": "Prévois :",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": "Exigence conservée ; consulter AVANCEMENT.md pour le travail restant."
+  },
+  {
+    "id": "REQ-07-020",
+    "section": 7,
+    "exigence": "- arrêt d’une tâche ;",
+    "statut": "réalisé",
+    "preuve": "server/context.ts, server/worker.ts, server/routes/tasks.ts, web/Chat.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-07-021",
+    "section": 7,
+    "exigence": "- ajout d’une précision en cours de travail lorsque possible ;",
+    "statut": "réalisé",
+    "preuve": "server/context.ts, server/worker.ts, server/routes/tasks.ts, web/Chat.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-07-022",
+    "section": 7,
+    "exigence": "- reprise après interruption ;",
+    "statut": "réalisé",
+    "preuve": "server/context.ts, server/worker.ts, server/routes/tasks.ts, web/Chat.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-07-023",
+    "section": 7,
+    "exigence": "- statut compréhensible ;",
+    "statut": "réalisé",
+    "preuve": "server/context.ts, server/worker.ts, server/routes/tasks.ts, web/Chat.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-07-024",
+    "section": 7,
+    "exigence": "- actions en attente d’autorisation ;",
+    "statut": "réalisé",
+    "preuve": "server/context.ts, server/worker.ts, server/routes/tasks.ts, web/Chat.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-07-025",
+    "section": 7,
+    "exigence": "- erreurs avec solution proposée ;",
+    "statut": "réalisé",
+    "preuve": "server/context.ts, server/worker.ts, server/routes/tasks.ts, web/Chat.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-07-026",
+    "section": 7,
+    "exigence": "- limites de durée, de coût et de nombre d’échanges.",
+    "statut": "à faire",
+    "preuve": "server/context.ts, server/worker.ts, server/routes/tasks.ts, web/Chat.tsx",
+    "limite": "Partiellement implémenté ; la totalité de cette exigence et sa validation restent à compléter. Voir AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-07-027",
+    "section": 7,
+    "exigence": "Aucun transfert vers un autre fournisseur ou passage à une API payante sans préférence explicite enregistrée de l’utilisateur.",
+    "statut": "réalisé",
+    "preuve": "server/context.ts, server/worker.ts, server/routes/tasks.ts, web/Chat.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-08-001",
+    "section": 8,
+    "exigence": "Je veux que les assistants disposent du meilleur contexte possible, sans devoir répéter mes demandes.",
+    "statut": "réalisé",
+    "preuve": "server/routes/projects.ts, server/context.ts, web/Projects.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-08-002",
+    "section": 8,
+    "exigence": "Construis une mémoire commune avec :",
+    "statut": "réalisé",
+    "preuve": "server/routes/projects.ts, server/context.ts, web/Projects.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-08-003",
+    "section": 8,
+    "exigence": "- préférences utilisateur pertinentes ;",
+    "statut": "réalisé",
+    "preuve": "server/routes/projects.ts, server/context.ts, web/Projects.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-08-004",
+    "section": 8,
+    "exigence": "- objectifs du projet ;",
+    "statut": "réalisé",
+    "preuve": "server/routes/projects.ts, server/context.ts, web/Projects.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-08-005",
+    "section": 8,
+    "exigence": "- cahier des charges ;",
+    "statut": "réalisé",
+    "preuve": "server/routes/projects.ts, server/context.ts, web/Projects.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-08-006",
+    "section": 8,
+    "exigence": "- décisions et leurs raisons ;",
+    "statut": "réalisé",
+    "preuve": "server/routes/projects.ts, server/context.ts, web/Projects.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-08-007",
+    "section": 8,
+    "exigence": "- contraintes ;",
+    "statut": "réalisé",
+    "preuve": "server/routes/projects.ts, server/context.ts, web/Projects.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-08-008",
+    "section": 8,
+    "exigence": "- tâches terminées et restantes ;",
+    "statut": "réalisé",
+    "preuve": "server/routes/projects.ts, server/context.ts, web/Projects.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-08-009",
+    "section": 8,
+    "exigence": "- problèmes connus ;",
+    "statut": "réalisé",
+    "preuve": "server/routes/projects.ts, server/context.ts, web/Projects.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-08-010",
+    "section": 8,
+    "exigence": "- fichiers de référence ;",
+    "statut": "réalisé",
+    "preuve": "server/routes/projects.ts, server/context.ts, web/Projects.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-08-011",
+    "section": 8,
+    "exigence": "- synthèses des conversations.",
+    "statut": "réalisé",
+    "preuve": "server/routes/projects.ts, server/context.ts, web/Projects.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-08-012",
+    "section": 8,
+    "exigence": "Sépare la mémoire personnelle, celle du projet et celle de chaque tâche.",
+    "statut": "à faire",
+    "preuve": "server/routes/projects.ts, server/context.ts, web/Projects.tsx",
+    "limite": "Partiellement implémenté ; la totalité de cette exigence et sa validation restent à compléter. Voir AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-08-013",
+    "section": 8,
+    "exigence": "Permets de consulter, corriger, épingler, supprimer et exporter les éléments de mémoire.",
+    "statut": "réalisé",
+    "preuve": "server/routes/projects.ts, server/context.ts, web/Projects.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-08-014",
+    "section": 8,
+    "exigence": "Chaque élément doit avoir une provenance et une date. Les décisions récentes explicites doivent pouvoir remplacer les anciennes sans perdre la traçabilité.",
+    "statut": "à faire",
+    "preuve": "server/routes/projects.ts, server/context.ts, web/Projects.tsx",
+    "limite": "Partiellement implémenté ; la totalité de cette exigence et sa validation restent à compléter. Voir AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-08-015",
+    "section": 8,
+    "exigence": "Pour les conversations antérieures :",
+    "statut": "réalisé",
+    "preuve": "server/routes/projects.ts, server/context.ts, web/Projects.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-08-016",
+    "section": 8,
+    "exigence": "- proposer les imports officiellement disponibles ;",
+    "statut": "à faire",
+    "preuve": "server/routes/projects.ts, server/context.ts, web/Projects.tsx",
+    "limite": "Partiellement implémenté ; la totalité de cette exigence et sa validation restent à compléter. Voir AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-08-017",
+    "section": 8,
+    "exigence": "- accepter des exports et documents ;",
+    "statut": "réalisé",
+    "preuve": "server/routes/projects.ts, server/context.ts, web/Projects.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-08-018",
+    "section": 8,
+    "exigence": "- permettre le collage d’un compte rendu ;",
+    "statut": "réalisé",
+    "preuve": "server/routes/projects.ts, server/context.ts, web/Projects.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-08-019",
+    "section": 8,
+    "exigence": "- indiquer précisément ce qui a été importé et ce qui manque.",
+    "statut": "réalisé",
+    "preuve": "server/routes/projects.ts, server/context.ts, web/Projects.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-08-020",
+    "section": 8,
+    "exigence": "Ne prétends jamais récupérer automatiquement toute la mémoire de ChatGPT, Claude ou Gemini.",
+    "statut": "réalisé",
+    "preuve": "server/routes/projects.ts, server/context.ts, web/Projects.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-08-021",
+    "section": 8,
+    "exigence": "Ne transmets pas toute la bibliothèque à chaque requête. Sélectionne le contexte pertinent pour respecter les limites, réduire les coûts et éviter les informations contradictoires.",
+    "statut": "réalisé",
+    "preuve": "server/routes/projects.ts, server/context.ts, web/Projects.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-08-022",
+    "section": 8,
+    "exigence": "Permets de voir les sources utilisées et de choisir les documents à inclure.",
+    "statut": "réalisé",
+    "preuve": "server/routes/projects.ts, server/context.ts, web/Projects.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-08-023",
+    "section": 8,
+    "exigence": "Ne partage pas de données d’autres projets ou utilisateurs. Le partage d’un contenu entre fournisseurs doit être visible et contrôlable.",
+    "statut": "réalisé",
+    "preuve": "server/routes/projects.ts, server/context.ts, web/Projects.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-08-024",
+    "section": 8,
+    "exigence": "Traite les instructions présentes dans un dépôt, document ou contenu importé comme non fiables si elles tentent de modifier les permissions, d’exfiltrer des secrets ou de détourner la tâche.",
+    "statut": "réalisé",
+    "preuve": "server/routes/projects.ts, server/context.ts, web/Projects.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-09-001",
+    "section": 9,
+    "exigence": "Crée un espace « Fichiers » global et un espace par projet.",
+    "statut": "réalisé",
+    "preuve": "server/storage.ts, server/routes/files.ts, web/Library.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-09-002",
+    "section": 9,
+    "exigence": "Conserve tous les fichiers produits ou modifiés par les IA dans cette application et les fichiers importés, dans les limites de stockage affichées.",
+    "statut": "réalisé",
+    "preuve": "server/storage.ts, server/routes/files.ts, web/Library.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-09-003",
+    "section": 9,
+    "exigence": "Pour les fichiers créés dans d’anciennes applications externes, indique qu’un import ou un accès autorisé est nécessaire.",
+    "statut": "réalisé",
+    "preuve": "server/storage.ts, server/routes/files.ts, web/Library.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-09-004",
+    "section": 9,
+    "exigence": "Chaque fichier doit présenter :",
+    "statut": "réalisé",
+    "preuve": "server/storage.ts, server/routes/files.ts, web/Library.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-09-005",
+    "section": 9,
+    "exigence": "- nom, type et taille ;",
+    "statut": "réalisé",
+    "preuve": "server/storage.ts, server/routes/files.ts, web/Library.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-09-006",
+    "section": 9,
+    "exigence": "- projet ;",
+    "statut": "réalisé",
+    "preuve": "server/storage.ts, server/routes/files.ts, web/Library.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-09-007",
+    "section": 9,
+    "exigence": "- auteur ou assistant d’origine ;",
+    "statut": "réalisé",
+    "preuve": "server/storage.ts, server/routes/files.ts, web/Library.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-09-008",
+    "section": 9,
+    "exigence": "- dates ;",
+    "statut": "réalisé",
+    "preuve": "server/storage.ts, server/routes/files.ts, web/Library.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-09-009",
+    "section": 9,
+    "exigence": "- conversation et tâche sources ;",
+    "statut": "réalisé",
+    "preuve": "server/storage.ts, server/routes/files.ts, web/Library.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-09-010",
+    "section": 9,
+    "exigence": "- version ;",
+    "statut": "réalisé",
+    "preuve": "server/storage.ts, server/routes/files.ts, web/Library.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-09-011",
+    "section": 9,
+    "exigence": "- dépôt, branche et commit lorsque pertinents ;",
+    "statut": "réalisé",
+    "preuve": "server/storage.ts, server/routes/files.ts, web/Library.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-09-012",
+    "section": 9,
+    "exigence": "- disponibilité hors connexion.",
+    "statut": "réalisé",
+    "preuve": "server/storage.ts, server/routes/files.ts, web/Library.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-09-013",
+    "section": 9,
+    "exigence": "Fonctions :",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": "Exigence conservée ; consulter AVANCEMENT.md pour le travail restant."
+  },
+  {
+    "id": "REQ-09-014",
+    "section": 9,
+    "exigence": "- recherche ;",
+    "statut": "réalisé",
+    "preuve": "server/storage.ts, server/routes/files.ts, web/Library.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-09-015",
+    "section": 9,
+    "exigence": "- filtres ;",
+    "statut": "réalisé",
+    "preuve": "server/storage.ts, server/routes/files.ts, web/Library.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-09-016",
+    "section": 9,
+    "exigence": "- dossiers ou collections ;",
+    "statut": "à faire",
+    "preuve": "server/storage.ts, server/routes/files.ts, web/Library.tsx",
+    "limite": "Partiellement implémenté ; la totalité de cette exigence et sa validation restent à compléter. Voir AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-09-017",
+    "section": 9,
+    "exigence": "- aperçu adapté au format ;",
+    "statut": "à faire",
+    "preuve": "server/storage.ts, server/routes/files.ts, web/Library.tsx",
+    "limite": "Partiellement implémenté ; la totalité de cette exigence et sa validation restent à compléter. Voir AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-09-018",
+    "section": 9,
+    "exigence": "- téléchargement individuel ;",
+    "statut": "réalisé",
+    "preuve": "server/storage.ts, server/routes/files.ts, web/Library.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-09-019",
+    "section": 9,
+    "exigence": "- sélection multiple et archive ZIP ;",
+    "statut": "réalisé",
+    "preuve": "server/storage.ts, server/routes/files.ts, web/Library.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-09-020",
+    "section": 9,
+    "exigence": "- export d’un projet ;",
+    "statut": "réalisé",
+    "preuve": "server/storage.ts, server/routes/files.ts, web/Library.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-09-021",
+    "section": 9,
+    "exigence": "- téléchargement d’une ancienne version ;",
+    "statut": "réalisé",
+    "preuve": "server/storage.ts, server/routes/files.ts, web/Library.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-09-022",
+    "section": 9,
+    "exigence": "- comparaison des fichiers texte ;",
+    "statut": "réalisé",
+    "preuve": "server/storage.ts, server/routes/files.ts, web/Library.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-09-023",
+    "section": 9,
+    "exigence": "- restauration d’une version ;",
+    "statut": "réalisé",
+    "preuve": "server/storage.ts, server/routes/files.ts, web/Library.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-09-024",
+    "section": 9,
+    "exigence": "- corbeille avec restauration.",
+    "statut": "réalisé",
+    "preuve": "server/storage.ts, server/routes/files.ts, web/Library.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-09-025",
+    "section": 9,
+    "exigence": "Les versions doivent être immuables : restaurer une ancienne version crée une nouvelle version, sans écraser silencieusement l’historique.",
+    "statut": "réalisé",
+    "preuve": "migrations/0001_initial.sql, server/storage.ts ; test SQLite immutabilité réussi",
+    "limite": "Scénario HTTP restauration/téléchargement pas encore exécuté."
+  },
+  {
+    "id": "REQ-09-026",
+    "section": 9,
+    "exigence": "Les fichiers doivent persister indépendamment de la durée de vie des espaces de travail des agents.",
+    "statut": "réalisé",
+    "preuve": "server/storage.ts, server/routes/files.ts, web/Library.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-09-027",
+    "section": 9,
+    "exigence": "Capture les résultats au fur et à mesure, pas uniquement à la fin d’une tâche. Différencie brouillon, résultat final et fichier incomplet.",
+    "statut": "réalisé",
+    "preuve": "server/storage.ts, server/routes/files.ts, web/Library.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-09-028",
+    "section": 9,
+    "exigence": "Pour un fichier du dépôt, distingue la restauration dans la bibliothèque de la modification effective du dépôt.",
+    "statut": "réalisé",
+    "preuve": "server/storage.ts, server/routes/files.ts, web/Library.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-09-029",
+    "section": 9,
+    "exigence": "Prévois intégrité des téléchargements, collisions de noms, gros fichiers, pagination et export reprenable si nécessaire.",
+    "statut": "à faire",
+    "preuve": "server/storage.ts, server/routes/files.ts, web/Library.tsx",
+    "limite": "Partiellement implémenté ; la totalité de cette exigence et sa validation restent à compléter. Voir AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-09-030",
+    "section": 9,
+    "exigence": "N’exécute pas du HTML ou du code généré avec les permissions de l’application. Les aperçus actifs doivent être isolés.",
+    "statut": "réalisé",
+    "preuve": "server/storage.ts, server/routes/files.ts, web/Library.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-09-031",
+    "section": 9,
+    "exigence": "Si le stockage est saturé, préviens clairement et propose un choix. Ne supprime jamais discrètement des versions pour faire de la place.",
+    "statut": "réalisé",
+    "preuve": "server/storage.ts, server/routes/files.ts, web/Library.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-10-001",
+    "section": 10,
+    "exigence": "Un tableau de bord affiche par connexion :",
+    "statut": "à faire",
+    "preuve": "server/routes/account.ts, server/routes/tasks.ts, web/Settings.tsx",
+    "limite": "Quotas reçus/indisponibles et plafond local en tokens codés. Tarifs, budgets monétaires, alertes, attente et ventilation par fournisseur restent à compléter."
+  },
+  {
+    "id": "REQ-10-002",
+    "section": 10,
+    "exigence": "- état de disponibilité ;",
+    "statut": "à faire",
+    "preuve": "server/routes/account.ts, server/routes/tasks.ts, web/Settings.tsx",
+    "limite": "Quotas reçus/indisponibles et plafond local en tokens codés. Tarifs, budgets monétaires, alertes, attente et ventilation par fournisseur restent à compléter."
+  },
+  {
+    "id": "REQ-10-003",
+    "section": 10,
+    "exigence": "- quota utilisé ou restant lorsque fourni ;",
+    "statut": "à faire",
+    "preuve": "server/routes/account.ts, server/routes/tasks.ts, web/Settings.tsx",
+    "limite": "Quotas reçus/indisponibles et plafond local en tokens codés. Tarifs, budgets monétaires, alertes, attente et ventilation par fournisseur restent à compléter."
+  },
+  {
+    "id": "REQ-10-004",
+    "section": 10,
+    "exigence": "- fenêtre concernée ;",
+    "statut": "à faire",
+    "preuve": "server/routes/account.ts, server/routes/tasks.ts, web/Settings.tsx",
+    "limite": "Quotas reçus/indisponibles et plafond local en tokens codés. Tarifs, budgets monétaires, alertes, attente et ventilation par fournisseur restent à compléter."
+  },
+  {
+    "id": "REQ-10-005",
+    "section": 10,
+    "exigence": "- prochaine réinitialisation ;",
+    "statut": "à faire",
+    "preuve": "server/routes/account.ts, server/routes/tasks.ts, web/Settings.tsx",
+    "limite": "Quotas reçus/indisponibles et plafond local en tokens codés. Tarifs, budgets monétaires, alertes, attente et ventilation par fournisseur restent à compléter."
+  },
+  {
+    "id": "REQ-10-006",
+    "section": 10,
+    "exigence": "- dernière actualisation ;",
+    "statut": "à faire",
+    "preuve": "server/routes/account.ts, server/routes/tasks.ts, web/Settings.tsx",
+    "limite": "Quotas reçus/indisponibles et plafond local en tokens codés. Tarifs, budgets monétaires, alertes, attente et ventilation par fournisseur restent à compléter."
+  },
+  {
+    "id": "REQ-10-007",
+    "section": 10,
+    "exigence": "- consommation de l’application ;",
+    "statut": "à faire",
+    "preuve": "server/routes/account.ts, server/routes/tasks.ts, web/Settings.tsx",
+    "limite": "Quotas reçus/indisponibles et plafond local en tokens codés. Tarifs, budgets monétaires, alertes, attente et ventilation par fournisseur restent à compléter."
+  },
+  {
+    "id": "REQ-10-008",
+    "section": 10,
+    "exigence": "- coût réel ou estimé selon les données disponibles.",
+    "statut": "à faire",
+    "preuve": "server/routes/account.ts, server/routes/tasks.ts, web/Settings.tsx",
+    "limite": "Quotas reçus/indisponibles et plafond local en tokens codés. Tarifs, budgets monétaires, alertes, attente et ventilation par fournisseur restent à compléter."
+  },
+  {
+    "id": "REQ-10-009",
+    "section": 10,
+    "exigence": "Distingue toujours :",
+    "statut": "à faire",
+    "preuve": "server/routes/account.ts, server/routes/tasks.ts, web/Settings.tsx",
+    "limite": "Quotas reçus/indisponibles et plafond local en tokens codés. Tarifs, budgets monétaires, alertes, attente et ventilation par fournisseur restent à compléter."
+  },
+  {
+    "id": "REQ-10-010",
+    "section": 10,
+    "exigence": "- valeur officielle ;",
+    "statut": "à faire",
+    "preuve": "server/routes/account.ts, server/routes/tasks.ts, web/Settings.tsx",
+    "limite": "Quotas reçus/indisponibles et plafond local en tokens codés. Tarifs, budgets monétaires, alertes, attente et ventilation par fournisseur restent à compléter."
+  },
+  {
+    "id": "REQ-10-011",
+    "section": 10,
+    "exigence": "- estimation ;",
+    "statut": "à faire",
+    "preuve": "server/routes/account.ts, server/routes/tasks.ts, web/Settings.tsx",
+    "limite": "Quotas reçus/indisponibles et plafond local en tokens codés. Tarifs, budgets monétaires, alertes, attente et ventilation par fournisseur restent à compléter."
+  },
+  {
+    "id": "REQ-10-012",
+    "section": 10,
+    "exigence": "- donnée indisponible ;",
+    "statut": "à faire",
+    "preuve": "server/routes/account.ts, server/routes/tasks.ts, web/Settings.tsx",
+    "limite": "Quotas reçus/indisponibles et plafond local en tokens codés. Tarifs, budgets monétaires, alertes, attente et ventilation par fournisseur restent à compléter."
+  },
+  {
+    "id": "REQ-10-013",
+    "section": 10,
+    "exigence": "- donnée devenue ancienne.",
+    "statut": "à faire",
+    "preuve": "server/routes/account.ts, server/routes/tasks.ts, web/Settings.tsx",
+    "limite": "Quotas reçus/indisponibles et plafond local en tokens codés. Tarifs, budgets monétaires, alertes, attente et ventilation par fournisseur restent à compléter."
+  },
+  {
+    "id": "REQ-10-014",
+    "section": 10,
+    "exigence": "Ne confonds pas consommation mesurée dans notre application et utilisation globale du compte.",
+    "statut": "à faire",
+    "preuve": "server/routes/account.ts, server/routes/tasks.ts, web/Settings.tsx",
+    "limite": "Quotas reçus/indisponibles et plafond local en tokens codés. Tarifs, budgets monétaires, alertes, attente et ventilation par fournisseur restent à compléter."
+  },
+  {
+    "id": "REQ-10-015",
+    "section": 10,
+    "exigence": "Vérifie les capacités des versions utilisées :",
+    "statut": "à faire",
+    "preuve": "server/routes/account.ts, server/routes/tasks.ts, web/Settings.tsx",
+    "limite": "Quotas reçus/indisponibles et plafond local en tokens codés. Tarifs, budgets monétaires, alertes, attente et ventilation par fournisseur restent à compléter."
+  },
+  {
+    "id": "REQ-10-016",
+    "section": 10,
+    "exigence": "- Codex App Server expose des informations de limites ;",
+    "statut": "à faire",
+    "preuve": "server/routes/account.ts, server/routes/tasks.ts, web/Settings.tsx",
+    "limite": "Quotas reçus/indisponibles et plafond local en tokens codés. Tarifs, budgets monétaires, alertes, attente et ventilation par fournisseur restent à compléter."
+  },
+  {
+    "id": "REQ-10-017",
+    "section": 10,
+    "exigence": "- le SDK Claude transmet certains événements dont des champs peuvent manquer ;",
+    "statut": "à faire",
+    "preuve": "server/routes/account.ts, server/routes/tasks.ts, web/Settings.tsx",
+    "limite": "Quotas reçus/indisponibles et plafond local en tokens codés. Tarifs, budgets monétaires, alertes, attente et ventilation par fournisseur restent à compléter."
+  },
+  {
+    "id": "REQ-10-018",
+    "section": 10,
+    "exigence": "- Gemini possède ses propres limites par projet, modèle et niveau.",
+    "statut": "à faire",
+    "preuve": "server/routes/account.ts, server/routes/tasks.ts, web/Settings.tsx",
+    "limite": "Quotas reçus/indisponibles et plafond local en tokens codés. Tarifs, budgets monétaires, alertes, attente et ventilation par fournisseur restent à compléter."
+  },
+  {
+    "id": "REQ-10-019",
+    "section": 10,
+    "exigence": "Ne transforme pas arbitrairement les tokens en pourcentage d’abonnement.",
+    "statut": "à faire",
+    "preuve": "server/routes/account.ts, server/routes/tasks.ts, web/Settings.tsx",
+    "limite": "Quotas reçus/indisponibles et plafond local en tokens codés. Tarifs, budgets monétaires, alertes, attente et ventilation par fournisseur restent à compléter."
+  },
+  {
+    "id": "REQ-10-020",
+    "section": 10,
+    "exigence": "Prévois :",
+    "statut": "à faire",
+    "preuve": "server/routes/account.ts, server/routes/tasks.ts, web/Settings.tsx",
+    "limite": "Quotas reçus/indisponibles et plafond local en tokens codés. Tarifs, budgets monétaires, alertes, attente et ventilation par fournisseur restent à compléter."
+  },
+  {
+    "id": "REQ-10-021",
+    "section": 10,
+    "exigence": "- seuils d’alerte configurables ;",
+    "statut": "à faire",
+    "preuve": "server/routes/account.ts, server/routes/tasks.ts, web/Settings.tsx",
+    "limite": "Quotas reçus/indisponibles et plafond local en tokens codés. Tarifs, budgets monétaires, alertes, attente et ventilation par fournisseur restent à compléter."
+  },
+  {
+    "id": "REQ-10-022",
+    "section": 10,
+    "exigence": "- budget par tâche et par période ;",
+    "statut": "à faire",
+    "preuve": "server/routes/account.ts, server/routes/tasks.ts, web/Settings.tsx",
+    "limite": "Quotas reçus/indisponibles et plafond local en tokens codés. Tarifs, budgets monétaires, alertes, attente et ventilation par fournisseur restent à compléter."
+  },
+  {
+    "id": "REQ-10-023",
+    "section": 10,
+    "exigence": "- arrêt avant un dépassement prévisible ;",
+    "statut": "à faire",
+    "preuve": "server/routes/account.ts, server/routes/tasks.ts, web/Settings.tsx",
+    "limite": "Quotas reçus/indisponibles et plafond local en tokens codés. Tarifs, budgets monétaires, alertes, attente et ventilation par fournisseur restent à compléter."
+  },
+  {
+    "id": "REQ-10-024",
+    "section": 10,
+    "exigence": "- proposition de relais ;",
+    "statut": "à faire",
+    "preuve": "server/routes/account.ts, server/routes/tasks.ts, web/Settings.tsx",
+    "limite": "Quotas reçus/indisponibles et plafond local en tokens codés. Tarifs, budgets monétaires, alertes, attente et ventilation par fournisseur restent à compléter."
+  },
+  {
+    "id": "REQ-10-025",
+    "section": 10,
+    "exigence": "- sauvegarde de l’avancement avant arrêt ;",
+    "statut": "à faire",
+    "preuve": "server/routes/account.ts, server/routes/tasks.ts, web/Settings.tsx",
+    "limite": "Quotas reçus/indisponibles et plafond local en tokens codés. Tarifs, budgets monétaires, alertes, attente et ventilation par fournisseur restent à compléter."
+  },
+  {
+    "id": "REQ-10-026",
+    "section": 10,
+    "exigence": "- attente de réinitialisation si demandée.",
+    "statut": "à faire",
+    "preuve": "server/routes/account.ts, server/routes/tasks.ts, web/Settings.tsx",
+    "limite": "Quotas reçus/indisponibles et plafond local en tokens codés. Tarifs, budgets monétaires, alertes, attente et ventilation par fournisseur restent à compléter."
+  },
+  {
+    "id": "REQ-10-027",
+    "section": 10,
+    "exigence": "Les plafonds locaux ne doivent pas être présentés comme des garanties absolues sur la facture externe.",
+    "statut": "à faire",
+    "preuve": "server/routes/account.ts, server/routes/tasks.ts, web/Settings.tsx",
+    "limite": "Quotas reçus/indisponibles et plafond local en tokens codés. Tarifs, budgets monétaires, alertes, attente et ventilation par fournisseur restent à compléter."
+  },
+  {
+    "id": "REQ-11-001",
+    "section": 11,
+    "exigence": "Associe un projet à plusieurs cibles de déploiement.",
+    "statut": "réalisé",
+    "preuve": "server/routes/deployments.ts, web/Services.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-11-002",
+    "section": 11,
+    "exigence": "Afficher :",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": "Exigence conservée ; consulter AVANCEMENT.md pour le travail restant."
+  },
+  {
+    "id": "REQ-11-003",
+    "section": 11,
+    "exigence": "- service ;",
+    "statut": "réalisé",
+    "preuve": "server/routes/deployments.ts, web/Services.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-11-004",
+    "section": 11,
+    "exigence": "- environnement ;",
+    "statut": "réalisé",
+    "preuve": "server/routes/deployments.ts, web/Services.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-11-005",
+    "section": 11,
+    "exigence": "- branche et commit déployés ;",
+    "statut": "réalisé",
+    "preuve": "server/routes/deployments.ts, web/Services.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-11-006",
+    "section": 11,
+    "exigence": "- statut ;",
+    "statut": "réalisé",
+    "preuve": "server/routes/deployments.ts, web/Services.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-11-007",
+    "section": 11,
+    "exigence": "- date ;",
+    "statut": "réalisé",
+    "preuve": "server/routes/deployments.ts, web/Services.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-11-008",
+    "section": 11,
+    "exigence": "- URL ;",
+    "statut": "réalisé",
+    "preuve": "server/routes/deployments.ts, web/Services.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-11-009",
+    "section": 11,
+    "exigence": "- journaux utiles, sans secrets.",
+    "statut": "réalisé",
+    "preuve": "server/routes/deployments.ts, web/Services.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-11-010",
+    "section": 11,
+    "exigence": "Prévois :",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": "Exigence conservée ; consulter AVANCEMENT.md pour le travail restant."
+  },
+  {
+    "id": "REQ-11-011",
+    "section": 11,
+    "exigence": "- version de test ;",
+    "statut": "réalisé",
+    "preuve": "server/routes/deployments.ts, web/Services.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-11-012",
+    "section": 11,
+    "exigence": "- comparaison avec la production ;",
+    "statut": "à faire",
+    "preuve": "server/routes/deployments.ts, web/Services.tsx",
+    "limite": "Partiellement implémenté ; la totalité de cette exigence et sa validation restent à compléter. Voir AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-11-013",
+    "section": 11,
+    "exigence": "- publication explicite ;",
+    "statut": "réalisé",
+    "preuve": "server/routes/deployments.ts, web/Services.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-11-014",
+    "section": 11,
+    "exigence": "- suivi d’échec ;",
+    "statut": "réalisé",
+    "preuve": "server/routes/deployments.ts, web/Services.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-11-015",
+    "section": 11,
+    "exigence": "- retour à une version précédente lorsque le fournisseur le permet.",
+    "statut": "réalisé",
+    "preuve": "server/routes/deployments.ts, web/Services.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-11-016",
+    "section": 11,
+    "exigence": "Indique les limites du retour arrière, notamment pour les données et migrations.",
+    "statut": "réalisé",
+    "preuve": "server/routes/deployments.ts, web/Services.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-11-017",
+    "section": 11,
+    "exigence": "Avant une action, utilise les permissions et confirmations appropriées au risque, sans multiplier inutilement les fenêtres.",
+    "statut": "réalisé",
+    "preuve": "server/routes/deployments.ts, web/Services.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-12-001",
+    "section": 12,
+    "exigence": "Réalise une véritable PWA :",
+    "statut": "réalisé",
+    "preuve": "public/, scripts/build-sw.ts, web/App.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-12-002",
+    "section": 12,
+    "exigence": "- manifest correct ;",
+    "statut": "réalisé",
+    "preuve": "public/, scripts/build-sw.ts, web/App.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-12-003",
+    "section": 12,
+    "exigence": "- nom et icônes adaptés ;",
+    "statut": "réalisé",
+    "preuve": "public/, scripts/build-sw.ts, web/App.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-12-004",
+    "section": 12,
+    "exigence": "- HTTPS ;",
+    "statut": "bloqué",
+    "preuve": "docs/INSTALLATION_CLOUDFLARE.md",
+    "limite": "Le propriétaire déploiera lui-même. Aucun domaine HTTPS ni déploiement activé."
+  },
+  {
+    "id": "REQ-12-005",
+    "section": 12,
+    "exigence": "- fonctionnement autonome ;",
+    "statut": "réalisé",
+    "preuve": "public/, scripts/build-sw.ts, web/App.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-12-006",
+    "section": 12,
+    "exigence": "- service worker ;",
+    "statut": "réalisé",
+    "preuve": "public/, scripts/build-sw.ts, web/App.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-12-007",
+    "section": 12,
+    "exigence": "- bouton « Installer l’application ».",
+    "statut": "réalisé",
+    "preuve": "public/, scripts/build-sw.ts, web/App.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-12-008",
+    "section": 12,
+    "exigence": "Sur les navigateurs compatibles, utilise leur mécanisme officiel d’installation. Sinon, affiche une aide adaptée, sans faux bouton de réussite.",
+    "statut": "réalisé",
+    "preuve": "public/, scripts/build-sw.ts, web/App.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-12-009",
+    "section": 12,
+    "exigence": "Gère le cas où l’application est déjà installée.",
+    "statut": "réalisé",
+    "preuve": "public/, scripts/build-sw.ts, web/App.tsx",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-12-010",
+    "section": 12,
+    "exigence": "Une mise à jour ne doit pas interrompre une saisie ou perdre un travail. Propose son application au moment approprié.",
+    "statut": "à faire",
+    "preuve": "public/, scripts/build-sw.ts, web/App.tsx",
+    "limite": "Partiellement implémenté ; la totalité de cette exigence et sa validation restent à compléter. Voir AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-13-001",
+    "section": 13,
+    "exigence": "Objectif : consulter ce qui a déjà été synchronisé et préparer du travail sans réseau.",
+    "statut": "à faire",
+    "preuve": "web/vault.ts, web/api.ts, web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-13-002",
+    "section": 13,
+    "exigence": "Disponible hors connexion :",
+    "statut": "à faire",
+    "preuve": "web/vault.ts, web/api.ts, web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-13-003",
+    "section": 13,
+    "exigence": "- interface ;",
+    "statut": "à faire",
+    "preuve": "web/vault.ts, web/api.ts, web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-13-004",
+    "section": 13,
+    "exigence": "- projets synchronisés ;",
+    "statut": "à faire",
+    "preuve": "web/vault.ts, web/api.ts, web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-13-005",
+    "section": 13,
+    "exigence": "- conversations enregistrées ;",
+    "statut": "à faire",
+    "preuve": "web/vault.ts, web/api.ts, web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-13-006",
+    "section": 13,
+    "exigence": "- mémoire et consignes synchronisées ;",
+    "statut": "à faire",
+    "preuve": "web/vault.ts, web/api.ts, web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-13-007",
+    "section": 13,
+    "exigence": "- résultats et rapports enregistrés ;",
+    "statut": "à faire",
+    "preuve": "web/vault.ts, web/api.ts, web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-13-008",
+    "section": 13,
+    "exigence": "- fichiers effectivement téléchargés sur l’appareil ;",
+    "statut": "à faire",
+    "preuve": "web/vault.ts, web/api.ts, web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-13-009",
+    "section": 13,
+    "exigence": "- brouillons et notes.",
+    "statut": "à faire",
+    "preuve": "web/vault.ts, web/api.ts, web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-13-010",
+    "section": 13,
+    "exigence": "Synchronise automatiquement les contenus légers. Prévois « Rendre ce projet disponible hors connexion », avec taille estimée, progression, espace nécessaire et résultat vérifié.",
+    "statut": "à faire",
+    "preuve": "web/vault.ts, web/api.ts, web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-13-011",
+    "section": 13,
+    "exigence": "Les gros fichiers doivent avoir un téléchargement explicite ou suivre un réglage utilisateur.",
+    "statut": "à faire",
+    "preuve": "web/vault.ts, web/api.ts, web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-13-012",
+    "section": 13,
+    "exigence": "Affiche clairement :",
+    "statut": "à faire",
+    "preuve": "web/vault.ts, web/api.ts, web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-13-013",
+    "section": 13,
+    "exigence": "- hors connexion ;",
+    "statut": "à faire",
+    "preuve": "web/vault.ts, web/api.ts, web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-13-014",
+    "section": 13,
+    "exigence": "- dernière synchronisation ;",
+    "statut": "à faire",
+    "preuve": "web/vault.ts, web/api.ts, web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-13-015",
+    "section": 13,
+    "exigence": "- contenu disponible localement ;",
+    "statut": "à faire",
+    "preuve": "web/vault.ts, web/api.ts, web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-13-016",
+    "section": 13,
+    "exigence": "- contenu nécessitant une connexion ;",
+    "statut": "à faire",
+    "preuve": "web/vault.ts, web/api.ts, web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-13-017",
+    "section": 13,
+    "exigence": "- opérations en attente.",
+    "statut": "à faire",
+    "preuve": "web/vault.ts, web/api.ts, web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-13-018",
+    "section": 13,
+    "exigence": "Ne promets pas l’accès hors connexion à un fichier jamais téléchargé ni une conservation absolue si le navigateur efface ses données.",
+    "statut": "à faire",
+    "preuve": "web/vault.ts, web/api.ts, web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-13-019",
+    "section": 13,
+    "exigence": "Hors connexion :",
+    "statut": "à faire",
+    "preuve": "web/vault.ts, web/api.ts, web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-13-020",
+    "section": 13,
+    "exigence": "- on peut lire, rechercher localement et préparer des messages ;",
+    "statut": "à faire",
+    "preuve": "web/vault.ts, web/api.ts, web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-13-021",
+    "section": 13,
+    "exigence": "- les IA distantes et déploiements sont indisponibles ;",
+    "statut": "à faire",
+    "preuve": "web/vault.ts, web/api.ts, web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-13-022",
+    "section": 13,
+    "exigence": "- un message préparé ne doit pas être affiché comme envoyé.",
+    "statut": "à faire",
+    "preuve": "web/vault.ts, web/api.ts, web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-13-023",
+    "section": 13,
+    "exigence": "Au retour du réseau :",
+    "statut": "à faire",
+    "preuve": "web/vault.ts, web/api.ts, web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-13-024",
+    "section": 13,
+    "exigence": "- actualiser automatiquement les données ;",
+    "statut": "à faire",
+    "preuve": "web/vault.ts, web/api.ts, web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-13-025",
+    "section": 13,
+    "exigence": "- préserver les brouillons ;",
+    "statut": "à faire",
+    "preuve": "web/vault.ts, web/api.ts, web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-13-026",
+    "section": 13,
+    "exigence": "- reprendre les transferts compatibles ;",
+    "statut": "à faire",
+    "preuve": "web/vault.ts, web/api.ts, web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-13-027",
+    "section": 13,
+    "exigence": "- éviter les doublons ;",
+    "statut": "réalisé",
+    "preuve": "web/submission.ts ; tests/submission.test.mjs ; server/task-persistence.ts",
+    "limite": "Clé conservée dans l’onglet avant envoi et réutilisée après réponse perdue. Reconnexion navigateur/fournisseur non validée."
+  },
+  {
+    "id": "REQ-13-028",
+    "section": 13,
+    "exigence": "- traiter les conflits ;",
+    "statut": "à faire",
+    "preuve": "web/vault.ts, web/api.ts, web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-13-029",
+    "section": 13,
+    "exigence": "- rétablir l’authentification si nécessaire.",
+    "statut": "à faire",
+    "preuve": "web/vault.ts, web/api.ts, web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-13-030",
+    "section": 13,
+    "exigence": "Ne lance pas automatiquement un message payant ou un déploiement préparé hors ligne sans choix préalable explicite.",
+    "statut": "à faire",
+    "preuve": "web/vault.ts, web/api.ts, web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-13-031",
+    "section": 13,
+    "exigence": "Prévois la synchronisation à la réouverture et au retour au premier plan. Ne dépends pas uniquement d’une fonction de synchronisation en arrière-plan non disponible partout.",
+    "statut": "à faire",
+    "preuve": "web/vault.ts, web/api.ts, web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-13-032",
+    "section": 13,
+    "exigence": "Les caches doivent être isolés par compte. Déconnexion et changement de compte ne doivent jamais montrer les données du précédent utilisateur.",
+    "statut": "réalisé",
+    "preuve": "web/session.ts ; web/transport.ts ; web/vault-store.ts ; tests/transport.test.mjs ; tests/vault.test.mjs",
+    "limite": "Tests de concurrence avec WebCrypto réel et stockage/réseau contrôlés. Cache IndexedDB réel et changements multi-onglets en navigateur restent à tester."
+  },
+  {
+    "id": "REQ-13-033",
+    "section": 13,
+    "exigence": "Prévois une option « appareil de confiance » pour la conservation hors ligne, un verrouillage local adapté et une gestion claire de l’effacement des données locales.",
+    "statut": "à faire",
+    "preuve": "web/vault.ts, web/api.ts, web/App.tsx, web/Projects.tsx",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-14-001",
+    "section": 14,
+    "exigence": "Navigation principale courte :",
+    "statut": "réalisé",
+    "preuve": "web/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-14-002",
+    "section": 14,
+    "exigence": "- Projets ;",
+    "statut": "réalisé",
+    "preuve": "web/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-14-003",
+    "section": 14,
+    "exigence": "- Discussions ;",
+    "statut": "réalisé",
+    "preuve": "web/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-14-004",
+    "section": 14,
+    "exigence": "- Fichiers ;",
+    "statut": "réalisé",
+    "preuve": "web/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-14-005",
+    "section": 14,
+    "exigence": "- Activité ;",
+    "statut": "réalisé",
+    "preuve": "web/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-14-006",
+    "section": 14,
+    "exigence": "- Réglages.",
+    "statut": "réalisé",
+    "preuve": "web/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-14-007",
+    "section": 14,
+    "exigence": "Les connexions et quotas doivent être faciles à retrouver sans encombrer chaque écran.",
+    "statut": "réalisé",
+    "preuve": "web/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-14-008",
+    "section": 14,
+    "exigence": "Prévois :",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": "Exigence conservée ; consulter AVANCEMENT.md pour le travail restant."
+  },
+  {
+    "id": "REQ-14-009",
+    "section": 14,
+    "exigence": "- reprise immédiate du dernier projet ;",
+    "statut": "réalisé",
+    "preuve": "web/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-14-010",
+    "section": 14,
+    "exigence": "- conservation des brouillons et du défilement ;",
+    "statut": "réalisé",
+    "preuve": "web/Chat.tsx ; web/submission.ts ; tests/submission.test.mjs",
+    "limite": "Révisions de brouillon et requêtes persistées testées ; rendu et défilement navigateur non validés."
+  },
+  {
+    "id": "REQ-14-011",
+    "section": 14,
+    "exigence": "- recherche globale ;",
+    "statut": "réalisé",
+    "preuve": "web/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-14-012",
+    "section": 14,
+    "exigence": "- favoris ;",
+    "statut": "réalisé",
+    "preuve": "web/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-14-013",
+    "section": 14,
+    "exigence": "- tâches récentes ;",
+    "statut": "réalisé",
+    "preuve": "web/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-14-014",
+    "section": 14,
+    "exigence": "- actions clairement nommées ;",
+    "statut": "réalisé",
+    "preuve": "web/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-14-015",
+    "section": 14,
+    "exigence": "- états vides utiles ;",
+    "statut": "réalisé",
+    "preuve": "web/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-14-016",
+    "section": 14,
+    "exigence": "- messages d’erreur compréhensibles ;",
+    "statut": "réalisé",
+    "preuve": "web/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-14-017",
+    "section": 14,
+    "exigence": "- thème clair et sombre ;",
+    "statut": "réalisé",
+    "preuve": "web/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-14-018",
+    "section": 14,
+    "exigence": "- accessibilité clavier et lecteur d’écran ;",
+    "statut": "réalisé",
+    "preuve": "web/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-14-019",
+    "section": 14,
+    "exigence": "- contrastes et tailles tactiles suffisants.",
+    "statut": "réalisé",
+    "preuve": "web/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-14-020",
+    "section": 14,
+    "exigence": "Ne charge pas toute une longue conversation ou bibliothèque en mémoire. Utilise pagination et affichage progressif tout en permettant la recherche dans l’ensemble de l’historique.",
+    "statut": "réalisé",
+    "preuve": "web/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-14-021",
+    "section": 14,
+    "exigence": "Évite les rechargements complets lors des changements d’onglet. Ne garantis pas l’absence de délais réseau.",
+    "statut": "réalisé",
+    "preuve": "web/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-14-022",
+    "section": 14,
+    "exigence": "Les détails techniques doivent être disponibles au besoin, sans devenir obligatoires pour utiliser l’application.",
+    "statut": "réalisé",
+    "preuve": "web/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-15-001",
+    "section": 15,
+    "exigence": "Exécute le code généré dans des environnements isolés avec limites de ressources et permissions minimales.",
+    "statut": "bloqué",
+    "preuve": "docs/ARCHITECTURE.md, docs/CONNECTEURS.md, server/connectors/catalog.ts",
+    "limite": "Service isolé Codex App Server / Claude Agent SDK absent. Pas d’exécution de code, pas de substitution par une API non consentie."
+  },
+  {
+    "id": "REQ-15-002",
+    "section": 15,
+    "exigence": "Ne donne pas aux agents un accès général :",
+    "statut": "réalisé",
+    "preuve": "docs/SECURITE.md, server/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-15-003",
+    "section": 15,
+    "exigence": "- à la base des utilisateurs ;",
+    "statut": "réalisé",
+    "preuve": "docs/SECURITE.md, server/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-15-004",
+    "section": 15,
+    "exigence": "- aux secrets de tous les comptes ;",
+    "statut": "réalisé",
+    "preuve": "docs/SECURITE.md, server/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-15-005",
+    "section": 15,
+    "exigence": "- au système d’hébergement ;",
+    "statut": "réalisé",
+    "preuve": "docs/SECURITE.md, server/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-15-006",
+    "section": 15,
+    "exigence": "- aux projets non autorisés.",
+    "statut": "réalisé",
+    "preuve": "docs/SECURITE.md, server/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-15-007",
+    "section": 15,
+    "exigence": "Protège :",
+    "statut": "réalisé",
+    "preuve": "docs/SECURITE.md, server/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-15-008",
+    "section": 15,
+    "exigence": "- les connexions OAuth et leurs redirections ;",
+    "statut": "à faire",
+    "preuve": "docs/SECURITE.md, server/",
+    "limite": "Partiellement implémenté ; la totalité de cette exigence et sa validation restent à compléter. Voir AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-15-009",
+    "section": 15,
+    "exigence": "- les téléchargements ;",
+    "statut": "réalisé",
+    "preuve": "docs/SECURITE.md, server/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-15-010",
+    "section": 15,
+    "exigence": "- les téléversements et archives ;",
+    "statut": "réalisé",
+    "preuve": "docs/SECURITE.md, server/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-15-011",
+    "section": 15,
+    "exigence": "- les aperçus ;",
+    "statut": "réalisé",
+    "preuve": "docs/SECURITE.md, server/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-15-012",
+    "section": 15,
+    "exigence": "- les événements en direct ;",
+    "statut": "réalisé",
+    "preuve": "docs/SECURITE.md, server/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-15-013",
+    "section": 15,
+    "exigence": "- les webhooks ;",
+    "statut": "à faire",
+    "preuve": "docs/SECURITE.md, server/",
+    "limite": "Partiellement implémenté ; la totalité de cette exigence et sa validation restent à compléter. Voir AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-15-014",
+    "section": 15,
+    "exigence": "- les commandes d’exécution ;",
+    "statut": "réalisé",
+    "preuve": "docs/SECURITE.md, server/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-15-015",
+    "section": 15,
+    "exigence": "- les URL utilisées par les connecteurs.",
+    "statut": "réalisé",
+    "preuve": "docs/SECURITE.md, server/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-15-016",
+    "section": 15,
+    "exigence": "Prévois des sauvegardes et teste au moins une restauration.",
+    "statut": "vérifié",
+    "preuve": "tests/schema_test.py::test_sqlite_backup_restore, docs/SAUVEGARDES.md",
+    "limite": "Restauration SQLite locale vérifiée ; exercice Cloudflare D1/R2 encore à effectuer."
+  },
+  {
+    "id": "REQ-15-017",
+    "section": 15,
+    "exigence": "La journalisation doit être utile au diagnostic sans exposer mots de passe, jetons, clés ou contenus privés inutiles.",
+    "statut": "réalisé",
+    "preuve": "docs/SECURITE.md, server/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-16-001",
+    "section": 16,
+    "exigence": "Ne déclare pas une fonction terminée parce qu’un bouton existe ou qu’un test simulé passe.",
+    "statut": "vérifié",
+    "preuve": "docs/VALIDATION.md",
+    "limite": "Toutes les validations non effectuées sont signalées."
+  },
+  {
+    "id": "REQ-16-002",
+    "section": 16,
+    "exigence": "Effectue les contrôles pertinents :",
+    "statut": "bloqué",
+    "preuve": "tests/ et docs/VALIDATION.md",
+    "limite": "Dépendances npm non installées ; matériel/accès fournisseur manquants selon scénario. Test non exécuté, aucune réussite revendiquée."
+  },
+  {
+    "id": "REQ-16-003",
+    "section": 16,
+    "exigence": "- compilation et analyse statique ;",
+    "statut": "bloqué",
+    "preuve": "tests/ et docs/VALIDATION.md",
+    "limite": "Dépendances npm non installées ; matériel/accès fournisseur manquants selon scénario. Test non exécuté, aucune réussite revendiquée."
+  },
+  {
+    "id": "REQ-16-004",
+    "section": 16,
+    "exigence": "- tests de logique ;",
+    "statut": "vérifié",
+    "preuve": "node tests/core.test.mjs : 3 succès ; python3 tests/schema_test.py : 6 succès",
+    "limite": "Périmètre limité au chiffrement et au schéma. Ni hachage scrypt final ni HTTP ni navigateur validés."
+  },
+  {
+    "id": "REQ-16-005",
+    "section": 16,
+    "exigence": "- tests d’intégration ;",
+    "statut": "bloqué",
+    "preuve": "tests/ et docs/VALIDATION.md",
+    "limite": "Dépendances npm non installées ; matériel/accès fournisseur manquants selon scénario. Test non exécuté, aucune réussite revendiquée."
+  },
+  {
+    "id": "REQ-16-006",
+    "section": 16,
+    "exigence": "- tests de permissions entre utilisateurs ;",
+    "statut": "bloqué",
+    "preuve": "tests/ et docs/VALIDATION.md",
+    "limite": "Dépendances npm non installées ; matériel/accès fournisseur manquants selon scénario. Test non exécuté, aucune réussite revendiquée."
+  },
+  {
+    "id": "REQ-16-007",
+    "section": 16,
+    "exigence": "- tests de bout en bout dans un navigateur ;",
+    "statut": "bloqué",
+    "preuve": "tests/ et docs/VALIDATION.md",
+    "limite": "Dépendances npm non installées ; matériel/accès fournisseur manquants selon scénario. Test non exécuté, aucune réussite revendiquée."
+  },
+  {
+    "id": "REQ-16-008",
+    "section": 16,
+    "exigence": "- vérification visuelle mobile ;",
+    "statut": "bloqué",
+    "preuve": "tests/ et docs/VALIDATION.md",
+    "limite": "Dépendances npm non installées ; matériel/accès fournisseur manquants selon scénario. Test non exécuté, aucune réussite revendiquée."
+  },
+  {
+    "id": "REQ-16-009",
+    "section": 16,
+    "exigence": "- tests réels de connecteurs lorsque les accès sont disponibles.",
+    "statut": "bloqué",
+    "preuve": "tests/ et docs/VALIDATION.md",
+    "limite": "Dépendances npm non installées ; matériel/accès fournisseur manquants selon scénario. Test non exécuté, aucune réussite revendiquée."
+  },
+  {
+    "id": "REQ-16-010",
+    "section": 16,
+    "exigence": "Scénarios obligatoires :",
+    "statut": "bloqué",
+    "preuve": "tests/ et docs/VALIDATION.md",
+    "limite": "Dépendances npm non installées ; matériel/accès fournisseur manquants selon scénario. Test non exécuté, aucune réussite revendiquée."
+  },
+  {
+    "id": "REQ-16-011",
+    "section": 16,
+    "exigence": "1. Créer un compte sans vérification d’email, se déconnecter et se reconnecter.",
+    "statut": "bloqué",
+    "preuve": "tests/ et docs/VALIDATION.md",
+    "limite": "Dépendances npm non installées ; matériel/accès fournisseur manquants selon scénario. Test non exécuté, aucune réussite revendiquée."
+  },
+  {
+    "id": "REQ-16-012",
+    "section": 16,
+    "exigence": "2. Vérifier que deux comptes ne partagent aucune donnée privée.",
+    "statut": "bloqué",
+    "preuve": "tests/ et docs/VALIDATION.md",
+    "limite": "Dépendances npm non installées ; matériel/accès fournisseur manquants selon scénario. Test non exécuté, aucune réussite revendiquée."
+  },
+  {
+    "id": "REQ-16-013",
+    "section": 16,
+    "exigence": "3. Connecter un service, gérer son expiration puis le déconnecter.",
+    "statut": "bloqué",
+    "preuve": "tests/ et docs/VALIDATION.md",
+    "limite": "Dépendances npm non installées ; matériel/accès fournisseur manquants selon scénario. Test non exécuté, aucune réussite revendiquée."
+  },
+  {
+    "id": "REQ-16-014",
+    "section": 16,
+    "exigence": "4. Associer un dépôt et une branche.",
+    "statut": "bloqué",
+    "preuve": "tests/ et docs/VALIDATION.md",
+    "limite": "Dépendances npm non installées ; matériel/accès fournisseur manquants selon scénario. Test non exécuté, aucune réussite revendiquée."
+  },
+  {
+    "id": "REQ-16-015",
+    "section": 16,
+    "exigence": "5. Lancer une tâche, fermer l’interface et retrouver son état.",
+    "statut": "bloqué",
+    "preuve": "tests/ et docs/VALIDATION.md",
+    "limite": "Dépendances npm non installées ; matériel/accès fournisseur manquants selon scénario. Test non exécuté, aucune réussite revendiquée."
+  },
+  {
+    "id": "REQ-16-016",
+    "section": 16,
+    "exigence": "6. Passer le relais à une autre IA avec le contexte utile.",
+    "statut": "bloqué",
+    "preuve": "tests/ et docs/VALIDATION.md",
+    "limite": "Dépendances npm non installées ; matériel/accès fournisseur manquants selon scénario. Test non exécuté, aucune réussite revendiquée."
+  },
+  {
+    "id": "REQ-16-017",
+    "section": 16,
+    "exigence": "7. Gérer un quota atteint sans perdre les fichiers.",
+    "statut": "bloqué",
+    "preuve": "tests/ et docs/VALIDATION.md",
+    "limite": "Dépendances npm non installées ; matériel/accès fournisseur manquants selon scénario. Test non exécuté, aucune réussite revendiquée."
+  },
+  {
+    "id": "REQ-16-018",
+    "section": 16,
+    "exigence": "8. Créer plusieurs versions d’un fichier et télécharger chacune.",
+    "statut": "bloqué",
+    "preuve": "tests/ et docs/VALIDATION.md",
+    "limite": "Dépendances npm non installées ; matériel/accès fournisseur manquants selon scénario. Test non exécuté, aucune réussite revendiquée."
+  },
+  {
+    "id": "REQ-16-019",
+    "section": 16,
+    "exigence": "9. Exporter plusieurs fichiers et vérifier l’intégrité de l’archive.",
+    "statut": "bloqué",
+    "preuve": "tests/ et docs/VALIDATION.md",
+    "limite": "Dépendances npm non installées ; matériel/accès fournisseur manquants selon scénario. Test non exécuté, aucune réussite revendiquée."
+  },
+  {
+    "id": "REQ-16-020",
+    "section": 16,
+    "exigence": "10. Reprendre une conversation longue sans charger tout l’historique.",
+    "statut": "bloqué",
+    "preuve": "tests/ et docs/VALIDATION.md",
+    "limite": "Dépendances npm non installées ; matériel/accès fournisseur manquants selon scénario. Test non exécuté, aucune réussite revendiquée."
+  },
+  {
+    "id": "REQ-16-021",
+    "section": 16,
+    "exigence": "11. Installer la PWA sur un environnement compatible.",
+    "statut": "bloqué",
+    "preuve": "tests/ et docs/VALIDATION.md",
+    "limite": "Dépendances npm non installées ; matériel/accès fournisseur manquants selon scénario. Test non exécuté, aucune réussite revendiquée."
+  },
+  {
+    "id": "REQ-16-022",
+    "section": 16,
+    "exigence": "12. Ouvrir l’application hors ligne après synchronisation.",
+    "statut": "bloqué",
+    "preuve": "tests/ et docs/VALIDATION.md",
+    "limite": "Dépendances npm non installées ; matériel/accès fournisseur manquants selon scénario. Test non exécuté, aucune réussite revendiquée."
+  },
+  {
+    "id": "REQ-16-023",
+    "section": 16,
+    "exigence": "13. Consulter un fichier local et préparer un brouillon hors ligne.",
+    "statut": "bloqué",
+    "preuve": "tests/ et docs/VALIDATION.md",
+    "limite": "Dépendances npm non installées ; matériel/accès fournisseur manquants selon scénario. Test non exécuté, aucune réussite revendiquée."
+  },
+  {
+    "id": "REQ-16-024",
+    "section": 16,
+    "exigence": "14. Reconnecter sans doublon ni perte de brouillon.",
+    "statut": "bloqué",
+    "preuve": "tests/submission.test.mjs ; tests/task-persistence.test.mjs ; tests/transport.test.mjs",
+    "limite": "Régressions locales exécutées ; scénario de bout en bout indisponible faute de dépendances npm."
+  },
+  {
+    "id": "REQ-16-025",
+    "section": 16,
+    "exigence": "15. Gérer un conflit entre deux appareils ou versions.",
+    "statut": "bloqué",
+    "preuve": "tests/ et docs/VALIDATION.md",
+    "limite": "Dépendances npm non installées ; matériel/accès fournisseur manquants selon scénario. Test non exécuté, aucune réussite revendiquée."
+  },
+  {
+    "id": "REQ-16-026",
+    "section": 16,
+    "exigence": "16. Vérifier le cloisonnement des caches après changement de compte.",
+    "statut": "bloqué",
+    "preuve": "tests/vault.test.mjs ; tests/transport.test.mjs ; tests/integration.test.ts",
+    "limite": "Régressions locales exécutées, contrôles Hono préparés ; test navigateur multicomptes encore non exécuté."
+  },
+  {
+    "id": "REQ-16-027",
+    "section": 16,
+    "exigence": "17. Réussir un déploiement de test et afficher le bon commit.",
+    "statut": "bloqué",
+    "preuve": "tests/ et docs/VALIDATION.md",
+    "limite": "Dépendances npm non installées ; matériel/accès fournisseur manquants selon scénario. Test non exécuté, aucune réussite revendiquée."
+  },
+  {
+    "id": "REQ-16-028",
+    "section": 16,
+    "exigence": "18. Gérer un déploiement échoué sans annoncer de réussite.",
+    "statut": "bloqué",
+    "preuve": "tests/ et docs/VALIDATION.md",
+    "limite": "Dépendances npm non installées ; matériel/accès fournisseur manquants selon scénario. Test non exécuté, aucune réussite revendiquée."
+  },
+  {
+    "id": "REQ-16-029",
+    "section": 16,
+    "exigence": "19. Mettre à jour l’application sans perte de travail.",
+    "statut": "bloqué",
+    "preuve": "tests/ et docs/VALIDATION.md",
+    "limite": "Dépendances npm non installées ; matériel/accès fournisseur manquants selon scénario. Test non exécuté, aucune réussite revendiquée."
+  },
+  {
+    "id": "REQ-16-030",
+    "section": 16,
+    "exigence": "20. Exporter puis supprimer un compte conformément aux choix affichés.",
+    "statut": "bloqué",
+    "preuve": "tests/ et docs/VALIDATION.md",
+    "limite": "Dépendances npm non installées ; matériel/accès fournisseur manquants selon scénario. Test non exécuté, aucune réussite revendiquée."
+  },
+  {
+    "id": "REQ-16-031",
+    "section": 16,
+    "exigence": "Teste aussi les états : données absentes, réseau lent, erreur fournisseur, stockage saturé et autorisation révoquée.",
+    "statut": "bloqué",
+    "preuve": "tests/ et docs/VALIDATION.md",
+    "limite": "Dépendances npm non installées ; matériel/accès fournisseur manquants selon scénario. Test non exécuté, aucune réussite revendiquée."
+  },
+  {
+    "id": "REQ-16-032",
+    "section": 16,
+    "exigence": "Si un accès, appareil ou secret manque, documente précisément le test non effectué. N’invente pas de résultat.",
+    "statut": "vérifié",
+    "preuve": "docs/VALIDATION.md",
+    "limite": "Toutes les validations non effectuées sont signalées."
+  },
+  {
+    "id": "REQ-17-001",
+    "section": 17,
+    "exigence": "Livre :",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": "Exigence conservée ; consulter AVANCEMENT.md pour le travail restant."
+  },
+  {
+    "id": "REQ-17-002",
+    "section": 17,
+    "exigence": "- code complet et maintenable ;",
+    "statut": "à faire",
+    "preuve": "README.md, docs/, migrations/",
+    "limite": "Partiellement implémenté ; la totalité de cette exigence et sa validation restent à compléter. Voir AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-17-003",
+    "section": 17,
+    "exigence": "- migrations ;",
+    "statut": "réalisé",
+    "preuve": "README.md, docs/, migrations/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-17-004",
+    "section": 17,
+    "exigence": "- configuration d’exemple sans secrets ;",
+    "statut": "réalisé",
+    "preuve": "README.md, docs/, migrations/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-17-005",
+    "section": 17,
+    "exigence": "- documentation d’installation ;",
+    "statut": "réalisé",
+    "preuve": "README.md, docs/, migrations/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-17-006",
+    "section": 17,
+    "exigence": "- procédure de lancement ;",
+    "statut": "réalisé",
+    "preuve": "README.md, docs/, migrations/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-17-007",
+    "section": 17,
+    "exigence": "- configuration des services ;",
+    "statut": "réalisé",
+    "preuve": "README.md, docs/, migrations/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-17-008",
+    "section": 17,
+    "exigence": "- fonctionnement des sauvegardes ;",
+    "statut": "réalisé",
+    "preuve": "README.md, docs/, migrations/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-17-009",
+    "section": 17,
+    "exigence": "- matrice des connecteurs et limites ;",
+    "statut": "réalisé",
+    "preuve": "README.md, docs/, migrations/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-17-010",
+    "section": 17,
+    "exigence": "- rapport de validation ;",
+    "statut": "réalisé",
+    "preuve": "README.md, docs/, migrations/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-17-011",
+    "section": 17,
+    "exigence": "- coûts potentiels et dépendances externes ;",
+    "statut": "réalisé",
+    "preuve": "README.md, docs/, migrations/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-17-012",
+    "section": 17,
+    "exigence": "- liste claire des éventuels blocages.",
+    "statut": "réalisé",
+    "preuve": "README.md, docs/, migrations/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-17-013",
+    "section": 17,
+    "exigence": "Les données de démonstration doivent être séparées des vraies connexions. N’utilise pas des quotas ou conversations fictifs dans l’interface de production.",
+    "statut": "réalisé",
+    "preuve": "README.md, docs/, migrations/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-17-014",
+    "section": 17,
+    "exigence": "Démarre par une tranche complète réellement fonctionnelle : compte isolé, projet, connexion réelle, discussion persistante, fichier téléchargeable et lecture hors ligne. Puis réalise les autres exigences sans considérer cette première tranche comme la livraison finale.",
+    "statut": "à faire",
+    "preuve": "README.md, docs/, migrations/",
+    "limite": "Partiellement implémenté ; la totalité de cette exigence et sa validation restent à compléter. Voir AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-17-015",
+    "section": 17,
+    "exigence": "Ne publie pas publiquement et n’engage pas de frais sans autorisation explicite. Prépare tout ce qui est nécessaire pour que la dernière validation porte sur un résultat concret et vérifiable.",
+    "statut": "vérifié",
+    "preuve": "wrangler.jsonc workers_dev=false ; workflow manuel ; aucune commande de déploiement exécutée",
+    "limite": "Déploiement explicitement réservé au propriétaire."
+  },
+  {
+    "id": "REQ-17-016",
+    "section": 17,
+    "exigence": "À chaque fin de lot, donne un bilan court : réalisé, vérifié, restant et branche/commit. Mets à jour les documents pour que n’importe quelle nouvelle conversation Codex ou Claude Code puisse reprendre sans repartir de zéro.",
+    "statut": "réalisé",
+    "preuve": "README.md, docs/, migrations/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-17-017",
+    "section": 17,
+    "exigence": "Commence maintenant par inspecter l’environnement, enregistrer ce cahier des charges, choisir une architecture justifiée et implémenter le premier lot.",
+    "statut": "réalisé",
+    "preuve": "README.md, docs/, migrations/",
+    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+  },
+  {
+    "id": "REQ-18-001",
+    "section": 18,
+    "exigence": "« Je veux que l'appli soit fonctionnelle sur tout les appareils pas que mon tel a05s je veux que si je passe le site a qlq qui a un iphone ou ordi ca marche aussi parfaitement pour lui »",
+    "statut": "à faire",
+    "preuve": "web/styles.css, playwright.config.ts",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-18-002",
+    "section": 18,
+    "exigence": "Interprétation de réalisation : interface responsive pour Android, iPhone/iPad et ordinateurs ; chaque visiteur dispose de son compte isolé ; fonctionnement web indépendant de l’installation ; détection des capacités des navigateurs et aide iOS ; matrice Chromium, WebKit, Firefox et tailles d’écran. Aucune promesse de perfection sur tous les appareils sans vérification matérielle.",
+    "statut": "à faire",
+    "preuve": "web/styles.css, playwright.config.ts",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-19-001",
+    "section": 19,
+    "exigence": "« Et je veux que ce soit moi qui deploie apres sur cloudflare pour l'instant fais le depot github complet parfait sans rien oublie »",
+    "statut": "à faire",
+    "preuve": "docs/AVANCEMENT.md",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-19-002",
+    "section": 19,
+    "exigence": "« Et je veux que le site soit vraiment simple et pratique a utiliser et que ca soit un vrai changement compare avec si je suis sur 2 ia differente et que je dois donner les infos d'une ia a l'autre et d'avoir l'ecran de chargement quand je vais sur github ou cloudflare je veux vraiment un site avec tout »",
+    "statut": "à faire",
+    "preuve": "docs/AVANCEMENT.md",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-19-003",
+    "section": 19,
+    "exigence": "« Continue c atelier sur github »",
+    "statut": "vérifié",
+    "preuve": "Dépôt privé martinznt/Atelier confirmé via connecteur GitHub ; commit initial 60f9b7fe",
+    "limite": null
+  },
+  {
+    "id": "REQ-19-004",
+    "section": 19,
+    "exigence": "« Continue automatiqueemnt » / « Continue en arriere plan aussi »",
+    "statut": "à faire",
+    "preuve": "docs/AVANCEMENT.md",
+    "limite": "Réalisation partielle. Validation complète et améliorations décrites dans AVANCEMENT.md."
+  },
+  {
+    "id": "REQ-19-005",
+    "section": 19,
+    "exigence": "Portée : dépôt privé martinznt/Atelier confirmé, aucun autre dépôt modifié ; préparation Cloudflare, déploiement par le propriétaire. Priorité au relais de contexte et aux vues intégrées des services. Continuer les travaux réversibles autorisés sans confirmations répétées. Ne pas promettre un agent autonome après la fin de la session ; conserver les éléments de reprise.\n",
+    "statut": "à faire",
+    "preuve": "docs/AVANCEMENT.md",
+    "limite": "Consigne de déploiement remplacée par la section20 : déploiement automatique autorisé, frais non autorisés. Dépôt complet toujours à synchroniser."
+  },
+  {
+    "id": "REQ-20-001",
+    "section": 20,
+    "exigence": "« La fais moi maintenant juste un site pour que claude, claude code et chat gpt et codex puisse acceder l'un a l'autre d'un compte a l'autre »",
+    "statut": "réalisé",
+    "preuve": "docs/PASSERELLE.md ; docs/AVANCEMENT.md ; web/SharedMemory.tsx ; passerelle/tests/",
+    "limite": "Portée conservée et code intégré ; compilation complète, clients réels et publication non vérifiés."
+  },
+  {
+    "id": "REQ-20-002",
+    "section": 20,
+    "exigence": "À la question sur la portée du partage : « je veux qu'ils aient acces a vraiment toutes les conversations et contexte partage fin tout ».",
+    "statut": "bloqué",
+    "preuve": "docs/PASSERELLE.md ; docs/AVANCEMENT.md ; web/SharedMemory.tsx ; passerelle/tests/",
+    "limite": "Les historiques privés non exportés ou non autorisés ne sont pas disponibles via une API générale. Les imports explicitement partagés sont implémentés et testés localement."
+  },
+  {
+    "id": "REQ-20-003",
+    "section": 20,
+    "exigence": "« Deploie automatiquement sans moi »",
+    "statut": "bloqué",
+    "preuve": "docs/PASSERELLE.md ; docs/AVANCEMENT.md ; web/SharedMemory.tsx ; passerelle/tests/",
+    "limite": "Autorisation enregistrée. Pas de build complet, accès Cloudflare ni infrastructure D1/R2/Queues validée ; Site préparatoire créé mais non publié."
+  },
+  {
+    "id": "REQ-20-004",
+    "section": 20,
+    "exigence": "Puis : « Finalement fais le site complet que j'avais demande pas que pr le lien entre chat gpt et claude mais je le veux aussi ds le site final ».",
+    "statut": "réalisé",
+    "preuve": "docs/PASSERELLE.md ; docs/AVANCEMENT.md ; web/SharedMemory.tsx ; passerelle/tests/",
+    "limite": "Portée conservée et code intégré ; compilation complète, clients réels et publication non vérifiés."
+  },
+  {
+    "id": "REQ-20-005",
+    "section": 20,
+    "exigence": "Décision de portée : toutes les exigences initiales restent actives. Ajouter la passerelle MCP,\nl’import des conversations et leur recherche à la mémoire des projets. La réduction temporaire\nà une passerelle seule est annulée. Ne pas perdre le travail correspondant. Le déploiement\nest désormais autorisé sans nouvelle confirmation ; aucune dépense non autorisée ni exposition\npublique des contenus privés n’est autorisée par cette consigne.",
+    "statut": "réalisé",
+    "preuve": "docs/PASSERELLE.md ; docs/AVANCEMENT.md ; web/SharedMemory.tsx ; passerelle/tests/",
+    "limite": "Portée conservée et code intégré ; compilation complète, clients réels et publication non vérifiés."
+  },
+  {
+    "id": "REQ-20-006",
+    "section": 20,
+    "exigence": "L’accès à « tout » est un objectif de centralisation des données officiellement accessibles et\nexplicitement importées/partagées. Il ne constitue pas une permission technique chez un fournisseur,\nni une promesse de lecture automatique des historiques privés. Les limites, contenus omis, formats\npris en charge et autorisations doivent rester visibles et vérifiables.",
+    "statut": "réalisé",
+    "preuve": "docs/PASSERELLE.md ; docs/AVANCEMENT.md ; web/SharedMemory.tsx ; passerelle/tests/",
+    "limite": "Portée conservée et code intégré ; compilation complète, clients réels et publication non vérifiés."
+  },
+  {
+    "id": "REQ-20-007",
+    "section": 20,
+    "exigence": "Le 15 octobre 2026 : « Continue et travaille en arriere plan meme si j'eteint mon tel ».\nContinuer les opérations autorisées pendant la session, conserver les commits et les\néléments de reprise. Ne pas promettre une exécution de l’agent après l’interruption\nde cette session. Les tâches de l’application sont exécutées côté serveur lorsque\nQueues et l’hébergement sont effectivement opérationnels.\n",
+    "statut": "réalisé",
+    "preuve": "docs/PASSERELLE.md ; docs/AVANCEMENT.md ; web/SharedMemory.tsx ; passerelle/tests/",
+    "limite": "Portée conservée et code intégré ; compilation complète, clients réels et publication non vérifiés."
+  },
+  {
+    "id": "REQ-21-001",
+    "section": 21,
+    "exigence": "« Continue et je veux vraiment que tu verifie toute les erreurs j'en veux aucune »",
+    "statut": "réalisé",
+    "preuve": "docs/VALIDATION.md ; npm run test:regressions",
+    "limite": "Campagne locale poursuivie et défauts corrigés, sans garantie zéro bug ni validation complète."
+  },
+  {
+    "id": "REQ-21-002",
+    "section": 21,
+    "exigence": "Priorité : poursuivre les contrôles et corriger les défauts reproduits, conserver les preuves\net distinguer tests locaux, tests navigateur et connexions réelles. L’objectif de fiabilité\nne constitue pas une garantie d’absence absolue de bugs. Les vérifications bloquées doivent\nrester visibles, sans déclarer l’application complète validée.\n",
+    "statut": "réalisé",
+    "preuve": "docs/VALIDATION.md ; docs/AVANCEMENT.md",
+    "limite": "Blocages et portée des tests explicités ; typage/build/navigateur/fournisseurs toujours non validés."
+  }
+]

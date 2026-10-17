@@ -1,0 +1,3 @@
+import React from 'react';import {createRoot} from 'react-dom/client';import {App} from './App';import './styles.css';
+class Boundary extends React.Component<{children:React.ReactNode},{failed:boolean}>{state={failed:false};static getDerivedStateFromError(){return {failed:true};}render(){return this.state.failed?<main className="fatal"><h1>L’affichage a rencontré un problème.</h1><p>Les données enregistrées sur le serveur sont conservées. Vos brouillons sauvegardés dans le coffre restent accessibles après déverrouillage.</p><button onClick={()=>location.reload()}>Recharger l’application</button></main>:this.props.children;}}
+createRoot(document.getElementById('root')!).render(<React.StrictMode><Boundary><App/></Boundary></React.StrictMode>);

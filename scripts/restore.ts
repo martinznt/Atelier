@@ -1,0 +1,6 @@
+import {cp,mkdir,readFile,readdir} from 'node:fs/promises';import {resolve,join} from 'node:path';import {createHash} from 'node:crypto';
+const backupPath=process.argv[2];if(!backupPath||!process.argv.includes('--stopped'))throw new Error('Usage : npm run restore:local -- backups/DATE --stopped ; arrêtez Wrangler avant.');
+const source=resolve(backupPath),manifest=JSON.parse(await readFile(join(source,'integrite.json'),'utf8')) as Record<string,string>;
+for(const [path,expected] of Object.entries(manifest)){if(path.startsWith('/')||path.split('/').includes('..'))throw new Error('Chemin de sauvegarde invalide');const hash=createHash('sha256').update(await readFile(join(source,path))).digest('hex');if(hash!==expected)throw new Error(`Intégrité incorrecte : ${path}`);}
+try{const contents=await readdir('.wrangler/state');if(contents.length)throw new Error('Destination non vide. Déplacez .wrangler/state après sauvegarde ; cet outil n’écrase aucune donnée.');}catch(error){if((error as NodeJS.ErrnoException).code!=='ENOENT')throw error;}
+await mkdir('.wrangler',{recursive:true});await cp(join(source,'state'),'.wrangler/state',{recursive:true,errorOnExist:true,force:false});console.log('Restauration locale terminée après contrôle SHA-256. Utilisez la clé MASTER_KEY correspondante.');

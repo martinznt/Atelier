@@ -1,0 +1,54 @@
+{
+  "name": "atelier-personnel",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "npm run build:web && wrangler dev --local --port 8787",
+    "dev:web": "vite --host 127.0.0.1",
+    "build:web": "vite build && tsx scripts/build-sw.ts",
+    "build": "npm run check && npm run build:web && wrangler deploy --dry-run --outdir dist-worker",
+    "check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "setup": "tsx scripts/setup.ts",
+    "db:migrate": "wrangler d1 migrations apply atelier-db --local",
+    "requirements": "node scripts/requirements.ts",
+    "backup:local": "tsx scripts/backup.ts",
+    "restore:local": "tsx scripts/restore.ts",
+    "test:core": "node tests/core.test.mjs && python3 tests/schema_test.py",
+    "test:bridge": "npm test --prefix passerelle",
+    "format": "prettier --write web server scripts tests *.ts *.json *.html public/manifest.webmanifest",
+    "test:regressions": "node tests/auth-store.test.mjs && node tests/task-persistence.test.mjs && node tests/vault.test.mjs && node tests/transport.test.mjs && node tests/submission.test.mjs && node tests/offline-file.test.mjs && node tests/deploy-check.test.mjs",
+    "deploy:check": "node scripts/deploy-check.mjs"
+  },
+  "dependencies": {
+    "hono": "^4.10.3",
+    "fflate": "^0.8.2",
+    "idb": "^8.0.3",
+    "lucide-react": "^0.468.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "zod": "^4.1.12",
+    "@noble/hashes": "^2.0.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.0",
+    "@types/node": "^24.9.1",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "@vitejs/plugin-react": "^5.0.4",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.12",
+    "vitest": "^3.2.4",
+    "wrangler": "^4.45.0",
+    "miniflare": "^4.20251024.0",
+    "@cloudflare/workers-types": "^4.20251024.0",
+    "esbuild": "^0.25.11",
+    "prettier": "^3.6.2"
+  }
+}
