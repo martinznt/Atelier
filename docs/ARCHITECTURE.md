@@ -68,8 +68,9 @@ n’est jamais entièrement envoyée par défaut. Un relais changeant de fournis
 nécessite l’autorisation de partage pour la tâche.
 
 Limites locales : durée, nombre de tours, taille du contexte, max tokens de sortie
-et plafond mensuel en tokens. Les coûts monétaires vérifiés, alertes et attente de
-réinitialisation ne sont pas encore implémentés. Les données inconnues restent
+et plafond mensuel en tokens. Les coûts monétaires vérifiés et alertes ne sont pas
+encore implémentés. L’attente explicitement demandée à partir d’un Retry-After est
+décrite ci-dessous ; elle n’est pas une réinitialisation garantie. Les données inconnues restent
 « indisponibles » ; pas de conversion en pourcentage d’abonnement.
 
 ## Fichiers et exports
@@ -154,3 +155,41 @@ synchroniser qu’après vérification de la même identité par le serveur. Les
 HTTP sont bornés sans nouvel envoi automatique ; un échec de réponse après écriture
 est signalé comme résultat potentiellement enregistré. Tests locaux détaillés dans
 VALIDATION.md ; les scénarios multi-onglets réels restent à exécuter en navigateur.
+
+## Rôles, préférences et mises à jour du 18 octobre
+
+Les connexions sont nommées indépendamment du fournisseur. Les réponses conservent
+un instantané du libellé et du rôle (migration 0004), ainsi que le modèle réellement
+renvoyé. La suppression ou le renommage d’une connexion ne réécrit pas cet historique.
+La comparaison ne transmet pas les réponses de la tâche aux autres assistants ;
+revue et collaboration transmettent seulement leurs réponses publiques utiles.
+
+Le moteur pur `planning.ts` choisit une connexion distincte pour chaque mission,
+parmi les candidats explicitement classés par l’utilisateur. Il tient compte des
+permissions, modèles, expiration, refus HTTP 429 connus et de trois priorités.
+Il ne mesure pas la qualité d’un modèle et ne prétend pas lire les abonnements.
+La proposition est recalculée côté serveur et son empreinte comparée avant création.
+Une modification des rôles, modèles, disponibilité attendue ou révision de catalogue
+impose une nouvelle proposition. Changer seulement le consentement ne l’efface pas.
+
+La migration 0005 ajoute `not_before` aux tâches. L’accord de lancement différé est
+stocké dans la demande. D1 conserve la tâche, la réservation et l’état après fermeture
+du navigateur. Le cron envoie les tâches dues ; une prise atomique protège contre
+livraison précoce, doublon, annulation et compte désactivé. La date limite absolue
+est contrôlée avant le premier appel. Une réservation encore ouverte compte aussi
+après changement de mois. Aucune nouvelle tentative d’inférence à issue inconnue
+n’est ajoutée ; une limite imprévue conserve les fichiers et demande une reprise.
+
+Chaque catalogue a une date de lecture et une révision, incrémentée lorsque l’ensemble
+des identifiants change. Le renouvellement du secret invalide aussi les propositions.
+Un test de modèle réussi ne supprime pas une observation 429 de discussion. Les
+résultats anciens ou liés à un secret remplacé ne peuvent écraser les résultats récents.
+Un opt-in par connexion autorise le cron à lire les métadonnées après 24 heures,
+au maximum deux connexions par passage, avec une heure entre tentatives en échec.
+Cette limite borne la charge ; une actualisation quotidienne exacte n’est pas garantie.
+Les appels de catalogue sont paginés et bornés (10 pages, 5000 entrées, 20 secondes
+pour les appels IA). Un résultat incomplet ne remplace pas le catalogue précédent.
+
+Restent : évaluations comparables et datées pour recommander automatiquement le
+meilleur modèle par mission, mesures de latence/coût, consommation ventilée par appel,
+authentification officielle et exécution isolée des agents Codex/Claude Code.

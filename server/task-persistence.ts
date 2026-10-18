@@ -13,6 +13,7 @@ export interface PendingChatTask {
  message:string;
  reservation:number;
  createdAt:string;
+ notBefore?:string|null;
 }
 
 export type PersistChatResult =
@@ -25,15 +26,15 @@ export async function persistChatTask(env:Pick<Env,'DB'>, task:PendingChatTask):
  const {DB}=env;
  const monthStart=task.createdAt.slice(0,7)+'-01T00:00:00.000Z';
  const result=await DB.batch([
-  DB.prepare(`INSERT INTO tasks(id,user_id,project_id,conversation_id,idempotency_key,request_hash,payload,context,created_at,updated_at)
-   SELECT ?,u.id,p.id,c.id,?,?,?,?,?,?
+  DB.prepare(`INSERT INTO tasks(id,user_id,project_id,conversation_id,idempotency_key,request_hash,payload,context,created_at,updated_at,not_before)
+   SELECT ?,u.id,p.id,c.id,?,?,?,?,?,?,?
    FROM users u JOIN conversations c ON c.user_id=u.id JOIN projects p ON p.id=c.project_id AND p.user_id=u.id
    WHERE u.id=? AND u.deleted_at IS NULL AND c.id=? AND p.id=?
    AND u.monthly_tokens >= ? + COALESCE((SELECT SUM(CASE WHEN status IN ('queued','running')
     THEN json_extract(payload,'$.reservation') ELSE COALESCE(input_tokens,0)+COALESCE(output_tokens,0) END)
-    FROM tasks WHERE user_id=u.id AND created_at>=?),0)
+    FROM tasks WHERE user_id=u.id AND (status IN ('queued','running') OR COALESCE(completed_at,created_at)>=?)),0)
    ON CONFLICT(user_id,idempotency_key) DO NOTHING`).bind(
-   task.id,task.idempotencyKey,task.requestHash,task.payload,task.context,task.createdAt,task.createdAt,
+   task.id,task.idempotencyKey,task.requestHash,task.payload,task.context,task.createdAt,task.createdAt,task.notBefore||null,
    task.userId,task.conversationId,task.projectId,task.reservation,monthStart),
   // A losing concurrent request has a different, fresh task.id: it cannot add another message.
   DB.prepare(`INSERT INTO messages(id,user_id,conversation_id,role,content,task_id,created_at)
@@ -59,4 +60,9 @@ export async function persistChatTask(env:Pick<Env,'DB'>, task:PendingChatTask):
   JOIN users u ON u.id=c.user_id WHERE c.id=? AND p.id=? AND c.user_id=? AND p.user_id=u.id AND u.deleted_at IS NULL`)
   .bind(task.conversationId,task.projectId,task.userId).first();
  return {kind:available?'budget':'unavailable'};
+}
+
+/** Queue delivery can occur early or twice. Only one due task can become running. */
+export async function claimQueuedTask<T>(db:D1Database,id:string,date:string):Promise<T|null>{
+ return db.prepare("UPDATE tasks SET status='running',started_at=?,updated_at=? WHERE id=? AND status='queued' AND cancel_requested=0 AND (not_before IS NULL OR not_before<=?) AND EXISTS(SELECT 1 FROM users WHERE users.id=tasks.user_id AND deleted_at IS NULL) RETURNING *").bind(date,date,id,date).first<T>();
 }

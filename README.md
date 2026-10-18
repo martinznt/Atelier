@@ -1,4 +1,4 @@
-> Mise à jour du 16 octobre 2026 : le site complet reste le périmètre demandé.
+> Mise à jour du 18 octobre 2026 : le site complet reste le périmètre demandé.
 > Une mémoire entre assistants (imports, contexte, MCP/OAuth, relais) est intégrée
 > aux projets. Voir [le fonctionnement et les limites](docs/PASSERELLE.md).
 > Déploiement automatique désormais autorisé, mais **aucune version publiée**.
@@ -9,15 +9,16 @@
 
 Un espace personnel, en français, pour retrouver ses projets, passer d’un assistant à l’autre avec un contexte choisi et conserver ses fichiers. Interface responsive Android, iPhone/iPad et ordinateur ; installation progressive en PWA.
 
-**État : premier lot développé, validation complète encore bloquée. Ce n’est pas la livraison finale du cahier des charges.** Les dépendances n’ont pas pu être installées dans la session : compilation, tests HTTP D1 et tests navigateur sont préparés mais pas encore exécutés. Consultez [le rapport de validation](docs/VALIDATION.md) avant toute mise en ligne.
+**État : application en développement, validation complète encore bloquée. Ce n’est pas la livraison finale du cahier des charges.** Les dépendances n’ont pas pu être installées dans la session : compilation, tests HTTP D1 et tests navigateur sont préparés mais pas encore exécutés. Consultez [le rapport de validation](docs/VALIDATION.md) avant toute mise en ligne.
 
-Le dépôt est privé : [martinznt/Atelier](https://github.com/martinznt/Atelier). Aucun déploiement automatique n’est configuré. Le déploiement automatique est autorisé depuis le 14 octobre, après validation ; aucun hébergement du site complet n’est encore opérationnel.
+Le dépôt est privé : [martinznt/Atelier](https://github.com/martinznt/Atelier). Une intégration de build Cloudflare a été lancée par le propriétaire et a échoué sur TS2783 ; le correctif est dans les sources. Aucun succès de déploiement n’est confirmé. Le déploiement automatique est autorisé depuis le 14 octobre, après validation ; aucun hébergement du site complet n’est encore opérationnel.
 
 ## Ce que contient le lot
 
 - Comptes sans email, mots de passe scrypt, sessions révocables, codes de récupération et autorisations serveur par propriétaire.
 - Projets, conversations persistantes et paginées, mémoire éditable avec historique et provenance.
 - Connecteurs API officiels OpenAI, Anthropic et Gemini ; passage de relais, comparaison et revue avec consentement explicite.
+- Connexions nommées, rôles personnalisés, choix selon délai et préférences, catalogue actualisable avec accord. Voir [le guide](docs/GUIDE_ASSISTANTS.md).
 - Tâches Cloudflare Queues, statut persistant, arrêt et sauvegardes de réponses intermédiaires. Aucun code généré n’est exécuté dans le serveur.
 - Fichiers R2 privés, versions immuables, restauration, corbeille, téléchargements et ZIP avec manifeste SHA-256.
 - GitHub intégré : dépôts autorisés, branches, fichiers, commits, contrôles, sauvegarde avec détection de conflit, pull requests en brouillon.
@@ -60,7 +61,7 @@ Les tests de connecteurs avec réponses contrôlées, lorsqu’ils seront exécu
 
 Le verrou des dépendances doit être généré par le premier `npm install` réussi, vérifié puis commité. Il n’a pas été inventé pendant la session sans accès réseau terminal.
 
-## Déployer plus tard sur Cloudflare
+## Déployer sur Cloudflare
 
 Suivre [INSTALLATION_CLOUDFLARE.md](docs/INSTALLATION_CLOUDFLARE.md). Atelier utilise un **Worker avec assets, D1, R2 et Queues**, et ne peut pas être livré comme simple dossier Pages statique. Le scrypt nécessite un budget CPU adapté ; une formule Workers payante peut être nécessaire. R2, Queues, stockage et API IA ont leurs propres coûts et conditions.
 
@@ -70,7 +71,7 @@ La configuration inclut volontairement un identifiant D1 nul et `workers_dev: fa
 
 - [Cahier des charges intégral](docs/CAHIER_DES_CHARGES.md), avec toutes les précisions utilisateur.
 - [Avancement et prochaine étape](docs/AVANCEMENT.md).
-- [386 exigences suivies individuellement](docs/EXIGENCES.json).
+- [413 exigences suivies individuellement](docs/EXIGENCES.json).
 - [Architecture](docs/ARCHITECTURE.md), [connecteurs](docs/CONNECTEURS.md), [validation](docs/VALIDATION.md).
 - [Sécurité](docs/SECURITE.md), [sauvegarde et restauration](docs/SAUVEGARDES.md).
 - `AGENTS.md` et `CLAUDE.md` renvoient vers ces mêmes documents.

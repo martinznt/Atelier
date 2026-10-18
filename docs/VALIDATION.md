@@ -1,3 +1,52 @@
+# Validation des équipes et catalogues — 18 octobre 2026
+
+Contrôles effectués après les changements de ce lot :
+
+| Commande / contrôle | Résultat | Portée |
+| --- | --- | --- |
+| `npm run test:core` | 9 réussis | Cryptographie native, schéma, permissions SQL, sauvegarde/restauration SQLite |
+| `npm run test:bridge` | 27 réussis | Imports, contrôleurs de passerelle, OAuth/PKCE, isolation et concurrence |
+| `npm run test:regressions` | 101 réussis | Helpers de production, SQLite/WebCrypto réels ; stockage/réseau contrôlés et identifiés |
+| Analyse Babel de tous les TS/TSX | 59 fichiers valides | Syntaxe uniquement, aucun typage ou bundle validé |
+| `git diff --check` | Réussi | Diff sans erreur d’espacement |
+| `npm run check` | Échec 127 : `tsc: not found` | Dépendances absentes |
+| `npm test` | Échec 127 : `vitest: not found` | Tests Hono/Miniflare non exécutés |
+| `npm run build` | Échec 127 lors du typage | Aucun artefact de production produit |
+| Navigateur, visuel mobile, PWA, fournisseurs et déploiement | Non exécutés | Build, accès et environnement de test manquants |
+
+**137 tests locaux réussis**, aucune intégration distante déduite de cette somme.
+Il n’y a eu ni nouvel essai npm réseau ni nouvelle longue attente de permission.
+
+Les 101 régressions couvrent : comptes (9), persistance des tâches (13), coffre (11),
+transport (11), envois/brouillons (9), fichiers hors ligne (5), prérequis déploiement
+(4), collaboration (12), propositions (10), catalogue en base (5), guide d’équipe
+(6), pagination fournisseur (6).
+
+Nouveaux cas vérifiés : deux comptes du même fournisseur, rôle transmis et historisé,
+comparaison indépendante, refus sans date non transformé en reset, choix préféré
+attendant une semaine ou remplaçant rapide, attente courte en mode compromis,
+connexions distinctes par mission, modèle retiré, expiration, consentement, empreinte
+invalide après mise à jour, date limite dépassée, réservation restant ouverte le mois
+suivant, prise précoce/doublon/annulation/compte supprimé. La case de partage conserve
+la proposition ; changer un rôle ou modèle l’invalide.
+
+Les tests de catalogue contrôlent pages suivantes, curseur encodé/cyclique/manquant,
+échec intermédiaire, plafonds de pages/volume, modèles retirés, révision stable après
+simple changement d’ordre, résultat ancien et secret renouvelé. Ils utilisent des
+fixtures nommées, sans clé ni appel d’inférence. Les documentations de pagination
+Anthropic, Gemini et OpenAI ont été consultées ; cela ne valide pas un accès réel.
+
+Tests d’intégration **ajoutés mais non exécutés** : contrats fichier/version du
+correctif TS2783 ; connexions nommées et secret absent de la réponse ; refus des
+identifiants et URL de connexion/tâche de A pour B ; proposition sans révéler une
+connexion étrangère ; accord de programmation, empreinte et idempotence ; annulation.
+Les catalogues d’essai sont injectés dans la base du test et explicitement fictifs.
+
+Le dernier journal Cloudflare reçu reste celui qui échoue sur TS2783. Aucun résultat
+de build réussi ou URL publiée n’a été reçu pour les nouvelles sources.
+
+---
+
 # Échec Cloudflare observé et correctif — 18 octobre 2026
 
 Preuve externe fournie par le propriétaire : journal Cloudflare du 17 octobre,

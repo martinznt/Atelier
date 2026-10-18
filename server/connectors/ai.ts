@@ -1,14 +1,14 @@
 import {jsonRequest,request,quotaHeaders,ProviderError} from './http.ts';
+import {listModels} from './model-list.ts';
 export interface AIMessage {role:'user'|'assistant';content:string}
 export interface Delta {text?:string;model?:string;input?:number;output?:number;quota?:unknown}
 export async function testConnection(provider:string,secret:string) {
  if(provider==='github'){const r=await jsonRequest(provider,secret,'/user');return {account:r.data.login,models:[],quota:r.quota};}
  if(provider==='cloudflare'){const r=await jsonRequest(provider,secret,'/client/v4/user/tokens/verify');if(!r.data.success||r.data.result.status!=='active')throw new ProviderError(401,'inactive');return {account:'Jeton actif · droits à vérifier par compte',models:[],quota:r.quota};}
  if(provider==='netlify'){const r=await jsonRequest(provider,secret,'/api/v1/user');return {account:r.data.full_name||r.data.id,models:[],quota:r.quota};}
- const path=provider==='openai'?'/v1/models':provider==='anthropic'?'/v1/models?limit=100':'/v1beta/models?pageSize=1000';
- const r=await jsonRequest(provider,secret,path);
- const models=provider==='gemini'?(r.data.models||[]).filter((m:any)=>m.supportedGenerationMethods?.includes('generateContent')).map((m:any)=>m.name.replace('models/','')):(r.data.data||[]).map((m:any)=>m.id);
- return {account:'Accès API vérifié',models:models.sort(),quota:r.quota};
+ const signal=AbortSignal.timeout(20000);
+ const catalogue=await listModels(provider,path=>jsonRequest(provider,secret,path,{signal}));
+ return {account:'Accès API vérifié',...catalogue};
 }
 async function* sse(response:Response):AsyncGenerator<any> {
  if(!response.body)throw new ProviderError(502,'empty');const reader=response.body.getReader(),decoder=new TextDecoder();let buffer='';

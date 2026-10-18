@@ -1,3 +1,23 @@
+# Lot du 18 octobre — compilation à revérifier avant publication
+
+TS2783 est corrigé dans les sources. Le lot ajoute les rôles et la planification,
+avec migrations **0004 et 0005** obligatoires avant de servir cette version. Les
+137 tests natifs réussis et l’analyse syntaxique ne remplacent pas le typage,
+Miniflare, le build et le navigateur : les dépendances restent absentes ici.
+
+Le workflow GitHub manuel est `.github/workflows/validation.yml`, sélection **main**.
+Il installe les dépendances et exécute les contrôles complets, sans publier. Vérifier
+les minutes disponibles/conditions GitHub Actions avant lancement ; aucun frais
+supplémentaire n’est autorisé implicitement. L’intégration Cloudflare choisie par le
+propriétaire peut réagir aux changements de main : vérifier le commit dans son journal.
+
+Ne pas supprimer la commande de typage pour contourner une erreur. Ne pas convertir
+l’application en site statique pour obtenir une URL : elle nécessite les bindings
+et secrets décrits dans INSTALLATION_CLOUDFLARE.md. Le dépôt contient encore une
+configuration locale ; un build réussi ne suffira pas à rendre le site fonctionnel.
+
+---
+
 # Premier journal Cloudflare reçu — 18 octobre 2026
 
 Le propriétaire a connecté GitHub dans Cloudflare et lancé un build. Le journal

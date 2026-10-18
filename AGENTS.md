@@ -31,3 +31,12 @@ production ; les doubles de stockage/réseau sont explicitement limités aux tes
 Ils ne remplacent pas Miniflare, le navigateur ou un fournisseur réel.
 Le header `X-Atelier-Account` détecte une divergence d’onglet/cookie ; il ne peut
 jamais autoriser l’accès. L’identité de session reste la seule autorité des routes API.
+
+Lot du 18 octobre : rôles et planification dans `server/collaboration.ts` et
+`server/planning.ts`, migrations 0004/0005. Les modèles proviennent des catalogues
+officiels ; leur présence ne prouve pas leur supériorité. Les préférences sont
+réexaminées avant l’envoi et figées pour la tâche acceptée. Ne jamais inventer un
+reset, contourner l’accord de partage ou rejouer une tâche à issue incertaine.
+Conserver le contrôle atomique de date, propriétaire et statut dans la prise de
+tâche. Une réponse de test ancienne ou d’un secret remplacé ne doit pas écraser
+les informations récentes. Lire `docs/GUIDE_ASSISTANTS.md` et le rapport actualisé.

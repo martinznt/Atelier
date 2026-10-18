@@ -132,3 +132,54 @@ describe('sécurité et persistance réelles D1/R2 locales',()=>{
  it('export exclut mots de passe, sessions et secrets fournisseurs',async()=>{const result=await json('/account/export?metadata=true');const text=JSON.stringify(result.body);expect(text).not.toContain('password_hash');expect(text).not.toContain('token_hash');expect(text).not.toContain('code_hash');expect(result.body.projects.length).toBeGreaterThan(0);});
  it('révocation, déconnexion et récupération à usage unique',async()=>{const c=await json('/auth/register','POST',{username:'carole',password:'mot-de-passe-de-carole'},'');const cookie=c.cookie!,code=c.body.recoveryCodes[0];expect(c.body.recoveryCodes.length).toBe(8);expect((await json('/auth/logout','POST',{},cookie)).status).toBe(200);expect((await json('/auth/me','GET',undefined,cookie)).status).toBe(401);const recovered=await json('/auth/recover','POST',{username:'carole',password:'nouveau-mot-de-passe-de-carole',code},'');expect(recovered.status).toBe(200);expect((await json('/auth/recover','POST',{username:'carole',password:'encore-autre-mot-de-passe',code},'')).status).toBe(401);});
 });
+
+// Fixture credentials and catalogues only. No inference or provider test is invoked.
+describe('connexions nommées et propositions de tâches isolées',()=>{
+ async function fixtureConnection(cookie:string,label:string){
+  const created=await json('/connections','POST',{provider:'anthropic',label,secret:'credential-integration-fixture',scopes:['chat'],api_consent:true},cookie);
+  expect(created.status).toBe(201);
+  const db=await mf.getD1Database('DB');
+  await db.prepare("UPDATE connections SET status='connected',models='[\"model-fixture\"]',models_revision=1,models_checked_at=? WHERE id=?").bind(new Date().toISOString(),created.body.id).run();
+  return created.body.id as string;
+ }
+ it('sépare deux accès du même fournisseur et protège leur renommage et leurs secrets',async()=>{
+  const first=await fixtureConnection(a,'Principal'),second=await fixtureConnection(a,'Secondaire');
+  expect(first).not.toBe(second);
+  expect((await json(`/connections/${first}`,'PATCH',{label:'Personnel'})).status).toBe(200);
+  const listed=(await json('/connections')).body.items;
+  expect(listed.find((c:any)=>c.id===first).label).toBe('Personnel');
+  expect(listed.find((c:any)=>c.id===first).status).toBe('connected');
+  expect(listed.find((c:any)=>c.id===second).label).toBe('Secondaire');
+  expect(JSON.stringify(listed)).not.toContain('credential-integration-fixture');
+  for(const method of ['PATCH','DELETE'])expect((await call(`/connections/${first}`,method,method==='PATCH'?{label:'Intrusion'}:undefined,b)).status).toBe(404);
+  expect((await call(`/connections/${first}/test`,'POST',{},b)).status).toBe(404);
+ });
+ it('ne révèle aucune connexion étrangère lors d’une proposition',async()=>{
+  const foreign=await fixtureConnection(b,'Libellé privé de Bob');
+  const planning={priority:'speed',max_wait_minutes:0,missions:[{role:'Vérifier le SQL',candidates:[{connection_id:foreign,model:'model-fixture'}]}]};
+  expect((await json('/tasks/plan','POST',{conversation_id:conversation,planning},b)).status).toBe(404);
+  const response=await json('/tasks/plan','POST',{conversation_id:conversation,planning});
+  expect(response.status).toBe(200);expect(response.body.assistants).toEqual([]);expect(response.body.blocked.length).toBeGreaterThan(0);
+  expect(JSON.stringify(response.body)).not.toContain('Libellé privé de Bob');
+ });
+ it('exige un plan inchangé et un accord de programmation, puis conserve une seule tâche annulable',async()=>{
+  const connection=await fixtureConnection(a,'Planification contrôlée');
+  const convo=(await json('/conversations','POST',{project_id:project,title:'Test de programmation isolé'})).body.id;
+  const db=await mf.getD1Database('DB'),retryAt=new Date(Date.now()+86400000).toISOString();
+  await db.prepare('UPDATE connections SET quota=? WHERE id=?').bind(JSON.stringify({kind:'unavailable',status:'rate_limited',retry_at:retryAt}),connection).run();
+  const planning={priority:'quality',max_wait_minutes:0,missions:[{role:'Vérifier les permissions du projet',candidates:[{connection_id:connection,model:'model-fixture'}]}]};
+  const preview=await json('/tasks/plan','POST',{conversation_id:convo,planning});expect(preview.status).toBe(200);expect(preview.body.not_before).toBe(retryAt);
+  const body={conversation_id:convo,message:'Test de programmation sans inference',mode:'individual',rounds:1,max_tokens:128,assistants:[{connection_id:connection,model:'model-fixture',role:planning.missions[0].role}],planning,plan_fingerprint:preview.body.fingerprint,idempotency_key:crypto.randomUUID()};
+  expect((await json('/tasks','POST',{...body,plan_fingerprint:'0'.repeat(64),allow_scheduled:true})).status).toBe(409);
+  expect((await json('/tasks','POST',body)).status).toBe(400);
+  const started=await json('/tasks','POST',{...body,allow_scheduled:true});expect(started.status).toBe(202);expect(started.body.not_before).toBe(retryAt);
+  const duplicate=await json('/tasks','POST',{...body,allow_scheduled:true});expect(duplicate.body.id).toBe(started.body.id);expect(duplicate.body.duplicate).toBe(true);
+  expect((await json(`/conversations/${convo}/messages`)).body.items).toHaveLength(1);
+  expect((await call(`/tasks/${started.body.id}`,'GET',undefined,b)).status).toBe(404);
+  expect((await call(`/tasks/${started.body.id}/cancel`,'POST',{},b)).status).toBe(404);
+  expect((await json(`/tasks/${started.body.id}/cancel`,'POST',{})).status).toBe(200);
+  expect((await json(`/tasks/${started.body.id}`)).body.status).toBe('cancelled');
+  await db.prepare('UPDATE connections SET models_revision=models_revision+1 WHERE id=?').bind(connection).run();
+  expect((await json('/tasks','POST',{...body,idempotency_key:crypto.randomUUID(),allow_scheduled:true})).status).toBe(409);
+ });
+});

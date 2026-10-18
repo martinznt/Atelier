@@ -109,9 +109,22 @@ base D1 ou une clé maître dans un agent ; ne pas exposer un socket Docker au W
 
 ## Mémoire partagée et clients MCP
 
-Appliquer **toutes** les migrations numérotées, notamment 0002 et 0003. Les routes
+Appliquer **toutes** les migrations numérotées, de 0001 à 0005. 0004 conserve les
+rôles historiques ; 0005 ajoute les tâches différées et les catalogues versionnés.
+Les routes
 `/mcp`, `/oauth/*` et `/.well-known/*` doivent passer par le Worker ; elles figurent
 dans `assets.run_worker_first`. Garder `SITES_AUTHENTICATION` absent sur un Worker
 Cloudflare autonome : un en-tête du navigateur ne prouve pas une identité Sites.
 L’adresse MCP est `APP_ORIGIN/mcp`. L’autorisation OAuth donne accès aux seuls projets
 partagés du compte. Les essais réels avec les quatre clients restent à effectuer.
+
+## Vérifier le lot des équipes et catalogues
+
+Après migration et validation du build, vérifier deux connexions nommées d’un même
+service avec des accès de test autorisés, puis un refus de lecture par un autre
+compte. Faire un essai de proposition sans lancer d’inférence, puis une tâche réelle
+avec consentement à l’API. Lancer le test de planification uniquement avec l’accord
+de lancement différé : fermer l’interface, vérifier l’état à la réouverture et
+l’annulation avant départ. Vérifier le cron ; ne pas promettre une exécution pendant
+sa désactivation. L’actualisation quotidienne des catalogues est désactivée par défaut.
+Les modèles nouvellement listés ne sont jamais ajoutés seuls aux tâches en cours.

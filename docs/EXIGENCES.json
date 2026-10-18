@@ -3174,5 +3174,133 @@
     "statut": "réalisé",
     "preuve": "Conversation du 17 octobre 2026 ; docs/INSTALLATION_CLOUDFLARE.md",
     "limite": "Configuration réelle des secrets et déploiement toujours à vérifier ; ne pas transmettre de clés dans le chat."
+  },
+  {
+    "id": "REQ-23-001",
+    "section": 23,
+    "exigence": "Ajouter simplement plusieurs connexions nommées, même pour un fournisseur identique.",
+    "statut": "réalisé",
+    "preuve": "web/Settings.tsx ; server/routes/connections.ts",
+    "limite": "Interface écrite ; validation navigateur et accès réels à effectuer."
+  },
+  {
+    "id": "REQ-23-002",
+    "section": 23,
+    "exigence": "Choisir plusieurs assistants dans une conversation avec un rôle distinct et modifiable pour chacun.",
+    "statut": "réalisé",
+    "preuve": "web/Chat.tsx ; server/routes/tasks.ts ; server/collaboration.ts",
+    "limite": "Jusqu’à 3 connexions et 3 tours ; aucun runtime de code supplémentaire activé."
+  },
+  {
+    "id": "REQ-23-003",
+    "section": 23,
+    "exigence": "Guider le choix d’une méthode de travail et rendre l’espace adaptable aux préférences du propriétaire.",
+    "statut": "réalisé",
+    "preuve": "web/AssistantTeam.tsx ; web/team-guide.ts",
+    "limite": "Aides et rôles préparés localement, sans décision payante automatique ; validation navigateur à effectuer."
+  },
+  {
+    "id": "REQ-23-004",
+    "section": 23,
+    "exigence": "Actualiser la disponibilité et les limites de chaque IA sans inventer les quotas des abonnements.",
+    "statut": "réalisé",
+    "preuve": "server/worker.ts ; web/Settings.tsx ; web/Chat.tsx",
+    "limite": "Actualisation des observations enregistrées ; les API peuvent ne pas fournir de quota ni de réinitialisation."
+  },
+  {
+    "id": "REQ-23-005",
+    "section": 23,
+    "exigence": "Prévoir un relais utile lorsqu’une limite est atteinte, sans perdre le contexte ni les fichiers.",
+    "statut": "réalisé",
+    "preuve": "web/Chat.tsx ; server/worker.ts",
+    "limite": "Relais manuel ; pas de transfert ni d’appel automatique à une autre API."
+  },
+  {
+    "id": "REQ-23-006",
+    "section": 23,
+    "exigence": "Permettre des connexions Claude Pro et Claude gratuit distinctes lorsque la méthode officielle le permet.",
+    "statut": "bloqué",
+    "preuve": "docs/CONNECTEURS.md",
+    "limite": "Le connecteur Anthropic actuel est une API facturée séparément. Runtime Claude Code isolé et connexion officielle d’abonnement non intégrés."
+  },
+  {
+    "id": "REQ-23-007",
+    "section": 23,
+    "exigence": "Proposer des outils de réflexion utiles et explicites.",
+    "statut": "réalisé",
+    "preuve": "web/AssistantTeam.tsx ; web/team-guide.ts",
+    "limite": "Consignes guidées éditables seulement ; outils d’exécution et recherche distante non intégrés par ce lot."
+  },
+  {
+    "id": "REQ-23-008",
+    "section": 23,
+    "exigence": "Corriger les erreurs de compilation, valider le fonctionnement et expliquer ensuite les étapes utilisateur dans le chat.",
+    "statut": "à faire",
+    "preuve": "docs/VALIDATION.md ; docs/DEPLOIEMENT.md",
+    "limite": "TS2783 corrigé dans les sources. Compilation complète, intégration, navigateur et déploiement restent à vérifier ; pas de garantie zéro bug."
+  },
+  {
+    "id": "REQ-24-001",
+    "section": 24,
+    "exigence": "Personnaliser les missions selon le besoin, sans assignation fixe par marque.",
+    "statut": "réalisé",
+    "preuve": "server/collaboration.ts ; web/AssistantTeam.tsx ; tests/collaboration.test.mjs",
+    "limite": "Missions saisies par l’utilisateur ; adaptation autonome des rôles à partir d’une évaluation de la tâche non intégrée."
+  },
+  {
+    "id": "REQ-24-002",
+    "section": 24,
+    "exigence": "Choisir entre démarrage rapide, priorité aux meilleurs choix et compromis dans un délai maximal.",
+    "statut": "réalisé",
+    "preuve": "server/planning.ts ; web/AssistantPlanner.tsx ; tests/planning.test.mjs",
+    "limite": "Choix selon les préférences de l’utilisateur et les disponibilités connues ; pas de score automatique de qualité."
+  },
+  {
+    "id": "REQ-24-003",
+    "section": 24,
+    "exigence": "Utiliser un remplaçant autorisé lorsque le choix préféré attend trop longtemps, ou attendre ce choix lorsque demandé.",
+    "statut": "réalisé",
+    "preuve": "server/planning.ts ; tests/planning.test.mjs",
+    "limite": "Date fondée seulement sur un Retry-After reçu ; abonnements Codex/Claude Code non intégrés. Date inconnue jamais inventée."
+  },
+  {
+    "id": "REQ-24-004",
+    "section": 24,
+    "exigence": "Conserver une tâche différée après fermeture du téléphone, avec accord explicite, annulation et protection contre les doublons.",
+    "statut": "réalisé",
+    "preuve": "server/routes/tasks.ts ; server/task-persistence.ts ; server/worker.ts ; migrations/0005_planning_catalog.sql ; tests/task-persistence.test.mjs",
+    "limite": "Prise SQL testée localement ; exécution réelle Cloudflare et délai du cron non validés. Attente limitée à 30 jours, date limite contrôlée."
+  },
+  {
+    "id": "REQ-24-005",
+    "section": 24,
+    "exigence": "Actualiser les catalogues officiels de modèles et réexaminer les propositions lorsqu’ils changent.",
+    "statut": "réalisé",
+    "preuve": "server/model-catalog.ts ; server/catalog-store.ts ; server/connectors/model-list.ts ; tests/model-catalog.test.mjs ; tests/model-list.test.mjs",
+    "limite": "Opt-in, date et révision ; logique testée sur SQLite et fixtures explicites, aucun catalogue fournisseur réel connecté dans Atelier."
+  },
+  {
+    "id": "REQ-24-006",
+    "section": 24,
+    "exigence": "Réévaluer automatiquement quel modèle est meilleur pour chaque mission selon les mises à jour et des preuves datées.",
+    "statut": "à faire",
+    "preuve": "docs/GUIDE_ASSISTANTS.md ; docs/ARCHITECTURE.md",
+    "limite": "Aucune source d’évaluations comparables ni protocole de mesure intégré. Le catalogue actualisé ne mesure pas les compétences ; préférences manuelles explicites actuellement."
+  },
+  {
+    "id": "REQ-24-007",
+    "section": 24,
+    "exigence": "Rendre visibles les raisons du choix et les informations de limites absentes ou anciennes.",
+    "statut": "réalisé",
+    "preuve": "server/planning.ts ; web/AssistantPlanner.tsx ; web/Settings.tsx ; tests/planning.test.mjs",
+    "limite": "Aucune estimation arbitraire de pourcentage d’abonnement ou de prochaine réinitialisation ; validation visuelle à effectuer."
+  },
+  {
+    "id": "REQ-24-008",
+    "section": 24,
+    "exigence": "Ne pas changer silencieusement de compte ou fournisseur pendant la tâche ou au retour du réseau.",
+    "statut": "réalisé",
+    "preuve": "server/routes/tasks.ts ; server/worker.ts ; web/Chat.tsx ; tests/submission.test.mjs",
+    "limite": "Proposition confirmée avant la tâche, accord de partage et clé d’idempotence ; relais pendant une tâche encore manuel."
   }
 ]

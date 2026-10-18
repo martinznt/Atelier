@@ -645,3 +645,34 @@ Conserver les sources sur main du dépôt privé Atelier, sans écraser des modi
 concurrentes. Donner les étapes utilisateur directement dans la conversation, en français
 simple ; les documents du dépôt complètent ces explications. Les valeurs des secrets
 sont saisies dans les paramètres sécurisés, jamais dans la conversation.
+
+## 23. Plusieurs comptes IA et travail guidé — 18 octobre 2026
+
+« Continue et je veux que ce soit vraiment simple d'ajouter d'autre ia avec des comptes differents par exemple si je veux ajouter claude pro avec mon compte principal et claude normal avec un autre compte je peux et je veux que ce soit vraiment simple a utiliser et de pouvoir dans une seul conv utiliser plusieure ia avec chacune un role different et que ce soit le site qui me guide pour utiliser le mieux possible les ia et que ca s'actualise et que ca prenne en compte les limites d'utilisation de chaque ia. Je veux vraiment que ca soit hyper pratique et fonctionnel pour faire vraiment un espace de travail le plus utile possible et modulable selon chacun et de pouvoir vraiment ajouter les outils de reflexion necessaire ».
+
+« Je veux que tu ne fasse pas d'erreur comme tout a l'heure je veux que quand tu as fini tu me donne les etapes a faire et je veux que ca marche sans erreur ».
+
+Portée de réalisation : plusieurs connexions nommées, y compris d'un même fournisseur ;
+plusieurs assistants dans un fil avec rôles visibles et modifiables ; méthodes guidées,
+limites actualisées et provenance des données, reprise manuelle conservant les sources.
+Les abonnements grand public ne sont pas des clés API. N'activer que les méthodes
+officielles réellement intégrées, sans récupération de cookies ni mutualisation des
+identités. Les outils de réflexion proposés comme consignes ne sont pas des outils
+d'exécution ni un accès aux raisonnements internes. Valider les étapes de production
+avant de dire que le site est prêt ; aucune promesse d'absence absolue de bugs.
+
+## 24. Choix selon l’objectif, le délai et les évolutions — 18 octobre 2026
+
+« Je veux que les roles de chaque ia soit vraiment personnalise selon les besoin et les limites et ect pas juste des regles fixe par exemple si claude code est meilleur pour une tache mais que la limite est atteinte jusqu'a une semaine et que j'ai choisi de le faire assez vite en pas trop longtemps ca va utiliser codex mais si j'ai choisi le meilleur sans prendre en compte le temps necessaire la ca va prendre le meilleur et je veux pouvoir aussi choisir de prendre le meilleur choix mais tout en etant rapide ».
+
+« Et je veux que les roles des ia s'actualisent selon les mises a jour aussi donc les meilleurs ia changent ».
+
+Portée : missions modifiables et classement adapté à l’objectif, trois priorités
+(rapidité, qualité, compromis), prise en compte des accès, modèles, limites connues
+et délai choisi. Prévoir l’attente demandée côté serveur et des remplaçants autorisés.
+Actualiser les connaissances sur les modèles et réexaminer les recommandations,
+avec sources et dates. Ne pas figer un classement par marque, inventer des scores de
+qualité ou une réinitialisation d’abonnement. Un catalogue de modèles disponibles
+n’est pas un classement de leurs compétences. Sans évaluation pertinente disponible,
+afficher que le choix repose sur les préférences de l’utilisateur. Aucun changement
+de compte, fournisseur ou coût ne doit devenir implicite pendant une tâche.

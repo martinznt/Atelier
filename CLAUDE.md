@@ -14,3 +14,9 @@ Une création Sites existe sans version publiée ; conserver son identifiant exa
 Pour les corrections de fiabilité, lancer aussi `npm run test:regressions` et lire
 le rapport du 16 octobre. Conserver les protections des réponses tardives, la clé
 persistée des envois et la comparaison du compte attendu avec la session serveur.
+
+Reprise du lot du 18 octobre : appliquer les cinq migrations dans l’ordre et lire
+`docs/GUIDE_ASSISTANTS.md`. Les nouvelles régressions couvrent rôles, propositions,
+planification et catalogues ; elles ne prouvent pas une intégration fournisseur.
+L’évaluation automatique du meilleur modèle par mission reste à réaliser. Conserver
+les préférences explicites et ne pas remplacer ce manque par un classement inventé.

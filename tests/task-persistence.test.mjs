@@ -3,7 +3,7 @@ import {readFileSync,readdirSync} from 'node:fs';
 import {randomUUID} from 'node:crypto';
 import {test} from 'node:test';
 import {openDatabase} from '../passerelle/scripts/sqlite.mjs';
-import {persistChatTask} from '../server/task-persistence.ts';
+import {persistChatTask,claimQueuedTask} from '../server/task-persistence.ts';
 
 // Real production statements and migrations, using SQLite transactions; no provider calls.
 const date='2026-10-16T10:00:00.000Z';
@@ -105,4 +105,23 @@ test('une suppression survenue avant le commit n’enregistre aucune nouvelle t�
  env.DB.exec("UPDATE users SET deleted_at='2026-10-16' WHERE id='a';");
  assert.deepEqual(await persistChatTask(env,pending()),{kind:'unavailable'});
  for(const table of ['tasks','messages','events'])assert.equal(await count(env,table),0);
+});
+
+test('une tâche différée persiste mais ne peut démarrer avant sa date, puis une seule fois',async t=>{
+ const env=database(t),task=pending({notBefore:'2026-10-23T10:00:00.000Z'});
+ await persistChatTask(env,task);
+ assert.equal(await claimQueuedTask(env.DB,task.id,date),null);
+ const claimed=await Promise.all([claimQueuedTask(env.DB,task.id,task.notBefore),claimQueuedTask(env.DB,task.id,task.notBefore)]);
+ assert.equal(claimed.filter(Boolean).length,1);assert.equal(claimed.find(Boolean).not_before,task.notBefore);
+ assert.equal(await count(env,'messages'),1);
+});
+test('annulation ou compte supprimé empêche le départ d’une tâche planifiée',async t=>{
+ const env=database(t),task=pending();await persistChatTask(env,task);
+ await env.DB.prepare('UPDATE tasks SET cancel_requested=1 WHERE id=?').bind(task.id).run();assert.equal(await claimQueuedTask(env.DB,task.id,date),null);
+ await env.DB.prepare('UPDATE tasks SET cancel_requested=0 WHERE id=?').bind(task.id).run();await env.DB.prepare("UPDATE users SET deleted_at='date' WHERE id='a'").run();assert.equal(await claimQueuedTask(env.DB,task.id,date),null);
+});
+test('une réservation différée du mois précédent reste comptée dans le plafond',async t=>{
+ const env=database(t);await env.DB.prepare("UPDATE users SET monthly_tokens=150 WHERE id='a'").run();
+ assert.equal((await persistChatTask(env,pending({createdAt:'2026-09-30T12:00:00.000Z',notBefore:'2026-10-23T00:00:00.000Z'}))).kind,'created');
+ assert.equal((await persistChatTask(env,pending({idempotencyKey:'next-month'}))).kind,'budget');
 });

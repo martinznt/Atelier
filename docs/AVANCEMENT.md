@@ -1,3 +1,66 @@
+# Équipes, délais et catalogues — lot du 18 octobre 2026
+
+Périmètre complet conservé, avec les précisions des sections 23/24 du cahier des
+charges. **413 exigences suivies**. Ce lot ne constitue pas la livraison finale.
+Branche locale : `feat/passerelle-mcp`. Correctif TS2783 conservé séparément au commit
+`aa9b5b2`. Les sections suivantes constituent l’historique des contrôles précédents.
+
+## Réalisé
+
+- Connexions nommées multiples, ajout guidé, renommage et remplacement d’un accès,
+  états de limites datés et relus au premier plan, modèle/compte/rôle dans les réponses.
+- Missions personnalisées, comparaison indépendante, réalisation/relecture et
+  collaboration jusqu’à trois assistants et trois tours ; consentement au partage.
+- Proposition selon priorité rapidité, préférences de qualité ou attente bornée,
+  avec raisons et informations inconnues. Pas de classement universel inventé.
+- Tâches différées conservées en D1, accord explicite, prise atomique après la date
+  prévue, annulation, contrôle de date limite, réservations de budget conservées
+  au changement de mois. Les relivraisons Queue ne créent pas de deuxième exécution.
+- Catalogue daté et versionné ; actualisation sur accord par connexion, pagination
+  Anthropic/Gemini, limites explicites. Résultat ancien ou jeton remplacé protégés.
+- Nouvelle proposition exigée si les choix ou le catalogue changent avant l’envoi.
+  La case de consentement ne supprime plus une proposition acceptée.
+- Relais manuel avec objectif et références conservés ; aides de rédaction modifiables.
+  Migrations 0004/0005, guide et tests de permissions Hono préparés.
+
+## Vérifié
+
+**137 tests locaux réussis** : 9 cœur/schéma, 27 passerelle, 101 régressions.
+59 sources TS/TSX syntaxiquement valides ; `git diff --check` réussi. Les tests SQLite
+utilisent les cinq migrations et les helpers de production. Les réponses fournisseur
+de tests sont des fixtures explicites ; aucun service réel n’est déclaré connecté.
+
+## Bloqué / restant
+
+`npm run check` et `npm run build` s’arrêtent sur `tsc: not found`, `npm test` sur
+`vitest: not found`, code 127 : dépendances toujours absentes. Aucun nouveau cycle
+de demande réseau longue n’a été lancé. Miniflare, navigateur, visuel mobile et
+déploiement réel restent non validés, y compris le correctif TS2783 chez Cloudflare.
+
+Le classement autonome des meilleurs modèles par mission reste **à faire** : il
+faut des évaluations comparables, pertinentes et datées. Le moteur actuel respecte
+les préférences classées par l’utilisateur et la disponibilité observée. Il ne
+peut pas affirmer que Codex ou Claude Code est meilleur sans données correspondantes.
+Ces runtimes isolés, leurs abonnements officiels, les coûts vérifiés et la ventilation
+de consommation par appel ne sont pas intégrés par ce lot. Claude Pro et gratuit
+ne se connectent pas via le connecteur API comme s’il s’agissait du même produit.
+
+## Prochaine étape et livraison Git
+
+Au début de cette reprise, GitHub `main` pointait sur `d3598d5a` ; le correctif isolé
+existait comme objet Git distant `99e310ea`, sans mise à jour confirmée de la branche.
+Transférer le lot complet avec mise à jour conditionnelle de `main`, puis comparer
+l’arbre distant au commit local. Le résultat de cette opération doit être annoncé
+avec son commit réel, sans assimiler ce transfert à un déploiement.
+
+Ensuite : exécuter le workflow manuel **Vérifications Atelier** sur `main` dans un
+environnement ayant les dépendances, puis corriger toute erreur effective. Vérifier
+la configuration Cloudflare réelle (D1, R2, Queues, secret serveur, origine HTTPS),
+les migrations et les parcours avant publication. Les étapes destinées au propriétaire
+doivent aussi être données directement dans la conversation.
+
+---
+
 # Correctif de compilation Cloudflare — 18 octobre 2026
 
 Le journal fourni par le propriétaire confirme le clonage GitHub, l’installation

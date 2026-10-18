@@ -1,6 +1,6 @@
 # Connecteurs : capacités implémentées et limites vérifiées
 
-État de la session du 13 octobre 2026 : le connecteur GitHub de l’assistant accède
+État actualisé le 18 octobre 2026 : le connecteur GitHub de l’assistant accède
 réellement au dépôt privé `martinznt/Atelier`. **Il n’est pas un jeton injecté dans
 l’application.** Aucune clé de fournisseur n’est configurée dans Atelier, aucun
 appel d’inférence ou déploiement réel n’y a été validé.
@@ -9,8 +9,8 @@ appel d’inférence ou déploiement réel n’y a été validé.
 | --- | --- | --- | --- |
 | GitHub | PAT finement limité, secret serveur | Test /user, dépôts et branches paginés, fichiers, commits, comparaison, PR en brouillon, checks, sauvegarde avec SHA | Non testé dans l’application ; OAuth/GitHub App à faire ; la connexion doit choisir ses dépôts chez GitHub |
 | OpenAI API | Clé API | Modèles réels, Responses API en flux, usage renvoyé, reprise par contexte Atelier | Distinct de ChatGPT et Codex ; aucun abonnement ou ancien historique importé automatiquement |
-| Claude · API Anthropic | Clé API | Modèles, Messages API en flux, consommation et en-têtes reçus | Distinct de Claude Code ; liste initiale limitée à 100 modèles, pagination du catalogue à ajouter |
-| Gemini API | Clé de projet | Modèles generateContent, flux SSE, modèle renvoyé et usage | Limites selon projet, modèle et niveau ; modèle/prix/quotas globaux non inventés ; catalogue jusqu’à 1000 entrées |
+| Claude · API Anthropic | Clé API | Catalogue paginé, Messages API en flux, consommation et en-têtes reçus | Distinct de Claude Code et Claude Pro/gratuit ; pagination et mise à jour testées sur fixtures uniquement |
+| Gemini API | Clé de projet | Catalogue paginé generateContent, flux SSE, modèle renvoyé et usage | Limites selon projet, modèle et niveau ; modèle/prix/quotas globaux non inventés ; accès réel non vérifié |
 | Codex App Server | Non activée | Déclaration de capacités et indisponibilité explicite | Runtime isolé, authentification officielle, reprise de thread et limites à intégrer |
 | Claude Code | Non activée | Déclaration de capacités et indisponibilité explicite | Claude Agent SDK en environnement isolé à intégrer |
 | Cloudflare | Token API limité à un compte | Test token, comptes/sites Pages, suivi, relance et rollback d’un déploiement existant | Pas d’envoi direct de fichiers Pages ni de déploiement Workers depuis ce connecteur ; token actif ne prouve pas les droits sur chaque ressource |
@@ -20,9 +20,66 @@ Les capacités sont exposées par `/api/connections/catalog`. Aucun service indi
 n’est affiché « connecté ». Une connexion n’atteint cet état qu’après un appel distant
 réussi ; un secret enregistré seul reste « à tester ». Les erreurs 401/403 de test
 passent la connexion à un état expiré. Expiration connue, remplacement manuel du
-jeton et déconnexion sont prévus. L’OAuth, le refresh automatique et la révocation
+jeton et déconnexion sont prévus. L’OAuth fournisseur, le renouvellement automatique des jetons et la révocation
 chez le fournisseur ne sont pas encore implémentés ; le retrait du secret local ne
 révoque pas le token externe.
+
+Plusieurs connexions nommées peuvent appartenir au même fournisseur. Chaque accès
+est chiffré séparément et testé indépendamment ; renommer ne modifie pas son secret.
+Le remplacement efface les observations et le catalogue liés à l’ancien accès.
+Les réponses historiques conservent le compte nommé, le rôle et le modèle de la tâche.
+
+## Actualisation des catalogues et choix des assistants
+
+L’actualisation manuelle teste l’accès et relit les modèles. Un opt-in par connexion
+autorise aussi le cron à les relire lorsqu’ils ont plus de 24 heures. La dernière
+lecture et la révision sont exposées. L’état enregistré est relu par l’interface
+toutes les 30 secondes et au retour au premier plan ; cela n’est pas un appel à une IA.
+Le cron traite au plus deux connexions par passage et espace les échecs d’une heure.
+
+Anthropic : `after_id`/`last_id`/`has_more`. Gemini : `pageToken`/`nextPageToken`.
+OpenAI : tableau retourné par `/v1/models`. Limites locales : 10 pages et 5000 entrées,
+20 secondes au total pour les lectures IA. Un échec ou une pagination incomplète
+conserve le catalogue précédent et n’est jamais annoncé comme une actualisation réussie.
+Les modèles OpenAI listés ne sont pas tous nécessairement compatibles avec Responses ;
+le catalogue ne prouve pas à lui seul l’exécution de chaque modèle dans Atelier.
+
+Les propositions sont refaites avant l’envoi si la révision du catalogue change.
+Un test de catalogue ne prouve pas la fin d’une limite de discussion ; les observations
+429 sont conservées. Les réponses de tests anciennes ou portant sur un ancien secret
+ne peuvent remplacer des observations récentes. Aucun nouveau modèle ne remplace
+silencieusement un modèle choisi pour une tâche déjà acceptée.
+
+Le classement actuel est celui des préférences de l’utilisateur par mission.
+Le système n’a pas de mesures comparables pour déclarer automatiquement le meilleur
+modèle selon une nouvelle version. Ce chantier reste ouvert, distinct de la lecture
+réelle du catalogue. Aucun benchmark payant n’est lancé en arrière-plan.
+
+## Abonnements : possibilités documentées, non intégrées
+
+La documentation officielle examinée distingue l’hébergement du binaire Claude Code
+non modifié, avec authentification officielle de chaque utilisateur, d’un service
+tiers intermédiant lui-même l’accès Claude via SDK ou jeton d’abonnement. Ne pas
+généraliser une possibilité locale à un SaaS multi-utilisateur. Le premier nécessite
+un runtime isolé et un parcours officiel qui ne sont pas intégrés dans Atelier.
+Ne pas demander de cookies, mots de passe d’abonnement ou secrets OAuth extraits.
+
+OpenAI documente également Sign in with ChatGPT pour des intégrations éligibles,
+avec profils séparés ; cela ne rend pas ce parcours opérationnel dans Atelier et
+ne donne pas accès automatiquement aux historiques ChatGPT. L’accès API actuel reste
+distinct. Les crédits proposés par certains plans ne sont pas un quota universel
+Claude Pro/gratuit ; vérifier le plan exact avant toute présentation de crédits.
+
+Sources documentaires complémentaires (aucune authentification réelle effectuée) :
+
+- https://code.claude.com/docs/en/legal-and-compliance
+- https://support.claude.com/en/articles/15036540-use-the-claude-agent-sdk-with-your-claude-plan
+- https://support.claude.com/en/articles/17154008-monthly-api-credits-for-max-and-team-plans
+- https://developers.openai.com/siwc/token-sharing-open-source
+- https://developers.openai.com/siwc/token-sharing-open-source/profiles-and-sessions
+- https://platform.claude.com/docs/en/api/models/list
+- https://ai.google.dev/api/models
+- https://developers.openai.com/api/reference/resources/models/methods/list
 
 ## Parcours et permissions
 

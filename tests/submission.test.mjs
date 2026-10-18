@@ -41,3 +41,10 @@ test('un succès vide seulement sa révision et empêche la résurrection du for
  const sent=writeDraft(store,'alice','thread','Message');assert.equal(clearSentDraft(store,'alice','thread',sent),true);
  assert.equal(readDraft(store,'alice','thread').text,'');
 });
+
+test('un changement de rôle utilise une nouvelle clé tout en conservant un nouvel envoi identique',()=>{
+ const values=new Map(),store={getItem:key=>values.get(key)??null,setItem:(key,value)=>values.set(key,value),removeItem:key=>values.delete(key)};
+ const draft={conversation_id:'conversation',message:'Objectif',assistants:[{connection_id:'a',model:'model',role:'Concevoir'}],mode:'individual',rounds:1,max_tokens:1024,memory_ids:[],file_ids:[],share_consent:false};
+ const first=prepareSubmission(store,'owner',draft);assert.equal(prepareSubmission(store,'owner',draft).idempotency_key,first.idempotency_key);
+ const revised={...draft,assistants:[{...draft.assistants[0],role:'Vérifier'}]};assert.notEqual(prepareSubmission(store,'owner',revised).idempotency_key,first.idempotency_key);
+});
