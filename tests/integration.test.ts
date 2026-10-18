@@ -104,6 +104,28 @@ describe('sécurité et persistance réelles D1/R2 locales',()=>{
  it('ignore un identifiant utilisateur fourni par le navigateur',async()=>{const me=(await json('/auth/me','GET',undefined,b)).body.user;const result=await json('/projects','POST',{name:'À Alice',user_id:me.id});expect(result.body.user_id).not.toBe(me.id);});
  it('bloque les mutations depuis une origine tierce',async()=>{const response=await mf.dispatchFetch(`${origin}/api/projects`,{method:'POST',headers:{Cookie:a,Origin:'https://evil.example','Content-Type':'application/json'},body:'{"name":"bad"}'});expect(response.status).toBe(403);});
  it('conflit entre deux appareils sans écrasement',async()=>{const initial=(await json(`/projects/${project}`)).body;expect((await json(`/projects/${project}`,'PATCH',{revision:initial.revision,name:'Nouvelle version'})).status).toBe(200);expect((await json(`/projects/${project}`,'PATCH',{revision:initial.revision,name:'Écrasement'})).status).toBe(409);});
+ it('la création distingue le fichier adressable de sa première version immuable',async()=>{
+  const content='Identité du fichier et de sa première version';
+  const created=await json('/files/text','POST',{project_id:project,name:'identite.txt',content});
+  expect(created.status).toBe(201);
+  const saved=created.body;
+  expect(saved.id).toBe(saved.file_id);
+  expect(saved.version_id).toEqual(expect.any(String));
+  expect(saved.version_id).not.toBe(saved.id);
+  expect(saved.version).toBe(1);
+  const listing=await json(`/files?project=${project}`);
+  expect(listing.status).toBe(200);
+  expect(listing.body.items).toContainEqual(expect.objectContaining({id:saved.id,name:'identite.txt',current_version:1}));
+  const versions=await json(`/files/${saved.id}/versions`);
+  expect(versions.status).toBe(200);
+  expect(versions.body.items).toEqual([expect.objectContaining({id:saved.version_id,version:1,sha256:saved.sha256})]);
+  const db=await mf.getD1Database('DB');
+  const stored=await db.prepare('SELECT file_id,version FROM file_versions WHERE id=?').bind(saved.version_id).first();
+  expect(stored).toEqual({file_id:saved.id,version:1});
+  const downloaded=await call(`/files/${saved.id}/download?version=1`);
+  expect(downloaded.status).toBe(200);
+  expect(await downloaded.text()).toBe(content);
+ });
  it('télécharge chaque version et restaure par création',async()=>{expect((await json('/files/text','POST',{project_id:project,file_id:file,expected_version:1,name:'test.txt',content:'version deux'})).status).toBe(201);expect(await (await call(`/files/${file}/download?version=1`)).text()).toBe('version une');expect(await (await call(`/files/${file}/download?version=2`)).text()).toBe('version deux');expect((await json(`/files/${file}/restore`,'POST',{version:1,expected_version:2})).body.version).toBe(3);expect(await (await call(`/files/${file}/download?version=3`)).text()).toBe('version une');});
  it('ZIP intègre des fichiers réels et un manifeste SHA-256',async()=>{const response=await call('/files/zip','POST',{ids:[file]});expect(response.status).toBe(200);const archive=unzipSync(new Uint8Array(await response.arrayBuffer()));const manifest=JSON.parse(strFromU8(archive['integrite.json']));expect(manifest[0].sha256).toHaveLength(64);expect(strFromU8(archive[manifest[0].path])).toBe('version une');});
  it('pagination des longues conversations',async()=>{for(let i=0;i<35;i++)await json(`/conversations/${conversation}/notes`,'POST',{content:`Note ${i}`});const first=(await json(`/conversations/${conversation}/messages`)).body;expect(first.items.length).toBe(30);expect(first.next).not.toBeNull();const second=(await json(`/conversations/${conversation}/messages?before=${first.next}`)).body;expect(second.items.length).toBe(5);expect(new Set([...first.items,...second.items].map(m=>m.id)).size).toBe(35);});

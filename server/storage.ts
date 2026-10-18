@@ -19,7 +19,10 @@ export async function writeVersion(env:Env,user:string,file:string,bytes:Uint8Ar
 export async function newFile(env:Env,user:string,project:string,name:string,mime:string,bytes:Uint8Array,metadata:Partial<Row>={}) {
  await owned(env,'projects',project,user);const id=uid(),date=now();
  await run(env,'INSERT INTO files(id,user_id,project_id,name,mime,author,conversation_id,task_id,collection,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)',id,user,project,safeFilename(name),mime.slice(0,120),metadata.author||'Vous',metadata.conversation_id||null,metadata.task_id||null,metadata.collection||'',date,date);
- try{const version=await writeVersion(env,user,id,bytes,0,metadata.state||'final');return {id,name:safeFilename(name),...version,file_id:id};}catch(e){await run(env,'DELETE FROM files WHERE id=? AND user_id=?',id,user);throw e;}
+ try{
+  const {id:version_id,...version}=await writeVersion(env,user,id,bytes,0,metadata.state||'final');
+  return {id,file_id:id,version_id,name:safeFilename(name),...version};
+ }catch(e){await run(env,'DELETE FROM files WHERE id=? AND user_id=?',id,user);throw e;}
 }
 export async function getVersion(env:Env,user:string,file:string,version?:number) {
  const f=await owned(env,'files',file,user);

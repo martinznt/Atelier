@@ -1,3 +1,25 @@
+# Échec Cloudflare observé et correctif — 18 octobre 2026
+
+Preuve externe fournie par le propriétaire : journal Cloudflare du 17 octobre,
+21:55:58–21:56:19 UTC. Clone et installation Bun réussis ; npm run build s’arrête
+sur TS2783, server/storage.ts(22,92), propriété id déclarée deux fois. Aucun succès
+de build ou de déploiement n’est établi par ce journal.
+
+Correction : identité du fichier id/file_id distincte de version_id ; plus de propriété
+id écrasée par le spread. Le test ajouté à tests/integration.test.ts vérifie la réponse,
+les relations D1, l’historique et le téléchargement avec l’identifiant retourné.
+
+Contrôles exécutés après correction :
+- npm run test:core : 9 réussis ; test:bridge : 27 réussis ; test:regressions : 58 réussis.
+- Analyse syntaxique Babel : server/storage.ts et tests/integration.test.ts valides.
+- npm run check / npm run build : code 127, tsc absent ; npm test : code 127, vitest absent.
+- Installation terminal : EPERM ; autorisation réseau interrompue sans installation.
+
+Les 94 tests existants ne valident pas le nouveau test d’intégration, qui reste non
+exécuté, ni la compilation complète. Il faut contrôler la nouvelle exécution Cloudflare.
+
+---
+
 # Vérification du transfert GitHub — 17 octobre 2026
 
 - Dépôt privé `martinznt/Atelier`, branche `main`, commit `ecc78e892ffdef9103a5f371d0be1d9052ebe098`.

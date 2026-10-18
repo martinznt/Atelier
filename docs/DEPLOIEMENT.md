@@ -1,3 +1,16 @@
+# Premier journal Cloudflare reçu — 18 octobre 2026
+
+Le propriétaire a connecté GitHub dans Cloudflare et lancé un build. Le journal
+du 17 octobre à 21:56 UTC confirme l’installation des dépendances, puis l’arrêt sur
+TS2783 dans server/storage.ts. Ce défaut est corrigé dans le lot courant.
+Une nouvelle compilation reste à vérifier. La configuration du dépôt contient
+encore des valeurs locales : D1 factice, APP_ORIGIN localhost, workers_dev désactivé.
+Même après compilation, ne pas annoncer de mise en ligne ni ignorer la configuration
+réelle de D1, R2, Queues, migrations et MASTER_KEY. Aucun accès Cloudflare n’est
+configuré dans l’environnement de l’assistant au dernier contrôle.
+
+---
+
 # État réel du déploiement — 17 octobre 2026
 
 La publication de l’application complète est autorisée. Aucun frais supplémentaire

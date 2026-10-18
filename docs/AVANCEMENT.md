@@ -1,3 +1,22 @@
+# Correctif de compilation Cloudflare — 18 octobre 2026
+
+Le journal fourni par le propriétaire confirme le clonage GitHub, l’installation
+réussie chez Cloudflare puis l’échec TypeScript TS2783 dans server/storage.ts:22.
+Le champ id du fichier était écrasé par celui de sa version. newFile renvoie désormais
+id/file_id pour le fichier et version_id pour sa version immuable. Les lecteurs
+existants de file_id sont préservés ; un test d’intégration dédié est ajouté.
+
+94 tests locaux existants repassent. La syntaxe des deux fichiers modifiés est valide.
+Le nouveau test Miniflare, le typage et le build restent non exécutables localement :
+dépendances absentes, EPERM réseau puis demande de permission interrompue sans
+résultat d’installation. Aucun motif de rejet automatique n’a été fourni.
+Ne pas répéter cette attente. Ne pas présenter ce correctif comme un déploiement réussi.
+
+Le propriétaire demande aussi un parcours guidé avec plusieurs comptes IA, rôles par
+assistant et limites actualisées : lot suivant en cours, distinct de ce correctif.
+
+---
+
 # Sources sur GitHub main — 17 octobre 2026
 
 Le propriétaire a explicitement demandé le transfert du site sur `main` et des
