@@ -1,5 +1,20 @@
 # Contrôles du 19 octobre 2026
 
+## Livraison du lot applicatif et dernier contrôle consulté
+
+- GitHub `main` : `b79fe702d1f7801c2900407ad78f68da2dc80923` ; parent de configuration
+  `947467c6d0306d69d53640f9728dd62990428ec0`.
+- Arbre `13cb294e5c1ee625c9f85bc67ec264011f995b26` identique au local `42466f8`.
+  Relecture récursive : 125 blobs, mêmes chemins, modes et SHA ; aucune troncature.
+- Mise à jour de `main` sans force, avec contrôle du SHA précédent. Copie locale propre.
+- Workers Builds, contrôle `117975116648`, build `6f8de76a-4b95-4791-8f0e-98329c71e708` :
+  **failure**, terminé le 19/10/2026 à 09:00:34 UTC. Aucun texte de journal et aucune
+  annotation dans la réponse GitHub. La cause exacte de cette nouvelle tentative
+  n’est donc pas vérifiée ; ne pas prétendre que ses tests ou son build ont réussi.
+- La commande du tableau de bord doit utiliser `deploy:cloudflare` et l’origine
+  réelle doit être fournie. Le script de configuration préparé ne peut pas modifier
+  les paramètres Workers Builds depuis cet environnement sans accès Cloudflare.
+
 ## Preuves distantes reçues
 
 Le transfert précédent vers GitHub `main` est confirmé au commit

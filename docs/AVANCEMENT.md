@@ -5,6 +5,14 @@
 Branche locale : `feat/passerelle-mcp` ; les sources sont livrées sur GitHub `main`.
 Le SHA du lot est celui du commit contenant ces changements, à contrôler avec Git.
 
+Livraison applicative confirmée : GitHub `main` au commit
+`b79fe702d1f7801c2900407ad78f68da2dc80923`, arbre `13cb294e5c1ee625c9f85bc67ec264011f995b26`,
+identique au commit local `42466f8`. **125 fichiers comparés, aucune différence.**
+Le contrôle Workers Builds de ce commit s’est terminé en échec le 19 octobre à
+09:00:34 UTC. GitHub ne fournit ni journal détaillé ni annotation : ne pas déduire
+l’étape exacte de cet échec. Origine HTTPS toujours attendue ; ne pas relancer
+sans sélectionner la nouvelle commande et compléter la configuration.
+
 ## Réalisé
 
 - Identifiant D1 fourni par le propriétaire conservé dans `cloudflare.production.json` :
