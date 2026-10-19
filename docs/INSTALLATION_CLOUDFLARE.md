@@ -1,13 +1,70 @@
-> Autorisation actualisée : le déploiement automatique est demandé depuis le 14 octobre
-> 2026. Les commandes ci-dessous restent la procédure Cloudflare ; aucune ressource
-> facturable supplémentaire n’est autorisée implicitement. Les accès Cloudflare et
-> la validation complète manquent encore dans cet environnement.
-
 # Installation et déploiement Cloudflare
 
-État : procédure préparée, aucun déploiement effectué. Ne déployer qu’après compilation,
-tests HTTP, tests navigateur et revue des blocages dans VALIDATION.md. Un Worker
-statique seul ne fournit ni la base, ni les fichiers, ni l’exécution des agents.
+Le déploiement automatique est autorisé depuis le 14 octobre 2026. Aucun frais
+supplémentaire n’est autorisé implicitement. État du 19 octobre : le build précédent
+a réussi, mais le Worker n’a pas été publié (D1 introuvable, code 10181).
+Le site exige Workers, D1, R2 privé et Queues. Codex/Claude Code isolés restent un
+chantier distinct ; la publication ne les rendra pas opérationnels.
+
+## Depuis le tableau de bord, y compris sur téléphone
+
+1. Ouvrir **Workers et Pages → atelier → Paramètres → Builds** (ou « Build »).
+   Garder le dépôt `martinznt/Atelier` et la branche de production **main**.
+2. Dans la configuration du build, conserver **`npm run build`** comme commande
+   de compilation. Remplacer la commande de déploiement **`npx wrangler deploy`**
+   par **`npm run deploy:cloudflare`**. Enregistrer.
+3. Renseigner la vraie adresse dans `cloudflare.production.json`, champ `origin`,
+   ou ajouter la variable de **build** `ATELIER_PUBLIC_ORIGIN` avec cette adresse
+   HTTPS complète, sans slash final. La trouver dans **Workers et Pages → Votre
+   sous-domaine**, ou **atelier → Paramètres → Domaines et routes**. Le sous-domaine
+   du compte n’est pas forcément son nom ni son identifiant. Ne pas deviner l’URL.
+4. Les identifiants D1 et compte de ce dépôt sont déjà renseignés. Le D1 vient du
+   propriétaire ; il doit encore être vérifié par Cloudflare. La Queue `atelier-tasks`
+   a été créée lors du build précédent : ne pas la recréer. Vérifier que le bucket
+   R2 **privé** `atelier-private-files` existe. Ne pas activer son accès public.
+5. Vérifier les droits du jeton utilisé par Workers Builds : publication du Worker,
+   modifications D1 pour les migrations, R2 et Queues du compte concerné. Un jeton
+   généré pour un simple Worker n’a pas forcément les droits D1. Modifier ce jeton
+   dans Cloudflare si nécessaire, sans copier sa valeur dans le chat ou GitHub.
+6. Configurer **MASTER_KEY** comme **secret d’exécution du Worker**, dans
+   **Paramètres → Variables et secrets**, selon la section dédiée ci-dessous.
+   Un secret placé seulement dans les paramètres du build n’est pas accessible à
+   l’application. Les identifiants D1/compte ne sont pas des clés de chiffrement.
+7. Relancer le dernier build de **main** une fois ces paramètres prêts. Contrôler
+   l’application des cinq migrations, la réussite du déploiement et l’URL retournée.
+   Un résultat de dry-run ou d’envoi d’assets ne suffit pas.
+
+Si l’interface ne permet pas encore de régler le secret d’exécution, conserver ce
+point comme blocage de mise en service des connexions ; ne pas prétendre que tous
+les services fonctionnent après le seul déploiement du Worker. Donner les étapes
+utiles au propriétaire directement dans la conversation, une fois le point atteint.
+
+Source officielle du parcours et de la séparation build/exécution :
+https://developers.cloudflare.com/workers/ci-cd/builds/configuration/.
+Sous-domaine : https://developers.cloudflare.com/workers/configuration/routing/workers-dev/.
+
+## Configuration de production préparée par le dépôt
+
+`cloudflare.production.json` contient uniquement `databaseId`, `accountId`, `origin`.
+Le D1 reçu est `eea113c4-a194-4567-a15c-d1b61d9c6867`. L’origine reste `null` en
+attendant la vraie adresse. Aucun token ou MASTER_KEY ne doit figurer dans ce fichier.
+
+`npm run configure:cloudflare` lit les paramètres et crée `wrangler.production.jsonc`,
+ignoré par Git. Le modèle `wrangler.jsonc` reste adapté au développement local.
+Priorité des valeurs : variable de build explicite, copie de production existante,
+paramètres suivis pour un checkout neuf, puis modèle local. Les variables possibles
+sont `ATELIER_D1_DATABASE_ID`, `CLOUDFLARE_ACCOUNT_ID`, `ATELIER_PUBLIC_ORIGIN`.
+L’adresse workers.dev du bon Worker active sa route ; un domaine personnalisé exige
+une route explicitement préparée dans la copie de production. Aucune route n’est
+inventée. La configuration locale/incomplète et les secrets en clair sont refusés.
+
+La commande **`npm run deploy:cloudflare`** enchaîne configuration, migrations D1
+**distantes**, puis publication avec la même copie. Elle s’arrête au premier échec.
+Le script ne crée pas lui-même de ressource ; Wrangler peut proposer leur création
+si elles manquent. Vérifier leur existence et les coûts avant d’accepter une création.
+Conserver la base et ses sauvegardes : ne pas la supprimer pour relancer un build.
+
+## Installation depuis un ordinateur
 
 ## 1. Préparer le dépôt
 
@@ -16,9 +73,10 @@ Exécuter les commandes du README. Commiter le verrou produit par `npm install`.
 Vérifier les dépendances, puis `npm run check`, `npm test`, `npm run build` et E2E.
 Les tests locaux ne prouvent pas le bon fonctionnement d’une connexion distante.
 
-Le fichier `wrangler.jsonc` est une configuration locale et un exemple pour la
-production : il ne contient aucun compte Cloudflare. Copier ce fichier vers
-`wrangler.production.jsonc` (ignoré par Git) et modifier cette copie.
+Après avoir renseigné les paramètres non secrets ci-dessus, exécuter
+`npm run configure:cloudflare`. Pour un autre compte, utiliser les variables de
+build ou adapter les paramètres suivis avant la première génération. Une copie
+existante de production est conservée sauf remplacement explicite par une variable.
 
 Avant toute publication, `npm run deploy:check` liste les prérequis locaux manquants
 sans contacter Cloudflare. Il ne vérifie pas les droits des jetons ni les tests.
@@ -41,8 +99,10 @@ https://developers.cloudflare.com/queues/platform/pricing/.
 
 ## 3. Créer les ressources dans votre compte
 
-Ces commandes sont données pour votre exécution ultérieure. Elles peuvent créer
-des ressources facturables ; elles n’ont pas été exécutées dans cette session.
+Pour une nouvelle installation uniquement : examiner d’abord les ressources du
+compte. Ne pas recréer le D1 ou la Queue déjà identifiés pour ce déploiement. Les
+commandes suivantes créent des ressources et peuvent entraîner une facturation ;
+elles n’ont pas été exécutées par l’assistant.
 
 ```sh
 npx wrangler login
@@ -81,10 +141,10 @@ Les comptes et fichiers n’utilisent pas cette clé comme mot de passe utilisat
 Sauvegarder les ressources existantes avant migration ; pour une base neuve :
 
 ```sh
-npm run build:web
-npx wrangler d1 migrations apply atelier-db --remote --config wrangler.production.jsonc
+npm run build
+npm run configure:cloudflare
 npx wrangler deploy --dry-run --config wrangler.production.jsonc
-npx wrangler deploy --config wrangler.production.jsonc
+npm run deploy:cloudflare
 ```
 
 Le dernier appel publie et doit porter sur la version validée. Ne pas confondre un dry-run avec un
@@ -99,10 +159,10 @@ Après déconnexion, vérifier sur tous les appareils utilisés que les caches p
 sont effacés. Configurer `ALLOW_REGISTRATION=false` si les inscriptions doivent être
 fermées. Les comptes existants restent utilisables.
 
-Ne brancher aucun déploiement automatique GitHub/Cloudflare à ce dépôt tant qu’il
-n’est pas souhaité. Certains services déploient sur chaque push : le vérifier
-avant d’activer l’intégration Git. Aucune fusion ou publication n’est exécutée
-automatiquement par l’application.
+Le propriétaire a déjà activé Workers Builds sur `main` : un nouveau commit peut
+déclencher une compilation et une publication. Désactiver les builds de prévisualisation
+non configurés ; ne pas appliquer les migrations de production depuis une branche
+de test. Les déploiements des projets gérés dans Atelier restent des actions explicites.
 
 Les environnements Codex/Claude Code sont un chantier séparé. Ne pas monter la
 base D1 ou une clé maître dans un agent ; ne pas exposer un socket Docker au Worker.

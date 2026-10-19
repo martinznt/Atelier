@@ -20,3 +20,10 @@ Reprise du lot du 18 octobre : appliquer les cinq migrations dans l’ordre et l
 planification et catalogues ; elles ne prouvent pas une intégration fournisseur.
 L’évaluation automatique du meilleur modèle par mission reste à réaliser. Conserver
 les préférences explicites et ne pas remplacer ce manque par un classement inventé.
+
+Lot du 19 octobre : appliquer aussi les instructions de configuration Cloudflare
+ajoutées dans AGENTS.md. La compilation du lot précédent a réussi chez Cloudflare,
+mais la publication a échoué sur l’identifiant D1 nul. Lire le dernier état dans
+AVANCEMENT.md et VALIDATION.md ; ne pas réutiliser les anciens constats comme état actuel.
+La référence Open Chat du propriétaire est conservée en section 25 ; les réglages
+de l’équipe sont maintenant accessibles depuis « Mes assistants » dans la discussion.

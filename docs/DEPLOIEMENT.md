@@ -1,3 +1,33 @@
+# Déploiement Cloudflare — état du 19 octobre 2026
+
+La compilation précédente a **réussi** chez Cloudflare. La publication a échoué au
+code 10181 : le binding DB utilisait encore l’identifiant D1 nul. Le journal du
+18 octobre prouve aussi l’envoi des assets et la création de `atelier-tasks`, sans
+prouver la mise en ligne du Worker. Le lot source correspondant est sur GitHub
+`main` au commit `35d5d2a10d087900eb7636be35deee76a94c2844`.
+
+L’identifiant fourni le 19 octobre par le propriétaire est maintenant conservé dans
+`cloudflare.production.json`. Ce fichier ne contient aucun jeton. L’identifiant de compte
+Cloudflare est aussi issu du journal réel ; l’origine publique reste à fournir.
+
+Commande de build : `npm run build`. Commande de déploiement à sélectionner dans
+Workers Builds : **`npm run deploy:cloudflare`**, à la place de `npx wrangler deploy`.
+Elle valide une copie `wrangler.production.jsonc`, applique les migrations distantes,
+puis déploie avec cette même copie. Une configuration incomplète s’arrête avant les
+mutations. Le modèle `wrangler.jsonc` conserve les paramètres de développement local.
+
+Blocages restants : origine HTTPS, existence/droits des ressources privées, MASTER_KEY
+d’exécution et validation du déploiement. Le secret d’exécution se règle dans
+Variables et secrets du Worker, distinctement des variables du build. Aucun jeton
+Cloudflare n’est disponible ici ; les actions du tableau de bord restent à effectuer
+par le propriétaire. Donner les étapes directement dans la conversation.
+
+Les nouvelles modifications de scripts/interface sont testées selon VALIDATION.md ;
+leur compilation complète et leur comportement navigateur doivent être vérifiés.
+Le guide actualisé est INSTALLATION_CLOUDFLARE.md. Les sections suivantes sont historiques.
+
+---
+
 # Lot du 18 octobre — compilation à revérifier avant publication
 
 TS2783 est corrigé dans les sources. Le lot ajoute les rôles et la planification,

@@ -1,3 +1,63 @@
+# Configuration Cloudflare et discussion simplifiée — 19 octobre 2026
+
+**Périmètre complet conservé ; 414 exigences suivies.** La référence d’usage Open Chat
+(AceTools Team) est enregistrée en section 25. Ce lot n’est pas la livraison finale.
+Branche locale : `feat/passerelle-mcp` ; les sources sont livrées sur GitHub `main`.
+Le SHA du lot est celui du commit contenant ces changements, à contrôler avec Git.
+
+## Réalisé
+
+- Identifiant D1 fourni par le propriétaire conservé dans `cloudflare.production.json` :
+  `eea113c4-a194-4567-a15c-d1b61d9c6867`. Compte Cloudflare issu du journal réel.
+  Ce fichier contient seulement des paramètres non secrets ; l’origine reste `null`
+  tant que le vrai sous-domaine n’a pas été communiqué.
+- `npm run configure:cloudflare` construit une copie de production après contrôle de
+  l’origine HTTPS, des ressources déclarées et de l’absence de secret en clair.
+  Les variables de build peuvent remplacer les valeurs suivies. Une copie locale
+  de production existante et ses routes sont préservées, sauf remplacement explicite.
+- `npm run deploy:cloudflare` applique les migrations distantes avant de publier.
+  La commande Cloudflare actuelle `npx wrangler deploy` doit être remplacée : elle
+  utilise encore le modèle local. Un paramètre manquant arrête la nouvelle chaîne
+  avant toute migration ou publication. Voir INSTALLATION_CLOUDFLARE.md.
+- Discussion allégée : compte et modèle résumés près du message ; « Mes assistants »
+  ouvre méthodes, rôles, limites et consentements. Les problèmes bloquants restent
+  visibles dans le fil. Les aides alimentent le brouillon sans envoyer de requête.
+  Le focus entre dans les fenêtres et revient au contrôle précédent s’il existe.
+
+## Vérifié
+
+- GitHub `main` relu : `35d5d2a10d087900eb7636be35deee76a94c2844`, arbre
+  `56792076bc468e53ec75051217d4cc6624a16783`, identique au lot local `fd32197`.
+  Les 122 fichiers du transfert précédent avaient été comparés sans différence.
+- Journal Cloudflare du 18 octobre 21:00–21:01 UTC fourni par le propriétaire :
+  typage, Vite, shell PWA et bundle Worker en dry-run réussis. TS2783 corrigé.
+  Assets téléversés ; Queue `atelier-tasks` créée. Publication du Worker **échouée**
+  avec le code 10181 : la configuration employait l’identifiant D1 nul.
+- 111 tests de régression exécutés dans ce lot, tous réussis, dont 10 nouveaux tests
+  de configuration. Syntaxe des 59 sources TS/TSX et scripts de configuration valide.
+  Ces contrôles ne sont pas une vérification réelle du compte Cloudflare.
+
+## Restant et prochaine étape
+
+1. Obtenir le véritable sous-domaine workers.dev ou l’origine HTTPS ; une question
+   courte est en attente dans la conversation. Ne pas deviner un domaine.
+2. Renseigner cette origine, choisir `npm run deploy:cloudflare` dans Workers Builds,
+   puis vérifier les droits D1, le bucket privé R2 et le secret d’exécution MASTER_KEY.
+   Le jeton du build n’est pas le secret de chiffrement de l’application.
+3. Relire le nouveau journal, confirmer les cinq migrations et le commit publié,
+   puis contrôler les parcours compte/projet/fichier et le navigateur. Les nouvelles
+   modifications d’interface n’ont pas encore de build ou test navigateur vérifié.
+4. Poursuivre les fonctions ouvertes : runtimes Codex/Claude Code, évaluations datées
+   des modèles, budgets monétaires, synchronisation étendue et critères d’acceptation.
+
+Aucun accès Cloudflare n’est disponible dans l’environnement de l’assistant. Le D1
+fourni n’a pas encore été interrogé ; R2, MASTER_KEY, CPU de scrypt et comportement
+mobile restent à vérifier. Ne pas présenter un build réussi comme un site opérationnel.
+Les sections suivantes sont l’historique daté ; les blocages de compilation du lot
+précédent sont levés par le journal Cloudflare décrit ci-dessus.
+
+---
+
 # Équipes, délais et catalogues — lot du 18 octobre 2026
 
 Périmètre complet conservé, avec les précisions des sections 23/24 du cahier des

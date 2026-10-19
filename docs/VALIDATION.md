@@ -1,3 +1,63 @@
+# Contrôles du 19 octobre 2026
+
+## Preuves distantes reçues
+
+Le transfert précédent vers GitHub `main` est confirmé au commit
+`35d5d2a10d087900eb7636be35deee76a94c2844` (arbre identique à `fd32197`, 122 fichiers).
+La branche a été relue le 19 octobre avant les nouvelles modifications.
+
+Journal Cloudflare fourni par le propriétaire, 18 octobre 2026, 21:00:18–21:01:04 UTC :
+
+| Étape | Résultat observé |
+| --- | --- |
+| Installation Bun | Réussie, 161 paquets |
+| `tsc --noEmit` | Réussi, sans TS2783 |
+| Vite | Réussi, 1599 modules ; JS principal 388,49 kB (120,06 kB gzip) |
+| Shell PWA | 8 ressources versionnées ; aucune réponse API mise en cache par ce script |
+| Wrangler dry-run | Réussi ; bundle Worker 1071,03 KiB (198,71 KiB gzip) |
+| Envoi des assets | 9 fichiers envoyés |
+| Provisionnement TASKS | Queue `atelier-tasks` créée |
+| Publication du Worker | Échec 10181 : identifiant D1 `00000000-0000-0000-0000-000000000000` introuvable |
+
+Cette preuve valide la compilation du lot précédent, pas les intégrations, l’installation
+PWA, l’accès hors ligne ou le fonctionnement en production. Le binding R2 affiché
+ne prouve pas l’existence du bucket. Aucun résultat positif du déploiement n’a été reçu.
+
+## Contrôles locaux du nouveau lot
+
+| Contrôle réellement exécuté | Résultat / portée |
+| --- | --- |
+| `npm run test:regressions` | 111 tests réussis ; 101 précédents + 10 de configuration |
+| `node tests/configure-cloudflare.test.mjs` | 10 réussis : origine et ID invalides, bindings, absence de secrets, copie indépendante, priorité des paramètres, conservation du fichier en cas d’échec |
+| `node tests/deploy-check.test.mjs` | 4 réussis, inclus dans les 111 |
+| `npm run configure:cloudflare` avec les paramètres suivis | Échec attendu, code 1 : origine HTTPS/route manquantes ; aucun fichier de production incomplet écrit, aucun appel réseau |
+| Analyse syntaxique Babel | 59 fichiers TS/TSX valides, y compris le panneau « Mes assistants » ; ce n’est pas un contrôle TypeScript |
+| `node --check` des deux scripts de configuration | Réussi |
+| `git diff --check` | Réussi |
+| `npm run check` / `npm run build` | Arrêt 127 : `tsc: not found`, dépendances locales absentes |
+| `npm test` | Arrêt 127 : `vitest: not found` ; aucun test Miniflare exécuté |
+
+Les valeurs des tests sont des fixtures. Le D1 réel fourni par le propriétaire est
+conservé dans un fichier non secret, mais son existence et ses permissions n’ont pas
+été vérifiées par l’assistant. Les 9 tests cœur et 27 tests passerelle du 18 octobre
+restent les dernières exécutions de ces suites ; ils n’ont pas été relancés pour ce lot.
+
+Les dépendances locales sont toujours absentes : aucun nouveau typage, build,
+Miniflare, navigateur ou visuel mobile n’est déclaré exécuté pour les changements
+actuels. Une première tentative d’analyse syntaxique via un sous-processus Git a
+rencontré EPERM ; l’analyse a ensuite réussi en lisant directement les fichiers.
+Aucune installation npm réseau n’a été répétée.
+
+Parcours à contrôler après le prochain build : ouverture/fermeture de « Mes assistants »
+au clavier et sur téléphone, modification des rôles, conservation du brouillon,
+autorisation explicite du partage, aides de rédaction, accès au choix selon les priorités.
+La fiche publique Open Chat a été consultée ; l’application Android n’a pas été exécutée.
+
+Les sections suivantes conservent l’historique. Leur mention d’un build Cloudflare
+non reçu ou encore bloqué ne décrit plus le résultat de `35d5d2a`.
+
+---
+
 # Validation des équipes et catalogues — 18 octobre 2026
 
 Contrôles effectués après les changements de ce lot :

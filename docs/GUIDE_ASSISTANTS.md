@@ -1,22 +1,26 @@
 # Préparer une équipe dans Atelier
 
-Ce parcours décrit le code du lot du 18 octobre. Le build, le navigateur et les
-connexions réelles restent à valider avant de présenter ce parcours comme livré.
+Parcours actualisé le 19 octobre : les réglages détaillés sont dans **Mes assistants**,
+pour laisser la place à la discussion. Le build précédent a réussi chez Cloudflare ;
+ce nouvel écran, le navigateur et les connexions réelles restent à valider.
 
 1. Ouvrir **Réglages → Connexions → Ajouter**. Choisir un service pris en charge.
 2. Donner un nom au compte, par exemple « Personnel » ou « Travail ». Ajouter son
    accès officiel et sélectionner les droits. Pour une API IA, accepter séparément
    sa facturation éventuelle. Tester l’accès, puis terminer. Répéter pour un second
    compte du même service si souhaité ; chaque secret reste séparé côté serveur.
-3. Dans un projet, ouvrir **Discussions**. Choisir une réponse, une comparaison,
+3. Dans un projet, ouvrir **Discussions**, puis **Choisir mes assistants** (ou
+   **Mes assistants** si une équipe est déjà choisie). Choisir une réponse, une comparaison,
    une réalisation suivie d’une relecture, ou une collaboration limitée en tours.
 4. Choisir jusqu’à trois connexions, les modèles et leurs missions. Les rôles
    sont modifiables ; aucune marque n’est désignée comme toujours meilleure.
 5. Ouvrir **Adapter selon mes priorités**. Pour chaque mission, classer ses candidats
    et remplaçants. Choisir démarrage rapide, priorité aux choix préférés, ou attente
    maximale. La proposition affiche le choix, sa raison et les données inconnues.
-6. Lire le contexte sélectionné et autoriser son partage aux connexions affichées.
-   Préparer une équipe ne lance aucune génération : l’envoi reste une action distincte.
+6. Autoriser le partage aux connexions affichées, puis **Revenir à la discussion**.
+   Le bouton **Contexte** permet de choisir et vérifier les sources. Les comptes et
+   modèles sont résumés près du message ; un problème d’équipe reste visible dans
+   le fil. Préparer une équipe ne lance aucune génération : l’envoi reste distinct.
 7. Si une attente est proposée, autoriser explicitement le lancement différé, puis
    programmer l’envoi. La tâche est conservée côté serveur et peut être annulée.
    Le cron reprend les tâches dues, avec une précision d’environ cinq minutes,

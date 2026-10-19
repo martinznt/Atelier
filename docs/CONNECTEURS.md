@@ -157,3 +157,13 @@ initial (`60f9b7fe`). Les sources locales ne doivent pas être annoncées prése
 sur GitHub avant un envoi confirmé et une relecture. Les tests OAuth/MCP locaux
 passent après corrections de concurrence ; aucun client externe n’a été connecté
 pour ce lot et aucun quota fournisseur, abonnement ou appel payant n’a été utilisé.
+
+## Évidence d’hébergement du 19 octobre
+
+La liaison GitHub → Cloudflare configurée par le propriétaire a réellement compilé
+le lot `35d5d2a`, envoyé les assets et créé atelier-tasks. La publication du Worker
+a échoué sur le D1 nul (10181). L’ID D1 transmis ensuite est enregistré pour la
+production, mais ni les droits ni son contenu n’ont été interrogés par l’assistant.
+Cela ne valide pas le connecteur Cloudflare Pages intégré à Atelier, les API IA,
+ou les clients MCP. La configuration de l’hébergement et les connexions de chaque
+utilisateur restent des systèmes distincts.

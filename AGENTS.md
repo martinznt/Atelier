@@ -40,3 +40,11 @@ reset, contourner l’accord de partage ou rejouer une tâche à issue incertain
 Conserver le contrôle atomique de date, propriétaire et statut dans la prise de
 tâche. Une réponse de test ancienne ou d’un secret remplacé ne doit pas écraser
 les informations récentes. Lire `docs/GUIDE_ASSISTANTS.md` et le rapport actualisé.
+
+Reprise du 19 octobre : les identifiants Cloudflare non secrets sont dans
+`cloudflare.production.json`. Ne pas déployer directement `wrangler.jsonc`, qui
+reste local. Lire INSTALLATION_CLOUDFLARE.md et utiliser `npm run deploy:cloudflare` :
+configuration validée, migrations distantes, puis Worker. L’origine HTTPS réelle
+reste à fournir ; aucune réussite distante n’est déduite des tests de configuration.
+La section 25 du cahier des charges précise la référence Open Chat. Dans Discussions,
+« Mes assistants » ouvre les réglages ; préserver choix, brouillons et consentements.

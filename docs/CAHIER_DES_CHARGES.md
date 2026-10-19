@@ -676,3 +676,20 @@ qualité ou une réinitialisation d’abonnement. Un catalogue de modèles dispo
 n’est pas un classement de leurs compétences. Sans évaluation pertinente disponible,
 afficher que le choix repose sur les préférences de l’utilisateur. Aucun changement
 de compte, fournisseur ou coût ne doit devenir implicite pendant une tâche.
+
+## 25. Inspiration d’usage — 19 octobre 2026
+
+« Je veux que tu t'inspire de open chat, appli de bot ia mais en beaucoup mieux mais le principe est la ».
+
+Référence précisée par le propriétaire : [Open Chat — Appli de bot IA, AceTools Team](https://play.google.com/store/apps/details?id=open.chat.gpt.aichat.bot.free.app&hl=fr),
+identifiant Android `open.chat.gpt.aichat.bot.free.app`. La fiche publique a été
+consultée le 19 octobre ; l’application Android n’a pas été exécutée dans cette session.
+
+Conserver une discussion centrale simple, un historique accessible et les outils
+à portée de main. Dans Atelier, plusieurs comptes et assistants doivent coopérer
+avec contexte choisi, rôles personnalisés et limites visibles. Présenter leurs
+réglages progressivement pour préserver la place des échanges sur téléphone.
+Le périmètre projets, fichiers, GitHub, déploiements et mémoire contrôlée demeure
+entier. Garder une identité propre ; ne pas reprendre les promesses commerciales
+de la référence comme des résultats vérifiés. Valider les parcours sur plusieurs
+formats d’écran avant de revendiquer une meilleure ergonomie.

@@ -114,7 +114,9 @@ Docker général dans un agent. Aucun tel service n’a été provisionné ou si
 
 ## Hébergement et dépenses
 
-Aucune publication ni ressource payante créée. Workers, D1, R2, Queues, sauvegardes et
+Aucune publication réussie confirmée. Le journal Cloudflare du 18 octobre prouve la
+création de la Queue atelier-tasks ; aucune facture ne permet d’en déduire son coût.
+Workers, D1, R2, Queues, sauvegardes et
 machines d’agents éventuelles ont des coûts distincts. Une formule Workers payante
 peut être nécessaire au CPU de scrypt. Les API IA sont facturées selon leurs comptes,
 séparément des abonnements grand public ; les méthodes d’abonnement des agents
@@ -193,3 +195,19 @@ pour les appels IA). Un résultat incomplet ne remplace pas le catalogue précé
 Restent : évaluations comparables et datées pour recommander automatiquement le
 meilleur modèle par mission, mesures de latence/coût, consommation ventilée par appel,
 authentification officielle et exécution isolée des agents Codex/Claude Code.
+
+## Configuration et interface du 19 octobre
+
+Les identifiants de ressources non secrets sont séparés du modèle local dans
+`cloudflare.production.json`. Le générateur contrôle leur forme, l’origine HTTPS
+et les bindings, puis écrit une copie privée de production. Il ne vérifie pas
+l’existence distante des ressources. Les migrations sont appliquées à la base
+configurée avant le déploiement du Worker, sans recréer ni purger cette base.
+La chaîne s’arrête avant les mutations quand la configuration manque.
+
+L’écran de discussion résume les comptes et modèles choisis. Les réglages d’équipe
+sont dans une fenêtre « Mes assistants » ; les erreurs bloquantes et les actions
+Contexte/Envoyer restent près du message. Le déplacement de ces contrôles conserve
+le même état React et la même sauvegarde de brouillon/équipe, sans modifier les
+permissions serveur. La référence d’usage est décrite en section 25 du cahier des
+charges ; aucun appel aux services d’Open Chat n’est ajouté.

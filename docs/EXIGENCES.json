@@ -2659,9 +2659,9 @@
     "id": "REQ-16-003",
     "section": 16,
     "exigence": "- compilation et analyse statique ;",
-    "statut": "bloqué",
-    "preuve": "tests/ et docs/VALIDATION.md",
-    "limite": "Dépendances npm non installées ; matériel/accès fournisseur manquants selon scénario. Test non exécuté, aucune réussite revendiquée."
+    "statut": "réalisé",
+    "preuve": "Journal Cloudflare du 18/10/2026 : tsc, Vite, shell PWA et bundle Worker réussis pour main 35d5d2a ; docs/VALIDATION.md",
+    "limite": "La compilation du lot du 19/10 reste à exécuter ; seule la syntaxe de ses sources TS/TSX a été analysée localement. Aucun test navigateur déduit du build."
   },
   {
     "id": "REQ-16-004",
@@ -2924,32 +2924,32 @@
     "section": 17,
     "exigence": "- configuration d’exemple sans secrets ;",
     "statut": "réalisé",
-    "preuve": "README.md, docs/, migrations/",
-    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+    "preuve": "wrangler.jsonc ; cloudflare.production.json ; scripts/configure-cloudflare.mjs ; 10 tests natifs réussis",
+    "limite": "Copie de production contrôlée localement. Origine HTTPS réelle à fournir ; existence et droits D1/R2/Queues et MASTER_KEY non vérifiés."
   },
   {
     "id": "REQ-17-005",
     "section": 17,
     "exigence": "- documentation d’installation ;",
     "statut": "réalisé",
-    "preuve": "README.md, docs/, migrations/",
-    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+    "preuve": "docs/INSTALLATION_CLOUDFLARE.md ; package.json deploy:cloudflare ; docs/DEPLOIEMENT.md",
+    "limite": "Procédure préparée et identifiant D1 fourni enregistré ; migrations distantes et publication du nouveau lot non exécutées. Donner les étapes dans la conversation."
   },
   {
     "id": "REQ-17-006",
     "section": 17,
     "exigence": "- procédure de lancement ;",
     "statut": "réalisé",
-    "preuve": "README.md, docs/, migrations/",
-    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+    "preuve": "docs/INSTALLATION_CLOUDFLARE.md ; package.json deploy:cloudflare ; docs/DEPLOIEMENT.md",
+    "limite": "Procédure préparée et identifiant D1 fourni enregistré ; migrations distantes et publication du nouveau lot non exécutées. Donner les étapes dans la conversation."
   },
   {
     "id": "REQ-17-007",
     "section": 17,
     "exigence": "- configuration des services ;",
     "statut": "réalisé",
-    "preuve": "README.md, docs/, migrations/",
-    "limite": "Code ou document présent. Compilation, HTTP, navigateur et fournisseurs non validés ; voir VALIDATION.md."
+    "preuve": "docs/INSTALLATION_CLOUDFLARE.md ; package.json deploy:cloudflare ; docs/DEPLOIEMENT.md",
+    "limite": "Procédure préparée et identifiant D1 fourni enregistré ; migrations distantes et publication du nouveau lot non exécutées. Donner les étapes dans la conversation."
   },
   {
     "id": "REQ-17-008",
@@ -3012,8 +3012,8 @@
     "section": 17,
     "exigence": "Ne publie pas publiquement et n’engage pas de frais sans autorisation explicite. Prépare tout ce qui est nécessaire pour que la dernière validation porte sur un résultat concret et vérifiable.",
     "statut": "vérifié",
-    "preuve": "wrangler.jsonc workers_dev=false ; workflow manuel ; aucune commande de déploiement exécutée",
-    "limite": "Déploiement explicitement réservé au propriétaire."
+    "preuve": "Autorisation utilisateur du 14/10/2026, confirmée ensuite ; docs/CAHIER_DES_CHARGES.md sections 20/22 ; journal Cloudflare du 18/10",
+    "limite": "Déploiement automatique autorisé ; aucun frais supplémentaire ni accès public aux contenus privés autorisé implicitement. Aucun succès de publication confirmé."
   },
   {
     "id": "REQ-17-016",
@@ -3164,16 +3164,16 @@
     "section": 22,
     "exigence": "Conserver les sources du site sur main du dépôt GitHub Atelier.",
     "statut": "vérifié",
-    "preuve": "GitHub main ecc78e892ffdef9103a5f371d0be1d9052ebe098 ; 106 fichiers comparés au commit local 3d49fd6 ; docs/VALIDATION.md",
-    "limite": "Le transfert des sources ne valide ni le fonctionnement complet ni le déploiement."
+    "preuve": "GitHub main 35d5d2a10d087900eb7636be35deee76a94c2844 relu le 19/10 ; 122 fichiers comparés au commit local fd32197 ; docs/VALIDATION.md",
+    "limite": "Dernière livraison comparée avant ce lot ; vérifier la référence main après transfert des nouveaux changements. Une livraison source ne valide pas le déploiement."
   },
   {
     "id": "REQ-22-002",
     "section": 22,
     "exigence": "Donner directement dans la conversation des instructions simples, étape par étape, pour les manipulations que le propriétaire doit effectuer.",
     "statut": "réalisé",
-    "preuve": "Conversation du 17 octobre 2026 ; docs/INSTALLATION_CLOUDFLARE.md",
-    "limite": "Configuration réelle des secrets et déploiement toujours à vérifier ; ne pas transmettre de clés dans le chat."
+    "preuve": "Conversation du 19/10/2026 : collecte du D1, demande guidée du sous-domaine ; docs/INSTALLATION_CLOUDFLARE.md",
+    "limite": "Origine HTTPS et actions de configuration restantes dans Cloudflare ; ne pas demander de secret dans le chat."
   },
   {
     "id": "REQ-23-001",
@@ -3302,5 +3302,13 @@
     "statut": "réalisé",
     "preuve": "server/routes/tasks.ts ; server/worker.ts ; web/Chat.tsx ; tests/submission.test.mjs",
     "limite": "Proposition confirmée avant la tâche, accord de partage et clé d’idempotence ; relais pendant une tâche encore manuel."
+  },
+  {
+    "id": "REQ-25-001",
+    "section": 25,
+    "exigence": "S’inspirer de la simplicité de Open Chat — Appli de bot IA (AceTools Team, open.chat.gpt.aichat.bot.free.app), en conservant le périmètre complet d’Atelier et une expérience de collaboration plus utile.",
+    "statut": "à faire",
+    "preuve": "Lien fourni par le propriétaire et fiche Google Play consultée le 19/10/2026 ; docs/CAHIER_DES_CHARGES.md section 25 ; web/Chat.tsx panneau Mes assistants",
+    "limite": "Première simplification écrite ; nouvelle compilation et vérification visuelle mobile/navigateur encore nécessaires. Aucun usage de l’application Android ni comparaison de supériorité vérifiés."
   }
 ]

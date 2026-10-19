@@ -1,17 +1,16 @@
-> Mise à jour du 18 octobre 2026 : le site complet reste le périmètre demandé.
-> Une mémoire entre assistants (imports, contexte, MCP/OAuth, relais) est intégrée
-> aux projets. Voir [le fonctionnement et les limites](docs/PASSERELLE.md).
-> Déploiement automatique désormais autorisé, mais **aucune version publiée**.
-> Les tests locaux sont détaillés dans [VALIDATION.md](docs/VALIDATION.md) ; compilation
-> et vérification des connexions réelles restent bloquées par les accès manquants.
+> Mise à jour du 19 octobre 2026 : le dernier build Cloudflare a compilé le site,
+> puis la publication a échoué sur un identifiant D1 nul. Le véritable identifiant
+> est conservé dans `cloudflare.production.json` ; l’origine HTTPS reste à renseigner.
+> Voir [le déploiement](docs/INSTALLATION_CLOUDFLARE.md) et [les validations](docs/VALIDATION.md).
+> Le périmètre complet, y compris la [mémoire partagée](docs/PASSERELLE.md), reste demandé.
 
 # Atelier
 
 Un espace personnel, en français, pour retrouver ses projets, passer d’un assistant à l’autre avec un contexte choisi et conserver ses fichiers. Interface responsive Android, iPhone/iPad et ordinateur ; installation progressive en PWA.
 
-**État : application en développement, validation complète encore bloquée. Ce n’est pas la livraison finale du cahier des charges.** Les dépendances n’ont pas pu être installées dans la session : compilation, tests HTTP D1 et tests navigateur sont préparés mais pas encore exécutés. Consultez [le rapport de validation](docs/VALIDATION.md) avant toute mise en ligne.
+**État : application en développement ; aucune publication réussie confirmée. Ce n’est pas la livraison finale du cahier des charges.** Le lot précédent a passé TypeScript et le build chez Cloudflare. Les tests HTTP D1, navigateur et connecteurs réels restent à effectuer ; les changements du 19 octobre nécessitent une nouvelle compilation.
 
-Le dépôt est privé : [martinznt/Atelier](https://github.com/martinznt/Atelier). Une intégration de build Cloudflare a été lancée par le propriétaire et a échoué sur TS2783 ; le correctif est dans les sources. Aucun succès de déploiement n’est confirmé. Le déploiement automatique est autorisé depuis le 14 octobre, après validation ; aucun hébergement du site complet n’est encore opérationnel.
+Le dépôt privé est [martinznt/Atelier](https://github.com/martinznt/Atelier), branche `main`. Le déploiement automatique est autorisé depuis le 14 octobre. La discussion garde les échanges au centre ; « Mes assistants » regroupe comptes, modèles, rôles et limites, selon la demande d’une expérience simple inspirée d’Open Chat.
 
 ## Ce que contient le lot
 
@@ -65,13 +64,13 @@ Le verrou des dépendances doit être généré par le premier `npm install` ré
 
 Suivre [INSTALLATION_CLOUDFLARE.md](docs/INSTALLATION_CLOUDFLARE.md). Atelier utilise un **Worker avec assets, D1, R2 et Queues**, et ne peut pas être livré comme simple dossier Pages statique. Le scrypt nécessite un budget CPU adapté ; une formule Workers payante peut être nécessaire. R2, Queues, stockage et API IA ont leurs propres coûts et conditions.
 
-La configuration inclut volontairement un identifiant D1 nul et `workers_dev: false` : aucun compte ou domaine n’a été inventé. Remplacez ces valeurs dans une copie locale de la configuration lors de votre propre déploiement.
+Dans Workers Builds, conserver `npm run build` et choisir **`npm run deploy:cloudflare`** comme commande de déploiement. Le script lit les paramètres non secrets de `cloudflare.production.json`, vérifie l’origine HTTPS, génère la copie de production, applique les migrations puis publie. L’origine actuellement `null` doit être remplacée par la vraie adresse ou par la variable de build `ATELIER_PUBLIC_ORIGIN`. `wrangler.jsonc` reste le modèle local ; ne pas le publier directement. Les ressources et le secret serveur doivent être configurés selon le guide.
 
 ## Références communes aux assistants
 
 - [Cahier des charges intégral](docs/CAHIER_DES_CHARGES.md), avec toutes les précisions utilisateur.
 - [Avancement et prochaine étape](docs/AVANCEMENT.md).
-- [413 exigences suivies individuellement](docs/EXIGENCES.json).
+- [414 exigences suivies individuellement](docs/EXIGENCES.json).
 - [Architecture](docs/ARCHITECTURE.md), [connecteurs](docs/CONNECTEURS.md), [validation](docs/VALIDATION.md).
 - [Sécurité](docs/SECURITE.md), [sauvegarde et restauration](docs/SAUVEGARDES.md).
 - `AGENTS.md` et `CLAUDE.md` renvoient vers ces mêmes documents.
