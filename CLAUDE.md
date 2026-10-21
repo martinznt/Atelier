@@ -27,3 +27,16 @@ mais la publication a échoué sur l’identifiant D1 nul. Lire le dernier état
 AVANCEMENT.md et VALIDATION.md ; ne pas réutiliser les anciens constats comme état actuel.
 La référence Open Chat du propriétaire est conservée en section 25 ; les réglages
 de l’équipe sont maintenant accessibles depuis « Mes assistants » dans la discussion.
+
+## Refonte gratuite demandée le 19 octobre (reprise du 21)
+
+Lire aussi `docs/REFONTE_GRATUITE.md`, suivi RF dans EXIGENCES.json. L’origine
+réelle est maintenant connue et conservée dans cloudflare.production.json. Branches
+dédiées Atelier et Outil-image ; préparer l’intégration main après validation.
+Le propriétaire autorise explicitement l’intégration sur une branche Outil-image.
+R2 est refusé, pas de nouvelle carte ou offre payante obligatoire. Les cinq premières
+migrations sont déjà appliquées selon le propriétaire : uniquement migrations
+additives. Exécuter `npm run test:storage` en plus des contrôles précédents.
+Ne pas rejouer les longues demandes réseau interrompues ; documenter la compilation
+bloquée et poursuivre les tests disponibles. Les secrets Cloudflare sont absents
+de cet environnement ; ne pas utiliser le connecteur GitHub comme jeton applicatif.

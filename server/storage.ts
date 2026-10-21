@@ -1,20 +1,28 @@
 import {digest} from './crypto.ts';import {fail,now,one,owned,run,safeFilename,uid} from './core.ts';
 import type {Env,Row} from './types.ts';
+import {persistTextVersion,readTextVersion,storedText,StorageError,DEFAULT_STORAGE_BYTES,MAX_TEXT_BYTES} from './storage-store.ts';
+export {MAX_TEXT_BYTES};
+function storageFailure(error:unknown):never {if(error instanceof StorageError)fail(error.status,error.message);throw error;}
 export async function writeVersion(env:Env,user:string,file:string,bytes:Uint8Array,expected:number,state:'draft'|'final'|'incomplete'='final') {
- await owned(env,'files',file,user);
- if(bytes.byteLength>Number(env.MAX_FILE_MB||20)*1048576)fail(413,`Fichier trop volumineux (maximum ${env.MAX_FILE_MB||20} Mo).`);
- const quota=Number(env.STORAGE_LIMIT_MB||512)*1048576;
- const reserved=await run(env,'UPDATE users SET storage_used=storage_used+? WHERE id=? AND storage_used+?<=? AND deleted_at IS NULL',bytes.byteLength,user,bytes.byteLength,quota);
- if(!reserved.meta.changes)fail(413,'Le stockage est plein. Exportez ou supprimez explicitement des fichiers, ou augmentez le quota. Aucune version n’a été effacée.');
- const id=uid(),key=`${user}/${file}/${id}`,sha=await digest(bytes),date=now();
+ const f=await owned(env,'files',file,user);
+ if(!isTextFile(f.name,f.mime))fail(422,'Conservez ce fichier binaire dans GitHub ou sur votre appareil. Le stockage intégré est réservé aux petits textes, JSON et SVG.');
  try {
- await env.FILES.put(key,bytes,{customMetadata:{sha256:sha,user,file},httpMetadata:{contentType:'application/octet-stream'}});
- const results=await env.DB.batch([
- env.DB.prepare('INSERT INTO file_versions(id,file_id,user_id,version,size,sha256,object_key,state,created_at) SELECT ?,id,user_id,?,?,?, ?,?,? FROM files WHERE id=? AND user_id=? AND current_version=?').bind(id,expected+1,bytes.byteLength,sha,key,state,date,file,user,expected),
- env.DB.prepare('UPDATE files SET current_version=current_version+1,updated_at=? WHERE id=? AND user_id=? AND current_version=? AND EXISTS (SELECT 1 FROM file_versions WHERE id=?)').bind(date,file,user,expected,id)]);
- if(!results[0].meta.changes)fail(409,'Une autre version a été enregistrée. Rechargez le fichier ; votre contenu n’a pas remplacé cette version.');
+ const content=storedText(bytes),id=uid(),sha=await digest(bytes),date=now();
+ const configured=Number(env.STORAGE_LIMIT_MB)*1048576;
+ const quota=Number.isFinite(configured)&&configured>0?Math.min(configured,20*1048576):DEFAULT_STORAGE_BYTES;
+ await persistTextVersion(env.DB,{user,file,expected,id,content,size:bytes.byteLength,sha,state,date,quota});
  return {id,version:expected+1,size:bytes.byteLength,sha256:sha,state,created_at:date};
- }catch(error){await env.FILES.delete(key);await run(env,'UPDATE users SET storage_used=MAX(0,storage_used-?) WHERE id=?',bytes.byteLength,user);throw error;}
+ }catch(error){storageFailure(error);}
+}
+export function isTextFile(name:string,mime:string){return mime.startsWith('text/')||/^(application\/(json|[^;]+\+json|xml|javascript|x-yaml)|image\/svg\+xml)(;|$)/i.test(mime)||/\.(md|txt|json|js|ts|tsx|jsx|css|html|csv|xml|yml|yaml|py|sql|sh|svg|toml|rs|go|c|h|cpp|vue|svelte)$/i.test(name);}
+/** Provider boundary. Callers never access a bucket or an external token. */
+export async function readVersion(env:Env,user:string,version:{id:string;sha256:string;size:number}) {
+ try {
+  const text=await readTextVersion(env.DB,user,version.id);
+  const bytes=new TextEncoder().encode(text);
+  if(bytes.byteLength!==version.size||await digest(bytes)!==version.sha256)fail(409,'L’intégrité de cette version est incorrecte. Le téléchargement a été arrêté.');
+  return new Response(bytes as BodyInit);
+ }catch(error){storageFailure(error);}
 }
 export async function newFile(env:Env,user:string,project:string,name:string,mime:string,bytes:Uint8Array,metadata:Partial<Row>={}) {
  await owned(env,'projects',project,user);const id=uid(),date=now();

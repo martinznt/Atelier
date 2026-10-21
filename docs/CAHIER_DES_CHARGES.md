@@ -693,3 +693,9 @@ Le périmètre projets, fichiers, GitHub, déploiements et mémoire contrôlée 
 entier. Garder une identité propre ; ne pas reprendre les promesses commerciales
 de la référence comme des résultats vérifiés. Valider les parcours sur plusieurs
 formats d’écran avant de revendiquer une meilleure ergonomie.
+
+## 26. Refonte gratuite, bibliothèque et outils — 19 octobre 2026
+
+Le nouveau périmètre complet est conservé dans [REFONTE_GRATUITE.md](REFONTE_GRATUITE.md).
+Il complète ce document et prévaut sur les anciennes obligations R2/payantes.
+Les exigences RF sont suivies dans la même matrice EXIGENCES.json.

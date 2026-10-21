@@ -1,69 +1,65 @@
-# Sauvegardes, export et restauration
+# Sauvegardes et restauration — stockage sans R2
 
-## Ce qui existe
+Les exports utilisateur incluent projets, conversations, messages, mémoires,
+historiques, tâches et versions accessibles. Les métadonnées contiennent aussi les
+références GitHub ; elles seules ne constituent pas une sauvegarde autonome.
+Secrets, mots de passe, codes, sessions et autorisations OAuth sont exclus.
 
-Les exports utilisateur contiennent les données propres au compte et toutes les
-versions de ses fichiers, avec un manifeste SHA-256. Ils excluent secrets, mots de
-passe, codes et sessions. Le ZIP intégré est plafonné à 25 Mo ; pour un volume plus
-grand, exporter les métadonnées et les fichiers par lots. Un dépassement est
-signalé, jamais présenté comme un export complet. L’export reprenable de gros
-comptes reste à réaliser.
+Le ZIP intégré est borné à 25 Mio. Chaque fichier y porte taille et SHA-256 ; le
+contenu est vérifié avant téléchargement. Une version absente ou un dépassement
+interdit d’annoncer une archive complète. Les dépôts GitHub et fichiers uniquement
+locaux nécessitent un export séparé. L’export reprenable volumineux reste à réaliser.
 
-Le test `tests/schema_test.py` effectue réellement une sauvegarde SQLite et une
-restauration dans une base séparée, puis `PRAGMA integrity_check` et une lecture de
-projet. Il ne valide pas une restauration Cloudflare D1/R2.
+## Migration des anciennes versions
 
-## Développement local
+0006 est additive et conserve les cinq migrations et toutes les références
+file_versions.object_key existantes. Une ancienne référence R2 n’est pas convertie
+magiquement en contenu D1. Si un bucket ou une sauvegarde préexistait, conserver sa
+copie avant toute manipulation ; ne pas activer R2 pour ce projet. Sans copie des
+octets, le contenu ne peut pas être récupéré. L’historique reste visible et le serveur
+signale l’absence. L’import guidé de récupération reste à développer. Les nouvelles
+versions UTF-8 utilisent D1 ; les binaires et gros fichiers devront être associés
+à GitHub ou conservés localement par choix explicite.
 
-Arrêter `wrangler dev` pour figer simultanément la base locale et R2.
+## Sauvegarde locale
+
+Arrêter Wrangler, puis :
 
 ```sh
 npm run backup:local -- --stopped
 ```
 
-Le script copie `.wrangler/state` vers `backups/DATE/state` et calcule les SHA-256.
-Conserver `.dev.vars` séparément dans un coffre chiffré. Le script ne copie aucun
-secret. Pour restaurer : sauvegarder puis déplacer l’ancien `.wrangler/state` ;
-la destination doit être absente ou vide.
+Copie de .wrangler/state et manifeste SHA-256. Aucun secret .dev.vars copié ; conserver
+MASTER_KEY séparément dans un coffre chiffré. Une éventuelle ancienne émulation de
+bucket présente dans le volume est conservée par la copie, jamais supprimée.
+
+Restaurer dans une destination absente ou vide, après contrôle du manifeste :
 
 ```sh
 npm run restore:local -- backups/DATE --stopped
 ```
 
-Le script refuse les chemins suspects, vérifie les empreintes et n’écrase pas un
-volume existant. Restaurer la même MASTER_KEY pour retrouver les connexions.
+La clé MASTER_KEY correspondante est nécessaire pour déchiffrer les connexions.
 
-## Cloudflare
+## Production
 
-Avant mise en service, choisir fréquence, rétention, destination chiffrée et
-responsable. Exemple de politique à faire valider : sauvegarde quotidienne,
-rétention limitée, copie hors compte Cloudflare et exercice de restauration mensuel.
-Cette politique n’est pas activée automatiquement.
+Exporter la D1 existante avec la configuration réellement validée :
 
-D1 : exporter avec `wrangler d1 export atelier-db --remote --output ...` ou employer
-Time Travel si disponible sur le plan. R2 : copier **tous les objets privés** avec
-un outil S3 compatible et une identité limitée au bucket. Exporter un inventaire
-des objets et vérifier les empreintes SHA-256 contre `file_versions`.
+```sh
+npx wrangler d1 export atelier-db --remote --config wrangler.production.jsonc --output sauvegarde.sql
+```
 
-Mettre les écritures en maintenance durant le point de cohérence D1/R2, ou employer
-un protocole de snapshot conçu pour une sauvegarde en ligne. Une simple copie D1
-pendant les téléversements ne suffit pas. Les clés de chiffrement se sauvegardent
-à part et ne doivent pas être imprimées dans les commandes ou journaux.
+Conserver le SQL chiffré hors du compte, avec date et empreinte. Cet export contient
+aussi les tables bridge_*, les nouvelles versions texte et les secrets chiffrés ;
+il est sensible et n’est pas l’export utilisateur ordinaire. Ne pas l’ajouter au dépôt.
+Time Travel Free est documenté sur 7 jours ; choisir et afficher une rétention des
+copies indépendante. Pas de restauration en écrasant la production pour tester.
 
-Test de restauration réel encore à faire : restaurer dans une base et un bucket
-isolés, vérifier toutes les références R2, ouvrir les comptes de test, télécharger
-chaque version et comparer les empreintes. Ne jamais tester en écrasant la production.
+Les tests schema_test.py effectuent réellement sauvegarde/restauration SQLite dans
+une base séparée, integrity_check et lecture. Les nouveaux tests stockage vérifient
+les migrations et versions sur SQLite. Une restauration Cloudflare réelle et une
+restauration complète GitHub/IndexedDB restent non effectuées.
 
-Une suppression de compte enlève les données actives ; les sauvegardes existantes
-expirent à la fin de leur rétention. Documenter cette durée dans l’interface avant
-ouverture publique. Les dépôts et déploiements externes ne sont pas supprimés.
-
-## Mémoire entre assistants
-
-Les tables `bridge_*` appartiennent à la même base D1 et doivent être comprises dans
-les sauvegardes administrateur. L’export utilisateur inclut contexte, historique,
-conversations importées, messages et relais ; il exclut les secrets et jetons OAuth.
-L’export JSONL de chaque mémoire convient aux grands ensembles textuels dans les
-limites documentées dans PASSERELLE.md. Son import ne restaure pas une base D1 ni
-les connexions OAuth : ces accès doivent être réautorisés. Les fichiers sources
-importés restent dans R2 et nécessitent sa sauvegarde correspondante.
+Suppression du compte : efface les données actives D1 après désactivation/délai ;
+les dépôts et données externes restent inchangés. Les sauvegardes ont leur rétention
+propre, à configurer et communiquer avant ouverture publique.

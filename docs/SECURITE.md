@@ -1,3 +1,19 @@
+# Refonte du stockage — 21 octobre 2026
+
+Le serveur n’a plus de binding R2. Les versions texte D1 sont immuables et
+transactionnelles ; quotas par compte/plafond partagé, UTF-8 strict et SHA-256
+contrôlé en lecture. Une panne d’artefact ne fait pas perdre le message IA.
+Les anciennes références sont préservées ; contenu absent = erreur explicite.
+Le script de déploiement refuse les branches autres que main avant les migrations.
+
+Les 11 tests nouveaux passent sur SQLite et les régressions existantes sont
+préservées. Cela ne prouve pas les routes Hono/Miniflare, le navigateur ou la
+production. Scrypt n’est pas affaibli ; son coût sur Workers Free reste à mesurer.
+Les anciennes mentions R2 ci-dessous décrivent les lots historiques, pas un prérequis
+actuel. Les nouveaux connecteurs URL et échange d’icônes restent à implémenter et auditer.
+
+---
+
 # Sécurité et limites à valider
 
 ## Mesures implémentées

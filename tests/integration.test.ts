@@ -6,7 +6,7 @@ async function call(path:string,method='GET',data?:unknown,cookie=a,headers:Reco
 async function json(path:string,method='GET',data?:unknown,cookie=a,headers:Record<string,string>={}){const r=await call(path,method,data,cookie,headers);return {status:r.status,body:await r.json() as any,cookie:r.headers.get('set-cookie')?.split(';')[0]};}
 beforeAll(async()=>{
  await mkdir('test-results',{recursive:true});await build({entryPoints:['server/index.ts'],outfile:'test-results/worker.mjs',bundle:true,format:'esm',platform:'browser',target:'es2022'});
- mf=new Miniflare({modules:true,scriptPath:'test-results/worker.mjs',compatibilityDate:'2025-10-24',compatibilityFlags:['nodejs_compat'],d1Databases:['DB'],r2Buckets:['FILES'],queueProducers:{TASKS:'atelier-tasks'},bindings:{MASTER_KEY:Buffer.alloc(32,7).toString('base64'),APP_ORIGIN:origin,ALLOW_REGISTRATION:'true',STORAGE_LIMIT_MB:'1',MAX_FILE_MB:'1'}});
+ mf=new Miniflare({modules:true,scriptPath:'test-results/worker.mjs',compatibilityDate:'2025-10-24',compatibilityFlags:['nodejs_compat'],d1Databases:['DB'],queueProducers:{TASKS:'atelier-tasks'},bindings:{MASTER_KEY:Buffer.alloc(32,7).toString('base64'),APP_ORIGIN:origin,ALLOW_REGISTRATION:'true',STORAGE_LIMIT_MB:'1',MAX_FILE_MB:'1'}});
  const db=await mf.getD1Database('DB');
  // Exercise the complete application schema, including bridge exports and OAuth tables.
  for(const migration of (await readdir('migrations')).filter(name=>/^\d+.*\.sql$/.test(name)).sort())await db.exec(await readFile(`migrations/${migration}`,'utf8'));
@@ -97,7 +97,7 @@ describe('compte affiché et cookie partagé entre onglets',()=>{
   expect((await call('/auth/logout','POST',{},'',{'X-Atelier-Account':ownerA})).status).toBe(200);
  });
 });
-describe('sécurité et persistance réelles D1/R2 locales',()=>{
+describe('sécurité et persistance réelles D1 sans R2 locales',()=>{
  it('hachage scrypt bibliothèque, mot de passe incorrect et sel distinct',async()=>{const hash=await hashPassword('test mot de passe 123');expect(await verifyPassword('test mot de passe 123',hash)).toBe(true);expect(await verifyPassword('mauvais',hash)).toBe(false);expect(await hashPassword('test mot de passe 123')).not.toBe(hash);});
  it('compte sans email, sessions sécurisées et refus sans session',async()=>{expect((await json('/auth/me')).body.user.username).toBe('alice');expect((await json('/projects','GET',undefined,'')).status).toBe(401);const login=await call('/auth/login','POST',{username:'alice',password:'phrase-de-test-solide-2026'},'');expect(login.headers.get('set-cookie')).toMatch(/HttpOnly/i);expect(login.headers.get('set-cookie')).toMatch(/SameSite=Strict/i);});
  it('refuse explicitement les URL et IDs privés de A pour B',async()=>{for(const path of [`/projects/${project}`,`/conversations/${conversation}/messages`,`/files/${file}/download`,`/files/${file}/versions`,`/files/${file}/preview`])expect((await call(path,'GET',undefined,b)).status,path).toBe(404);expect((await json('/conversations','POST',{project_id:project,title:'Intrusion'},b)).status).toBe(404);expect((await json('/projects','GET',undefined,b)).body.items).toEqual([]);expect((await json('/files/zip','POST',{ids:[file]},b)).status).toBe(404);});

@@ -1,3 +1,17 @@
+# Reprise sans R2 — 21 octobre 2026
+
+La mission nouvelle remplace les anciennes consignes de création R2 ci-dessous.
+Suivre désormais INSTALLATION_CLOUDFLARE.md. L’origine réelle est connue, la D1
+existante est conservée et les cinq premières migrations sont déjà appliquées
+selon le propriétaire. Le dernier échec communiqué est R2 10085 ; ce lot retire
+ses dépendances dans le code et la configuration, avec migration additive 0006.
+
+Branche dédiée feat/stockage-gratuit-outils ; intégration main à préparer après
+contrôles. Aucun déploiement de cette refonte effectué. Le budget CPU d’authentification
+Workers Free, la compilation et les parcours navigateur restent à valider.
+
+---
+
 # Déploiement Cloudflare — état du 19 octobre 2026
 
 La compilation précédente a **réussi** chez Cloudflare. La publication a échoué au
