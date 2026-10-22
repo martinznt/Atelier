@@ -10,9 +10,9 @@ test('la configuration locale ne peut pas passer pour une configuration de publi
 test('les accès absents sont listés sans inventer ni exposer un secret',()=>{
  const checks=inspectDeployment({config:null});assert.equal(checks.length,5);assert.ok(checks.every(x=>!x.ok));
 });
-test('files et traitements durables sont nécessaires même si le front est compilé',()=>{
+test('les traitements durables restent nécessaires et R2 est facultatif',()=>{
  const config=structuredClone(base);delete config.queues;delete config.triggers;delete config.r2_buckets;
- const errors=missing(inspectDeployment({...presence,config}));for(const id of ['tasks','maintenance','files'])assert.ok(errors.includes(id));
+ const errors=missing(inspectDeployment({...presence,config}));for(const id of ['tasks','maintenance'])assert.ok(errors.includes(id));
 });
 test('origine externe sûre et identité de session autonome sont exigées',()=>{
  const config=structuredClone(base);config.vars.APP_ORIGIN='https://atelier.example/path';config.vars.SITES_AUTHENTICATION='true';config.vars.MASTER_KEY='fixture-not-a-key';

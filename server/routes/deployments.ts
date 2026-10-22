@@ -1,5 +1,5 @@
 import {Hono} from 'hono';import {z} from 'zod';import {zipSync} from 'fflate';
-import {credentialsFor} from './connections.ts';import {jsonRequest,request} from '../connectors/http.ts';import {externalAction} from '../actions.ts';import {getVersion} from '../storage.ts';
+import {credentialsFor} from './connections.ts';import {jsonRequest,request} from '../connectors/http.ts';import {externalAction} from '../actions.ts';import {getVersion,readVersion} from '../storage.ts';
 import {fail,jsonBody,many,now,owned,run,uid,userId} from '../core.ts';import type {AppEnv} from '../types.ts';
 export const deployments=new Hono<AppEnv>();
 const remoteId=z.string().regex(/^[a-zA-Z0-9_-]{1,100}$/);
@@ -24,7 +24,7 @@ deployments.post('/:id/preview',async c=>{
  if(t.environment!=='preview')fail(400,'Sélectionnez une cible de test.');
  return c.json(await externalAction(c.env,userId(c),t.project_id,d.idempotency_key,'deployment',d,async()=>{
  const archive:Record<string,Uint8Array>={};let total=0;
- for(const selected of d.files){const {file,version}=await getVersion(c.env,userId(c),selected.id,selected.version);if(file.project_id!==t.project_id)fail(403,'Tous les fichiers doivent appartenir au projet.');if(selected.path.startsWith('/')||selected.path.split('/').some(p=>p==='..'||p==='.'||p==='')||selected.path.includes('\\')||archive[selected.path])fail(400,'Chemin de publication invalide ou dupliqué.');total+=version.size;if(total>20*1048576)fail(413,'Le déploiement ZIP est limité à 20 Mo dans ce lot.');const obj=await c.env.FILES.get(version.object_key);if(!obj)fail(404,'Contenu introuvable.');archive[selected.path]=new Uint8Array(await obj.arrayBuffer());}
+ for(const selected of d.files){const {file,version}=await getVersion(c.env,userId(c),selected.id,selected.version);if(file.project_id!==t.project_id)fail(403,'Tous les fichiers doivent appartenir au projet.');if(selected.path.startsWith('/')||selected.path.split('/').some(p=>p==='..'||p==='.'||p==='')||selected.path.includes('\\')||archive[selected.path])fail(400,'Chemin de publication invalide ou dupliqué.');total+=version.size;if(total>20*1048576)fail(413,'Le déploiement ZIP est limité à 20 Mo dans ce lot.');const obj=await readVersion(c.env,userId(c),version);if(!obj)fail(404,'Contenu introuvable.');archive[selected.path]=new Uint8Array(await obj.arrayBuffer());}
  if(!archive['index.html'])fail(400,'Un fichier doit être affecté au chemin index.html.');
  const response=await request('netlify',secret,`/api/v1/sites/${t.remote_id}/deploys?draft=true`,{method:'POST',headers:{'Content-Type':'application/zip'},body:zipSync(archive,{level:0}) as BodyInit});const result:any=await response.json();
  const id=uid();await run(c.env,'INSERT INTO deployments(id,user_id,project_id,target_id,remote_id,status,url,detail,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?)',id,userId(c),t.project_id,t.id,result.id,result.state,result.deploy_ssl_url||result.deploy_url||null,'Instantané des fichiers de la bibliothèque, aucun commit Git revendiqué.',now(),now());return {id,remote_id:result.id,status:result.state,url:result.deploy_ssl_url||result.deploy_url};

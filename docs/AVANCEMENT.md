@@ -1,3 +1,32 @@
+# Refonte gratuite — lot stockage du 21 octobre 2026
+
+Branche locale et GitHub : feat/stockage-gratuit-outils. Main distante de référence
+79a5e1a ; sa modification d’origine de production a été conservée. Nouvelle mission
+REFONTE_GRATUITE.md suivie dans la même matrice, sans retirer les exigences historiques.
+
+Réalisé : suppression des accès/bindings R2 dans serveur, contexte, fichiers,
+exports, comptes/suppressions et déploiements ; migration additive 0006 ; versions
+texte UTF-8 privées, intégrité et transactions ; limites visibles ; panne d’artefact
+IA indépendante du message ; garde des migrations/publication sur main.
+
+Testé localement : 11 nouveaux tests stockage, cœur/schéma 9, passerelle 27,
+régressions existantes 111 puis nouveau test configuration et 2 gardes. Configuration
+production générée sans R2 ; analyse syntaxique et diff contrôlés. Ces preuves ne
+valident pas le fournisseur ni une installation de production.
+
+Bloqué : dépendances absentes (tsc/vitest), proxy terminal inaccessible, aucun accès
+Cloudflare. Scrypt Free reste non mesuré. Anciens contenus R2 préservés en références,
+mais non récupérables sans copie externe ; import de récupération encore à développer.
+
+Restant : bibliothèque GitHub complète/streaming/sync, stockage GitHub/local de
+binaires, Mes outils extensible, vrai aller-retour Outil-image et branche associée,
+accueil/navigation, sécurité/performances, tests navigateur Android/iOS/tablette/PC,
+restauration distante et validation du plan gratuit. Ce lot n’est pas la mission finale.
+Prochaine étape : terminer la revue, enregistrer le lot sur sa branche GitHub, puis
+bibliothèque GitHub et protocole d’échange éditable.
+
+---
+
 # Configuration Cloudflare et discussion simplifiée — 19 octobre 2026
 
 **Périmètre complet conservé ; 414 exigences suivies.** La référence d’usage Open Chat

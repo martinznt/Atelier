@@ -48,3 +48,16 @@ configuration validée, migrations distantes, puis Worker. L’origine HTTPS ré
 reste à fournir ; aucune réussite distante n’est déduite des tests de configuration.
 La section 25 du cahier des charges précise la référence Open Chat. Dans Discussions,
 « Mes assistants » ouvre les réglages ; préserver choix, brouillons et consentements.
+
+## Refonte gratuite demandée le 19 octobre (reprise du 21)
+
+Lire aussi `docs/REFONTE_GRATUITE.md`, suivi RF dans EXIGENCES.json. L’origine
+réelle est maintenant connue et conservée dans cloudflare.production.json. Branches
+dédiées Atelier et Outil-image ; préparer l’intégration main après validation.
+Le propriétaire autorise explicitement l’intégration sur une branche Outil-image.
+R2 est refusé, pas de nouvelle carte ou offre payante obligatoire. Les cinq premières
+migrations sont déjà appliquées selon le propriétaire : uniquement migrations
+additives. Exécuter `npm run test:storage` en plus des contrôles précédents.
+Ne pas rejouer les longues demandes réseau interrompues ; documenter la compilation
+bloquée et poursuivre les tests disponibles. Les secrets Cloudflare sont absents
+de cet environnement ; ne pas utiliser le connecteur GitHub comme jeton applicatif.

@@ -16,9 +16,8 @@ projects.patch('/:id',async c=>{
 projects.delete('/:id',async c=>{
  const p=await owned(c.env,'projects',c.req.param('id'),userId(c));
  if(await one(c.env,"SELECT id FROM tasks WHERE project_id=? AND user_id=? AND status IN ('queued','running')",p.id,userId(c)))fail(409,'Arrêtez les tâches du projet avant de le supprimer.');
- // R2 objects are removed before SQL metadata; a failed delete is retryable.
+ // Contents and metadata are deleted in the same D1 transaction; external repositories remain unchanged.
  const versions=await many(c.env,'SELECT v.object_key,v.size FROM file_versions v JOIN files f ON f.id=v.file_id WHERE f.project_id=? AND f.user_id=?',p.id,userId(c));
- for(let i=0;i<versions.length;i+=100)await c.env.FILES.delete(versions.slice(i,i+100).map(v=>v.object_key));
  await c.env.DB.batch([c.env.DB.prepare('DELETE FROM projects WHERE id=? AND user_id=?').bind(p.id,userId(c)),c.env.DB.prepare('UPDATE users SET storage_used=MAX(0,storage_used-?) WHERE id=?').bind(versions.reduce((s,v)=>s+v.size,0),userId(c))]);return c.json({ok:true});
 });
 

@@ -22,11 +22,12 @@
     "test:core": "node tests/core.test.mjs && python3 tests/schema_test.py",
     "test:bridge": "npm test --prefix passerelle",
     "format": "prettier --write web server scripts tests *.ts *.json *.html public/manifest.webmanifest",
-    "test:regressions": "node tests/auth-store.test.mjs && node tests/task-persistence.test.mjs && node tests/vault.test.mjs && node tests/transport.test.mjs && node tests/submission.test.mjs && node tests/offline-file.test.mjs && node tests/deploy-check.test.mjs && node tests/collaboration.test.mjs && node tests/planning.test.mjs && node tests/model-catalog.test.mjs && node tests/team-guide.test.mjs && node tests/model-list.test.mjs && node tests/configure-cloudflare.test.mjs",
+    "test:regressions": "node tests/auth-store.test.mjs && node tests/task-persistence.test.mjs && node tests/vault.test.mjs && node tests/transport.test.mjs && node tests/submission.test.mjs && node tests/offline-file.test.mjs && node tests/deploy-check.test.mjs && node tests/collaboration.test.mjs && node tests/planning.test.mjs && node tests/model-catalog.test.mjs && node tests/team-guide.test.mjs && node tests/model-list.test.mjs && node tests/configure-cloudflare.test.mjs && npm run test:storage && node tests/deploy-guard.test.mjs",
     "deploy:check": "node scripts/deploy-check.mjs",
     "configure:cloudflare": "node scripts/configure-cloudflare.mjs",
-    "db:migrate:production": "wrangler d1 migrations apply atelier-db --remote --config wrangler.production.jsonc",
-    "deploy:cloudflare": "npm run configure:cloudflare && npm run db:migrate:production && wrangler deploy --config wrangler.production.jsonc"
+    "db:migrate:production": "node scripts/deploy-guard.mjs && wrangler d1 migrations apply atelier-db --remote --config wrangler.production.jsonc",
+    "deploy:cloudflare": "node scripts/deploy-guard.mjs && npm run configure:cloudflare && npm run db:migrate:production && wrangler deploy --config wrangler.production.jsonc",
+    "test:storage": "node tests/storage-store.test.mjs"
   },
   "dependencies": {
     "hono": "^4.10.3",

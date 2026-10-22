@@ -74,3 +74,8 @@ test('les paramètres suivis refusent les champs de secrets et les types inatten
   assert.equal(existsSync(join(directory,'wrangler.production.jsonc')),false);
  }
 });
+
+test('une ancienne copie de production perd son binding R2 sans recréer D1',()=>{
+ const old=structuredClone(template);old.r2_buckets=[{binding:'FILES',bucket_name:'atelier-private-files'}];
+ const result=productionConfiguration(old,values);assert.equal(result.r2_buckets,undefined);assert.equal(old.r2_buckets.length,1);assert.equal(result.vars.MAX_FILE_MB,'0.25');
+});

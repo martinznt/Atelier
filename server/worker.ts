@@ -1,4 +1,5 @@
 import {claimQueuedTask} from './task-persistence.ts';
+import {captureArtifact} from './artifact-save.ts';
 import {plannedStartIssue} from './planning.ts';
 import {refreshModelCatalogues} from './model-catalog.ts';
 import {purgeDeletedAccounts} from './deletion.ts';
@@ -14,12 +15,19 @@ export async function executeTask(env:Env,id:string) {
  if(startIssue){await run(env,"UPDATE tasks SET status='interrupted',error=?,completed_at=?,updated_at=? WHERE id=? AND user_id=?",startIssue,now(),now(),id,task.user_id);await event(env,task.user_id,'interrupted',startIssue,task.project_id,id);return;}
  let turnInput=0,turnOutput=0;
  let activeMessage:string|undefined,activeFile:string|undefined,activeConnection:string|undefined,activeCredentialSnapshot:string|undefined,fileVersion=0,text='',actualModel='',provider='',activeLabel='',activeRole='';
+ let artifactWarning=false,lastArtifactAt=0;
+ const warnArtifact=async()=>{if(artifactWarning)return;artifactWarning=true;await event(env,task.user_id,'file_warning','La réponse est conservée dans la conversation. Un fichier n’a pas pu être enregistré : vérifiez la limite de 256 Kio et l’espace texte disponible. Vous pouvez copier ou exporter la réponse avant de reprendre.',task.project_id,id);};
  const cancelled=async()=>{const row=await one(env,'SELECT cancel_requested FROM tasks WHERE id=? AND user_id=?',id,task.user_id);return !row||row.cancel_requested;};
  const save=async(state:'draft'|'final'|'incomplete')=>{
  if(!activeMessage)return;
  await run(env,'UPDATE messages SET content=?,model=?,status=? WHERE id=? AND user_id=?',text,actualModel||null,state,activeMessage,task.user_id);
- if(text){if(!activeFile){const f=await newFile(env,task.user_id,task.project_id,`reponse-${id.slice(0,8)}-${activeMessage.slice(0,8)}.md`,'text/markdown',new TextEncoder().encode(text),{author:`${activeLabel} · ${provider}`,task_id:id,conversation_id:task.conversation_id,state});activeFile=f.file_id;fileVersion=f.version;}
- else{const v=await writeVersion(env,task.user_id,activeFile,new TextEncoder().encode(text),fileVersion,state);fileVersion=v.version;}}
+ if(text&&(state!=='draft'||Date.now()-lastArtifactAt>30000)){
+  lastArtifactAt=Date.now();
+  await captureArtifact(async()=>{
+   if(!activeFile){const f=await newFile(env,task.user_id,task.project_id,`reponse-${id.slice(0,8)}-${activeMessage!.slice(0,8)}.md`,'text/markdown',new TextEncoder().encode(text),{author:`${activeLabel} · ${provider}`,task_id:id,conversation_id:task.conversation_id,state});activeFile=f.file_id;fileVersion=f.version;}
+   else{const v=await writeVersion(env,task.user_id,activeFile,new TextEncoder().encode(text),fileVersion,state);fileVersion=v.version;}
+  },warnArtifact);
+ }
  await run(env,'UPDATE tasks SET updated_at=?,input_tokens=?,output_tokens=? WHERE id=?',now(),hasUsage?totalInput+turnInput:null,hasUsage?totalOutput+turnOutput:null,id);
  };
  try{
@@ -45,13 +53,13 @@ export async function executeTask(env:Env,id:string) {
  const blocks=[...text.matchAll(/```([^\n]*)\n([\s\S]*?)```/g)];
  for(let b=0;b<blocks.length;b++){
  const match=blocks[b],first=match[2].split('\n')[0];const filename=first.match(/^(?:\/\/|#|<!--)?\s*(?:fichier|file):\s*(.+?)(?:\s*-->)?$/i)?.[1];
- await newFile(env,task.user_id,task.project_id,filename||`extrait-${id.slice(0,8)}-${index+1}-${round+1}-${b+1}.${/^[a-z0-9]+$/i.test(match[1])?match[1]:'txt'}`,'text/plain',new TextEncoder().encode(filename?match[2].split('\n').slice(1).join('\n'):match[2]),{author:`${activeLabel} · ${provider}`,task_id:id,conversation_id:task.conversation_id});
+ await captureArtifact(()=>newFile(env,task.user_id,task.project_id,filename||`extrait-${id.slice(0,8)}-${index+1}-${round+1}-${b+1}.${/^[a-z0-9]+$/i.test(match[1])?match[1]:'txt'}`,'text/plain',new TextEncoder().encode(filename?match[2].split('\n').slice(1).join('\n'):match[2]),{author:`${activeLabel} · ${provider}`,task_id:id,conversation_id:task.conversation_id}),warnArtifact);
  }
  activeMessage=undefined;
  }
  await run(env,"UPDATE tasks SET status='completed',completed_at=?,updated_at=?,input_tokens=?,output_tokens=? WHERE id=?",now(),now(),hasUsage?totalInput:null,hasUsage?totalOutput:null,id);
  await run(env,'UPDATE conversations SET updated_at=? WHERE id=? AND user_id=?',now(),task.conversation_id,task.user_id);
- await event(env,task.user_id,'completed','Réponses et fichiers enregistrés. Aucun test de code n’a été exécuté par ce connecteur.',task.project_id,id);
+ await event(env,task.user_id,'completed',artifactWarning?'Réponses enregistrées ; certains fichiers nécessitent une sauvegarde manuelle. Consultez l’avertissement de stockage.':'Réponses et fichiers enregistrés. Aucun test de code n’a été exécuté par ce connecteur.',task.project_id,id);
  }catch(error){
  try{await save('incomplete');}catch{/* Previous versions remain immutable when storage is full. */}
  const stop=error instanceof ProviderError&&error.status===499;const quota=error instanceof ProviderError&&error.status===429;

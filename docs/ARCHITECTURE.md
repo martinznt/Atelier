@@ -1,3 +1,38 @@
+# Architecture de la refonte gratuite — 21 octobre 2026
+
+Le contenu daté ci-dessous décrit les lots précédents et reste historique.
+Cette section prévaut sur les anciennes obligations R2 et offres payantes.
+
+- Worker Hono et assets React : inchangés, aucune machine supplémentaire créée.
+- D1 existante : migrations 0001–0005 conservées ; 0006 ajoute file_contents et
+  file_storage_usage. Les anciennes versions ne sont jamais réécrites ou purgées.
+- Frontière de stockage : storage.ts expose writeVersion/readVersion ; les routes,
+  contextes, exports et déploiements ne connaissent plus de bucket. Le fournisseur
+  actuel conserve les petits textes UTF-8 (JSON/SVG inclus), 262144 octets/version,
+  20 Mio/compte et plafond partagé 100 Mio pour la bibliothèque. Ce dernier laisse
+  une marge dans les 500 Mo de la base Free, sans garantir les autres tables illimitées.
+- Versions et contenu immuables, compteur atomique par triggers, transaction D1
+  pour contenu/métadonnées/changement de version ; conflits sans écrasement.
+- Une ancienne version dépourvue de contenu D1 reste référencée et visible, mais
+  son téléchargement est refusé explicitement. Aucun contenu n’est inventé. Une
+  copie externe ou sauvegarde est nécessaire ; récupération guidée encore à développer.
+- Messages IA persistés pendant le flux ; snapshots de fichiers espacés de 30 s,
+  sauvegarde finale/incomplète séparée. L’échec d’un artefact produit un avertissement
+  dans l’activité sans arrêter l’inférence ou effacer le message.
+- GitHub est la cible des sources/gros fichiers ; bibliothèque complète et fournisseur
+  de références encore à développer. IndexedDB conserve le coffre hors connexion.
+- Queues et cron conservés : Queues est disponible sur Workers Free depuis février
+  2026 selon la documentation officielle. Aucun passage payant déclenché.
+- Publication et migrations distantes gardées sur main ; les branches de refonte
+  servent aux validations. WORKERS_CI_BRANCH est contrôlé avant ces mutations.
+
+Le budget CPU Free de 10 ms rend la configuration scrypt actuelle potentiellement
+incompatible. Elle n’a pas été affaiblie. Mesure réelle et alternative sûre restent
+un blocage avant d’annoncer les comptes opérationnels sur l’hébergement gratuit.
+Voir LIMITES_GRATUITES.md et VALIDATION.md. Aucun nouveau déploiement effectué.
+
+---
+
 # Architecture et décisions
 
 ## Décisions conservées

@@ -1,3 +1,18 @@
+# Refonte gratuite et outils — 21 octobre 2026
+
+Aucun fournisseur de stockage payant n’est requis par les nouvelles routes.
+Les connecteurs IA, GitHub, Cloudflare Pages et Netlify existants sont conservés.
+Leur authentification réelle par l’utilisateur reste distincte du connecteur GitHub
+utilisé pour développer le dépôt. Aucun jeton propriétaire partagé entre comptes.
+
+Mes outils, découverte sûre d’URL, API/OpenAPI/MCP extensibles et intégration
+Outil-image sont encore à réaliser ; ne pas les présenter comme livrés. L’audit
+initial d’Outil-image confirme le format atelier-icones v2 et son stockage IndexedDB,
+exports de projets et sauvegardes. Le lien seul ne transfère aucune donnée. Les
+conditions/limites officielles consultées sont dans LIMITES_GRATUITES.md.
+
+---
+
 # Connecteurs : capacités implémentées et limites vérifiées
 
 État actualisé le 18 octobre 2026 : le connecteur GitHub de l’assistant accède

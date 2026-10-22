@@ -3176,6 +3176,14 @@
     "limite": "Origine HTTPS et actions de configuration restantes dans Cloudflare ; ne pas demander de secret dans le chat."
   },
   {
+    "id": "REQ-22-003",
+    "section": 22,
+    "exigence": "Conserver les sources sur main du dépôt privé Atelier, sans écraser des modifications\nconcurrentes. Donner les étapes utilisateur directement dans la conversation, en français\nsimple ; les documents du dépôt complètent ces explications. Les valeurs des secrets\nsont saisies dans les paramètres sécurisés, jamais dans la conversation.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
     "id": "REQ-23-001",
     "section": 23,
     "exigence": "Ajouter simplement plusieurs connexions nommées, même pour un fournisseur identique.",
@@ -3198,6 +3206,467 @@
     "statut": "réalisé",
     "preuve": "web/AssistantTeam.tsx ; web/team-guide.ts",
     "limite": "Aides et rôles préparés localement, sans décision payante automatique ; validation navigateur à effectuer."
+  },
+  {
+    "id": "REQ-24-001",
+    "section": 24,
+    "exigence": "Personnaliser les missions selon le besoin, sans assignation fixe par marque.",
+    "statut": "réalisé",
+    "preuve": "server/collaboration.ts ; web/AssistantTeam.tsx ; tests/collaboration.test.mjs",
+    "limite": "Missions saisies par l’utilisateur ; adaptation autonome des rôles à partir d’une évaluation de la tâche non intégrée."
+  },
+  {
+    "id": "REQ-24-002",
+    "section": 24,
+    "exigence": "Choisir entre démarrage rapide, priorité aux meilleurs choix et compromis dans un délai maximal.",
+    "statut": "réalisé",
+    "preuve": "server/planning.ts ; web/AssistantPlanner.tsx ; tests/planning.test.mjs",
+    "limite": "Choix selon les préférences de l’utilisateur et les disponibilités connues ; pas de score automatique de qualité."
+  },
+  {
+    "id": "REQ-24-003",
+    "section": 24,
+    "exigence": "Utiliser un remplaçant autorisé lorsque le choix préféré attend trop longtemps, ou attendre ce choix lorsque demandé.",
+    "statut": "réalisé",
+    "preuve": "server/planning.ts ; tests/planning.test.mjs",
+    "limite": "Date fondée seulement sur un Retry-After reçu ; abonnements Codex/Claude Code non intégrés. Date inconnue jamais inventée."
+  },
+  {
+    "id": "REQ-25-001",
+    "section": 25,
+    "exigence": "S’inspirer de la simplicité de Open Chat — Appli de bot IA (AceTools Team, open.chat.gpt.aichat.bot.free.app), en conservant le périmètre complet d’Atelier et une expérience de collaboration plus utile.",
+    "statut": "à faire",
+    "preuve": "Lien fourni par le propriétaire et fiche Google Play consultée le 19/10/2026 ; docs/CAHIER_DES_CHARGES.md section 25 ; web/Chat.tsx panneau Mes assistants",
+    "limite": "Première simplification écrite ; nouvelle compilation et vérification visuelle mobile/navigateur encore nécessaires. Aucun usage de l’application Android ni comparaison de supériorité vérifiés."
+  },
+  {
+    "id": "REQ-25-002",
+    "section": 25,
+    "exigence": "Référence précisée par le propriétaire : [Open Chat — Appli de bot IA, AceTools Team](https://play.google.com/store/apps/details?id=open.chat.gpt.aichat.bot.free.app&hl=fr),\nidentifiant Android `open.chat.gpt.aichat.bot.free.app`. La fiche publique a été\nconsultée le 19 octobre ; l’application Android n’a pas été exécutée dans cette session.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "REQ-25-003",
+    "section": 25,
+    "exigence": "Conserver une discussion centrale simple, un historique accessible et les outils\nà portée de main. Dans Atelier, plusieurs comptes et assistants doivent coopérer\navec contexte choisi, rôles personnalisés et limites visibles. Présenter leurs\nréglages progressivement pour préserver la place des échanges sur téléphone.\nLe périmètre projets, fichiers, GitHub, déploiements et mémoire contrôlée demeure\nentier. Garder une identité propre ; ne pas reprendre les promesses commerciales\nde la référence comme des résultats vérifiés. Valider les parcours sur plusieurs\nformats d’écran avant de revendiquer une meilleure ergonomie.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "REQ-26-001",
+    "section": 26,
+    "exigence": "Le nouveau périmètre complet est conservé dans [REFONTE_GRATUITE.md](REFONTE_GRATUITE.md).\nIl complète ce document et prévaut sur les anciennes obligations R2/payantes.\nLes exigences RF sont suivies dans la même matrice EXIGENCES.json.\n",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "RF-00-001",
+    "section": 0,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "Cette référence conserve le périmètre de la nouvelle mission, avec les exigences\ninitiales de CAHIER_DES_CHARGES.md. Les paragraphes sont suivis individuellement\ndans EXIGENCES.json (préfixe RF). Aucun état « réalisé » ne vaut test fournisseur.\nLe travail se poursuit par lots ; ce document ne déclare pas la mission achevée.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "RF-01-001",
+    "section": 1,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "Améliorer l’application existante martinznt/Atelier, branche principale main,\nproduction prévue https://atelier.martin-zannet22.workers.dev. Application personnelle\net quelques autres comptes isolés pour centraliser projets, fichiers, outils de\ncréation, assistants IA et déploiements. Implémenter code, migrations, interfaces,\ntests et configuration, sans présenter une maquette ou une simulation comme un\nservice connecté.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "RF-01-002",
+    "section": 1,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "Aucune offre de stockage payante, formule Cloudflare payante, carte bancaire\nsupplémentaire ou frais obligatoire ne doit être nécessaire aux fonctions\nprincipales. Préserver les fonctions compatibles et remplacer leurs dépendances\npayantes intelligemment. Une limite impossible à respecter gratuitement doit être\nexpliquée avec une alternative qui conserve les fonctions essentielles.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "RF-02-001",
+    "section": 2,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "Examiner les fichiers importants, AGENTS.md, CLAUDE.md, tous les documents docs/,\nles migrations D1 et les services Workers, D1, Queues, R2, GitHub et API IA. Vérifier\nles fonctions existantes et problèmes ouverts avant de changer le code. Consulter\nles limites et conditions actuelles dans les documentations officielles.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "RF-02-002",
+    "section": 2,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "Ne pas reconstruire inutilement une fonction opérationnelle. Préserver données,\nparamètres et compatibilité. Travailler sur des branches dédiées, commits cohérents,\npuis préparer l’intégration sur main après vérification. Aucune fusion risquée,\npublication en production ou modification d’un autre site sans validation appropriée.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "RF-03-001",
+    "section": 3,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "Le déploiement échoue avec « R2 bucket 'atelier-private-files' not found [10085] ».\nLe propriétaire refuse d’activer R2. Supprimer entièrement son obligation dans\nwrangler.jsonc, production, storage.ts, types.ts, routes fichiers, context.ts,\nworker.ts, comptes/suppressions, sauvegardes, imports/exports, tests et autres usages.\nToutes les fonctions remplacées doivent disposer d’un chemin effectif, pas seulement\nd’un binding supprimé. Les réponses IA sont aussi des fichiers intermédiaires ;\nleur échec de sauvegarde ne doit pas interrompre une conversation conservée en base.",
+    "statut": "réalisé",
+    "preuve": "migrations/0006_file_content.sql ; server/storage.ts ; server/storage-store.ts ; server/worker.ts ; tests/storage-store.test.mjs",
+    "limite": "Partiellement réalisée : code sans R2 et 11 tests SQLite réussis ; anciens contenus externes non récupérés, compilation/HTTP/navigateur/production bloqués."
+  },
+  {
+    "id": "RF-03-002",
+    "section": 3,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "La D1 de production existe et ses cinq migrations initiales sont déjà appliquées\n(information fournie par le propriétaire). Migrations additives et reprise seulement ;\naucune recréation de base, suppression automatique, perte de versions ou reset destructif.",
+    "statut": "réalisé",
+    "preuve": "migrations/0006_file_content.sql ; server/storage.ts ; server/storage-store.ts ; server/worker.ts ; tests/storage-store.test.mjs",
+    "limite": "Partiellement réalisée : code sans R2 et 11 tests SQLite réussis ; anciens contenus externes non récupérés, compilation/HTTP/navigateur/production bloqués."
+  },
+  {
+    "id": "RF-04-001",
+    "section": 4,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "GitHub conserve sources, dossiers, branches, commits, versions publiées, archives\net fichiers IA explicitement sauvegardés dans un dépôt autorisé. D1 conserve comptes,\nconnexions, projets, conversations/messages, mémoire, paramètres, métadonnées,\nréférences GitHub, tâches, synchronisation, événements et autorisations. D1 peut\nconserver des contenus textuels raisonnablement petits selon ses limites.",
+    "statut": "réalisé",
+    "preuve": "docs/ARCHITECTURE.md ; server/storage.ts ; migrations/0006_file_content.sql",
+    "limite": "Partiellement réalisée : fournisseur D1 texte actif dans le code, GitHub/local existants mais stockage multi-fournisseur complet à poursuivre ; aucun service réel validé."
+  },
+  {
+    "id": "RF-04-002",
+    "section": 4,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "IndexedDB conserve données/projets choisis hors connexion, brouillons, fichiers\nexplicitement téléchargés, éditions non synchronisées, consultation et opérations\nlocales autorisées. Pas de duplication inutile de gros fichiers ou stockage massif\nde binaires D1. Aucun stockage cloud gratuit illimité promis.",
+    "statut": "réalisé",
+    "preuve": "docs/ARCHITECTURE.md ; server/storage.ts ; migrations/0006_file_content.sql",
+    "limite": "Partiellement réalisée : fournisseur D1 texte actif dans le code, GitHub/local existants mais stockage multi-fournisseur complet à poursuivre ; aucun service réel validé."
+  },
+  {
+    "id": "RF-04-003",
+    "section": 4,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "Créer une abstraction extensible de stockage. Limites visibles, export sans fournisseur\nunique, pas d’effacement silencieux ni fausse réussite de synchronisation. KV et\nDurable Objects SQLite ne sont envisageables qu’après vérification de leurs quotas\ngratuits et si un avantage concret justifie cette dépendance.",
+    "statut": "réalisé",
+    "preuve": "docs/ARCHITECTURE.md ; server/storage.ts ; migrations/0006_file_content.sql",
+    "limite": "Partiellement réalisée : fournisseur D1 texte actif dans le code, GitHub/local existants mais stockage multi-fournisseur complet à poursuivre ; aucun service réel validé."
+  },
+  {
+    "id": "RF-05-001",
+    "section": 5,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "Pour chaque dépôt : nom/description, propriétaire, branche, dossiers et fichiers,\narborescence complète, recherche de noms, filtres de types, tailles, date et commit\nde dernière modification lorsqu’ils sont disponibles, historique, changements et\ndernier déploiement. Navigation comme un explorateur de fichiers.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "RF-05-002",
+    "section": 5,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "Détecter un commit externe, actualiser et identifier les fichiers modifiés selon\nl’historique réel. Webhook authentifié si possible, récupération manuelle et à\nl’ouverture/premier plan, interrogation périodique raisonnable sinon. Réduire les\nappels API et respecter les quotas ; gérer les réponses paginées ou tronquées.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "RF-05-003",
+    "section": 5,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "Créer/modifier un texte, ajouter dossier, renommer, déplacer, supprimer après\nconfirmation, comparer, restaurer une ancienne version, créer branche, sauvegarder\net préparer une pull request. Vérifier branche, SHA attendu et conflits pour chaque\nécriture. Si distant modifié, proposer la comparaison sans écrasement. Distinguer\nmodifications locales, brouillons et changements effectivement envoyés.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "RF-06-001",
+    "section": 6,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "Télécharger individuellement les fichiers compatibles, sélectionner plusieurs\nfichiers ou un dossier en ZIP en préservant noms et arborescence. Projet : sources\ncomplètes GitHub par branche/commit, ancienne version par commit/tag/Release, version\ncompilée finale uniquement quand un véritable artefact existe. Source ZIP ne signifie\npas site prêt à déployer.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "RF-06-002",
+    "section": 6,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "Gérer code, images, icônes, documents et archives au-delà de 20 Mo. Streaming ou\naccès direct autorisé pour les gros téléchargements ; jamais un gros ZIP entièrement\nen mémoire du Worker. Lots si nécessaire, limites exactes, intégrité quand possible,\ndépôts privés et aucune fuite de jeton au navigateur. Pour les fichiers incompatibles\navec GitHub classique, proposer fournisseur adapté ou conservation locale. Ne pas\nactiver automatiquement Git LFS, GitHub Actions payants ou dépenses annexes.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "RF-07-001",
+    "section": 7,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "Chaque fichier réellement produit/modifié porte nom, format, projet, assistant,\nconversation/tâche, date, taille, version, état de sauvegarde et dépôt/branche/commit\néventuels. Détecter les fichiers de code produits, proposer aperçu puis sauvegarde\nexplicite dans le dépôt choisi, sans publication automatique.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "RF-07-002",
+    "section": 7,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "Fichiers non associés à GitHub : petits textes temporaires D1, stockage local ou\ndépôt privé de brouillons/archives explicitement choisi. Conversations conservées\nmême si fichier indisponible ; versions, comparaison, téléchargement et restauration\nadaptés au fournisseur. Capturer l’avancement pendant les tâches.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "RF-08-001",
+    "section": 8,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "Créer « Mes outils » extensible, sans liste limitée à cinq services codés en dur.\nApplications web personnelles, création d’images, sport, recettes, documents, notes,\ngestion, IA, Git, stockage, hébergeurs, API, MCP et futurs outils sont enregistrables.\nNom, URL, icône, catégorie, description, favoris, personnalisation, plusieurs projets,\ncapacités autorisées, test, état, paramètres, déconnexion et suppression de la seule\nréférence Atelier sans détruire les données externes.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "RF-08-002",
+    "section": 8,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "Parcours simple Ajouter → service ou URL → analyse → autorisations → connexion → test.\nIdentifier sûrement les informations publiques, intégrations documentées, OpenAPI,\nMCP, OAuth et échanges de fichiers possibles. Ne pas exécuter de code distant.\nUne URL ne donne aucun accès aux données privées. Afficher précisément les limites.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "RF-08-003",
+    "section": 8,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "Prévoir les modes lien externe, import/export de fichiers, API REST officielle ou\nconfigurable, description OpenAPI validée, OAuth 2.0 PKCE, MCP contrôlé, webhooks\nauthentifiés, connexion approfondie des applications personnelles et interface de\nconnecteur versionnée documentée. Les modes non implémentés restent explicitement\nindisponibles ; un lien n’est jamais présenté comme une connexion complète.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "RF-08-004",
+    "section": 8,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "Protéger SSRF, adresses privées/locales, redirections malveillantes, jetons,\ninstructions importées, permissions excessives et fuites entre comptes. Pas de\nJavaScript arbitraire fourni par URL. Capacités/permis explicites et révocables ;\ndifférencier lien, lecture, écriture, import/export, sync, actions, testé/non testé.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "RF-09-001",
+    "section": 9,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "Analyser le code de martinznt/Outil-image et le site\nhttps://outil-image.martin-zannet22.workers.dev/ avant l’intégration. Application\nstatique, IndexedDB par origine, exports JSON, SVG, PNG, WebP et ZIP, sans sync cloud\ncomplète. Le propriétaire autorise les changements nécessaires sur une branche\ndédiée de ce dépôt, en conservant ses fonctions existantes.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "RF-09-002",
+    "section": 9,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "Ajouter l’outil, l’associer à plusieurs projets, l’ouvrir, importer les créations\nexplicitement transférées, retrouver/télécharger leurs fichiers, préserver le format\néditable, rouvrir dans l’éditeur, enregistrer de nouvelles versions, éviter les\ndoublons, détecter les conflits et réutiliser les exports dans plusieurs projets.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "RF-09-003",
+    "section": 9,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "Échange réel Atelier → éditeur et éditeur → bibliothèque choisie, avec GitHub autorisé\npour historique/récupération. Mécanisme officiel, authentifié, résistant aux changements\nde domaine. Import explicite des anciens projets IndexedDB ; aucune lecture du\nstockage privé d’une autre origine. Préserver calques, propriétés et éléments éditables.\nL’éditeur reste autonome et utilisable hors connexion.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "RF-09-004",
+    "section": 9,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "Livraison progressive autorisée : d’abord échange JSON export/import fonctionnel,\npuis synchronisation autorisée. Critère obligatoire : projet éditable exporté de\nl’outil vers Atelier et rouvert dans l’éditeur avec tous ses éléments conservés.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "RF-10-001",
+    "section": 10,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "Préparer Sport/Mes séances, Livre de recettes, Outfit et futurs sites du compte GitHub.\nEnregistrement, ouverture, source, versions/mises à jour, téléchargement, déploiements\net échange quand un protocole existe. Manifestes/capacités/permissions génériques,\najouts ultérieurs sans réécriture du cœur. Ne pas fusionner toutes les applications\nni supposer qu’un iframe donne accès à leurs fonctions privées.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "RF-11-001",
+    "section": 11,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "Conserver OpenAI, Anthropic, Gemini, GitHub, Cloudflare, Netlify et les chemins\nréellement officiels Codex/Claude Code. Plusieurs comptes par fournisseur, rôles,\npréférences, modèles, limites, relais, discussions/historique/recherche, mémoires,\ncontexte consenti, comparaison/collaboration/répartition, résultats/fichiers, choix\nselon capacités réelles, erreurs, reprise et arrêt. Quotas seulement connus.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "RF-11-002",
+    "section": 11,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "ChatGPT/Claude Pro ne donnent pas accès illimité à leurs API. Ne pas présenter Codex\nou Claude Code comme intégrés sans exécution réelle. Aucun contournement, cookie ou\nrécupération de sessions. Ni fournisseur payant, essai payant, bascule API ou facture\nsilencieux. Prévenir du coût, proposer site officiel ou alternative gratuite ; une\nintégration indisponible est affichée honnêtement.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "RF-12-001",
+    "section": 12,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "Français, rapide, clair, accessible Samsung A05s, autres Android, iPhone, tablettes,\nordinateurs. Navigation cohérente : Accueil, Projets, Discussions IA, Fichiers, Mes\noutils, Activité/tâches, Réglages ; barre compacte et menus adaptés sur téléphone.\nAccueil : projets récents, outils favoris, tâches, derniers fichiers et déploiements.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "RF-12-002",
+    "section": 12,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "Mode simple par défaut, avancé facultatif. Éviter formulaires interminables, étapes\ninutiles, jargon obligatoire, erreurs incompréhensibles, boutons inactifs, synchronisation\ninvisible et lenteurs excessives. Préserver brouillons et pagination des historiques.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "RF-13-001",
+    "section": 13,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "Conserver comptes existants, projets/outils/dépôts/conversations/mémoires/fichiers,\nautorisations/paramètres/historiques privés par utilisateur. Aucun accès aux jetons\nou fichiers d’un autre. Chaque utilisateur connecte son GitHub ou un partage explicite ;\nne jamais mutualiser silencieusement le jeton du propriétaire. Lecture et écriture\nséparées, authentification sûre, sessions révocables et contrôles serveur.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "RF-13-002",
+    "section": 13,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "Mesurer CPU scrypt sur Workers Free. Si dépassement réellement confirmé, rechercher\nune alternative sûre et éprouvée avec migration compatible des comptes, sans affaiblir\nles mots de passe. Ne pas imposer un plan payant comme solution par défaut.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "RF-14-001",
+    "section": 14,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "Conserver PWA : ouverture après installation/synchronisation, projets, conversations,\nmémoire et fichiers réellement locaux, notes/brouillons, modifications préparées et\nexport des éléments disponibles. Au retour : actualiser, sync autorisée, conflits,\néchecs visibles et aucun brouillon effacé. Pas de publication ou requête payante sans\naccord préalable. Dernière sync et contenu local réel visibles ; jamais de faux accès\nhors connexion. Isolation des caches et effacement au changement de compte.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "RF-15-001",
+    "section": 15,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "Gérer plusieurs sites ; conserver Cloudflare, Netlify, fournisseurs futurs extensibles.\nAfficher états/commit/erreurs/journaux, relance autorisée, comparaison production/test,\nsite final, sources, véritable build disponible et rollback selon fournisseur.\nBuild réel si nécessaire. Actions : runners et quotas gratuits surveillés, pas de\nservice payant activé ni artefacts temporaires inutilement gros. Validation adaptée\navant publication/merge/changement d’un autre site.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "RF-16-001",
+    "section": 16,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "Vérifier précisément documentation actuelle Workers Free, D1, Queues, KV/DO si\nretenus, GitHub Free, Actions, Releases et API. Peu de comptes n’exige pas une\ninfrastructure coûteuse. Objectif nominal 0 € supplémentaire et aucune carte\nobligatoire ; alternative aux besoins impossibles gratuitement, aucune dépense\nautomatique. Page espace/fichiers/ressources connus/limites/dernières sync/blocages\npar quota/actions de libération. Aucun chiffre inventé quand absent de l’API.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "RF-17-001",
+    "section": 17,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "Exports projets, conversations, mémoires, fichiers ou références, ZIP quand possible,\nmanifestes/intégrité, sauvegardes GitHub et restauration documentée. Confirmation de\nsuppression, échecs de sync traités. Métadonnées/liens seuls ne constituent pas une\nsauvegarde autonome. Fichier absent interdit d’annoncer une sauvegarde complète.\nAucune suppression d’historique pour gagner de l’espace sans décision du propriétaire.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "RF-18-001",
+    "section": 18,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "Exécuter TypeScript, tests unitaires, intégration/régression existants, ajouter les\ncas pertinents pour chaque modification. Une compilation seule ne suffit pas.\nSimulations explicitement distinguées des vérifications réelles fournisseurs.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "RF-18-002",
+    "section": 18,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "GitHub : dépôt autorisé, arbre complet, dossiers, lecture/modification, branche de\ntest, commit externe/détection/actualisation, comparaison, fichier/ZIP, restauration,\nconflit, privé et isolation des comptes. Pas d’écriture risquée sur production.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "RF-18-003",
+    "section": 18,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "Stockage : routes sans R2, réponses IA D1, code GitHub, saturation visible, versions\npréservées, suppressions sûres, exports cohérents, gros téléchargements sans saturation\nmémoire. Outils : URL, lien externe, API, refus non autorisé, déconnexion/révocation,\nindisponibilité/changement de compte et protection privée.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "RF-18-004",
+    "section": 18,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "Icônes : ouverture du vrai site, export éditable, import/bibliothèque autorisée,\ntéléchargement/réouverture, calques/propriétés, nouvelle version/conflit et éditeur\nindépendant hors connexion. Playwright Android/iPhone/tablette/ordinateur, petits\nécrans, tactile, téléchargements, réseau lent et accessibilité. Accès manquants et\nscénarios non effectués précisément documentés.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "RF-19-001",
+    "section": 19,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "Commandes actuelles npm run build puis npm run deploy:cloudflare. Adapter scripts,\nconfig et bindings ; D1 existante cinq migrations préservée, aucune obligation bucket\nR2 atelier-private-files. Compilation et tests avant livraison ; dry-run ne prouve\npas production. Déploiement autorisé/disponible : HTTP/auth/fichiers/tâches/sécurité\nréels. Secret manquant : nom et procédure Cloudflare, jamais sa valeur dans le dépôt,\nle chat ou un log.",
+    "statut": "réalisé",
+    "preuve": "scripts/configure-cloudflare.mjs ; scripts/deploy-guard.mjs ; docs/INSTALLATION_CLOUDFLARE.md",
+    "limite": "Configuration sans R2 testée localement ; build et publication réels non exécutés. Authentification Free non mesurée."
+  },
+  {
+    "id": "RF-20-001",
+    "section": 20,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "Ordre : audit des deux applications → architecture gratuite → suppression R2 →\nbibliothèque GitHub → connexions universelles → Outil-image → autres outils →\nsécurité/performances/mobile/PWA/hors connexion/conflits/sauvegardes → tests réels et\nconfiguration → commits/documentation/bilan/mise en service. Continuer les phases\nréalisables automatiquement ; ne pas s’arrêter à la description d’un plan.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "RF-21-001",
+    "section": 21,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "Actualiser README, AGENTS, CLAUDE, ARCHITECTURE, CONNECTEURS, AVANCEMENT, VALIDATION,\nDEPLOIEMENT, SAUVEGARDES et matrice d’exigences. Documenter toutes les nouvelles API,\ninterfaces et points de reprise. États explicites : réalisée, testée, partiellement\nréalisée, bloquée, non disponible chez fournisseur. Correspondance historique :\n« réalisé » = code présent ; « vérifié » = preuves exécutées ; les vérifications\nlocales ne prouvent jamais une connexion réelle fournisseur.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "RF-22-001",
+    "section": 22,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "1. Déploiement possible sans R2.\n2. Aucune nouvelle offre payante pour les fonctions essentielles.\n3. Création de compte et connexion.\n4. Projets retrouvables.\n5. GitHub propre connecté.\n6. Dossiers et fichiers des sites visibles.\n7. Changements GitHub détectés.\n8. Consultation et téléchargement des fichiers.\n9. Projet complet ZIP.\n10. Anciennes versions retrouvées et comparées.\n11. Réponses/conversations IA sans R2.\n12. Espace Mes outils.\n13. Ajout simple d’outil externe.\n14. Connexion du site Outil-image.\n15. Aller-retour de projet d’icône éditable.\n16. Nouveaux connecteurs via architecture modulaire.\n17. Isolation stricte multi-utilisateur.\n18. Hors connexion préservé.\n19. Sécurité des opérations et permissions.\n20. Limites réelles honnêtes.\n21. Tests exécutés et documentés.\n22. Utilisation mobile pratique et rapide.\n23. Fonctions existantes compatibles préservées.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
+  },
+  {
+    "id": "RF-23-001",
+    "section": 23,
+    "source": "REFONTE_GRATUITE.md",
+    "exigence": "Code maintenable, intégrations officielles et expérience simple ; aucune suppression\nartificielle de fonctions importantes ni infrastructure complexe inutile. Ne pas\npromettre connexion parfaite d’un service sans interface technique. Aucun détournement\nde session/abonnement/fichiers privés. Revue complète du code modifié et des parcours\ncritiques avant d’annoncer mission terminée. Expliquer précisément les impossibilités\ntechniques/gratuites et leurs alternatives, conserver le maximum de fonctions.\nRésultat attendu : application utilisable, code sur GitHub, validations documentées,\nétapes simples de déploiement. Le développement est exigé, pas seulement un rapport.\n",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": null
   },
   {
     "id": "REQ-23-004",
@@ -3240,30 +3709,6 @@
     "limite": "TS2783 corrigé dans les sources. Compilation complète, intégration, navigateur et déploiement restent à vérifier ; pas de garantie zéro bug."
   },
   {
-    "id": "REQ-24-001",
-    "section": 24,
-    "exigence": "Personnaliser les missions selon le besoin, sans assignation fixe par marque.",
-    "statut": "réalisé",
-    "preuve": "server/collaboration.ts ; web/AssistantTeam.tsx ; tests/collaboration.test.mjs",
-    "limite": "Missions saisies par l’utilisateur ; adaptation autonome des rôles à partir d’une évaluation de la tâche non intégrée."
-  },
-  {
-    "id": "REQ-24-002",
-    "section": 24,
-    "exigence": "Choisir entre démarrage rapide, priorité aux meilleurs choix et compromis dans un délai maximal.",
-    "statut": "réalisé",
-    "preuve": "server/planning.ts ; web/AssistantPlanner.tsx ; tests/planning.test.mjs",
-    "limite": "Choix selon les préférences de l’utilisateur et les disponibilités connues ; pas de score automatique de qualité."
-  },
-  {
-    "id": "REQ-24-003",
-    "section": 24,
-    "exigence": "Utiliser un remplaçant autorisé lorsque le choix préféré attend trop longtemps, ou attendre ce choix lorsque demandé.",
-    "statut": "réalisé",
-    "preuve": "server/planning.ts ; tests/planning.test.mjs",
-    "limite": "Date fondée seulement sur un Retry-After reçu ; abonnements Codex/Claude Code non intégrés. Date inconnue jamais inventée."
-  },
-  {
     "id": "REQ-24-004",
     "section": 24,
     "exigence": "Conserver une tâche différée après fermeture du téléphone, avec accord explicite, annulation et protection contre les doublons.",
@@ -3302,13 +3747,5 @@
     "statut": "réalisé",
     "preuve": "server/routes/tasks.ts ; server/worker.ts ; web/Chat.tsx ; tests/submission.test.mjs",
     "limite": "Proposition confirmée avant la tâche, accord de partage et clé d’idempotence ; relais pendant une tâche encore manuel."
-  },
-  {
-    "id": "REQ-25-001",
-    "section": 25,
-    "exigence": "S’inspirer de la simplicité de Open Chat — Appli de bot IA (AceTools Team, open.chat.gpt.aichat.bot.free.app), en conservant le périmètre complet d’Atelier et une expérience de collaboration plus utile.",
-    "statut": "à faire",
-    "preuve": "Lien fourni par le propriétaire et fiche Google Play consultée le 19/10/2026 ; docs/CAHIER_DES_CHARGES.md section 25 ; web/Chat.tsx panneau Mes assistants",
-    "limite": "Première simplification écrite ; nouvelle compilation et vérification visuelle mobile/navigateur encore nécessaires. Aucun usage de l’application Android ni comparaison de supériorité vérifiés."
   }
 ]

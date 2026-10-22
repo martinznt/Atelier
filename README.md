@@ -1,8 +1,9 @@
-> Mise à jour du 19 octobre 2026 : le dernier build Cloudflare a compilé le site,
-> puis la publication a échoué sur un identifiant D1 nul. Le véritable identifiant
-> est conservé dans `cloudflare.production.json` ; l’origine HTTPS reste à renseigner.
-> Voir [le déploiement](docs/INSTALLATION_CLOUDFLARE.md) et [les validations](docs/VALIDATION.md).
-> Le périmètre complet, y compris la [mémoire partagée](docs/PASSERELLE.md), reste demandé.
+> Refonte gratuite en cours sur `feat/stockage-gratuit-outils` (21 octobre 2026).
+> R2 retiré du serveur et de la configuration ; petits textes privés dans D1,
+> versions préservées. Bibliothèque GitHub complète et Mes outils/Outil-image encore
+> à développer. Ce lot n’est pas une livraison complète validée. Voir
+> [mission](docs/REFONTE_GRATUITE.md), [avancement](docs/AVANCEMENT.md),
+> [limites gratuites](docs/LIMITES_GRATUITES.md) et [validation](docs/VALIDATION.md).
 
 # Atelier
 
@@ -19,7 +20,7 @@ Le dépôt privé est [martinznt/Atelier](https://github.com/martinznt/Atelier),
 - Connecteurs API officiels OpenAI, Anthropic et Gemini ; passage de relais, comparaison et revue avec consentement explicite.
 - Connexions nommées, rôles personnalisés, choix selon délai et préférences, catalogue actualisable avec accord. Voir [le guide](docs/GUIDE_ASSISTANTS.md).
 - Tâches Cloudflare Queues, statut persistant, arrêt et sauvegardes de réponses intermédiaires. Aucun code généré n’est exécuté dans le serveur.
-- Fichiers R2 privés, versions immuables, restauration, corbeille, téléchargements et ZIP avec manifeste SHA-256.
+- Petits fichiers texte D1 privés, versions immuables, restauration, corbeille, téléchargements et ZIP avec manifeste SHA-256.
 - GitHub intégré : dépôts autorisés, branches, fichiers, commits, contrôles, sauvegarde avec détection de conflit, pull requests en brouillon.
 - Cloudflare Pages : consultation, relance et retour à un déploiement existant. Netlify : aperçu ZIP, consultation et publication explicite.
 - PWA, coffre local chiffré sur appareil de confiance, lecture des éléments synchronisés, téléchargement explicite des fichiers et brouillons non envoyés.
@@ -37,7 +38,7 @@ npm run db:migrate
 npm run dev
 ```
 
-Ouvrir `http://localhost:8787`. Le serveur local Wrangler émule Workers, D1, R2 et Queues. `npm run setup` crée uniquement une clé locale dans `.dev.vars`, ignorée par Git. Le volume local est `.wrangler/state`.
+Ouvrir `http://localhost:8787`. Le serveur local Wrangler émule Workers, D1 et Queues. `npm run setup` crée uniquement une clé locale dans `.dev.vars`, ignorée par Git. Le volume local est `.wrangler/state`.
 
 La première inscription crée un compte vide. Aucun compte de démonstration, aucune clé prédéfinie. Conservez les codes de récupération. Ajoutez vos services dans **Réglages → Connexions → Ajouter**, définissez leurs accès et testez-les. Une clé API peut entraîner une facturation fournisseur : rien n’est envoyé à une IA avant votre action explicite.
 
@@ -62,15 +63,15 @@ Le verrou des dépendances doit être généré par le premier `npm install` ré
 
 ## Déployer sur Cloudflare
 
-Suivre [INSTALLATION_CLOUDFLARE.md](docs/INSTALLATION_CLOUDFLARE.md). Atelier utilise un **Worker avec assets, D1, R2 et Queues**, et ne peut pas être livré comme simple dossier Pages statique. Le scrypt nécessite un budget CPU adapté ; une formule Workers payante peut être nécessaire. R2, Queues, stockage et API IA ont leurs propres coûts et conditions.
+Suivre [INSTALLATION_CLOUDFLARE.md](docs/INSTALLATION_CLOUDFLARE.md). Atelier utilise un **Worker avec assets, D1 et Queues**, et ne peut pas être livré comme simple dossier Pages statique. Objectif : fonctions essentielles sur l’offre gratuite sans R2 ni carte supplémentaire. Le CPU scrypt sur Workers Free reste à mesurer ; aucune formule payante ne sera activée silencieusement. Les API IA ont leurs conditions séparées.
 
-Dans Workers Builds, conserver `npm run build` et choisir **`npm run deploy:cloudflare`** comme commande de déploiement. Le script lit les paramètres non secrets de `cloudflare.production.json`, vérifie l’origine HTTPS, génère la copie de production, applique les migrations puis publie. L’origine actuellement `null` doit être remplacée par la vraie adresse ou par la variable de build `ATELIER_PUBLIC_ORIGIN`. `wrangler.jsonc` reste le modèle local ; ne pas le publier directement. Les ressources et le secret serveur doivent être configurés selon le guide.
+Dans Workers Builds, conserver `npm run build` et choisir **`npm run deploy:cloudflare`** comme commande de déploiement. Le script lit les paramètres non secrets de `cloudflare.production.json`, vérifie l’origine HTTPS, génère la copie de production, applique les migrations puis publie. L’origine de production est renseignée : https://atelier.martin-zannet22.workers.dev. `wrangler.jsonc` reste le modèle local ; ne pas le publier directement. Les ressources et le secret serveur doivent être configurés selon le guide.
 
 ## Références communes aux assistants
 
 - [Cahier des charges intégral](docs/CAHIER_DES_CHARGES.md), avec toutes les précisions utilisateur.
 - [Avancement et prochaine étape](docs/AVANCEMENT.md).
-- [414 exigences suivies individuellement](docs/EXIGENCES.json).
+- [Exigences suivies individuellement](docs/EXIGENCES.json).
 - [Architecture](docs/ARCHITECTURE.md), [connecteurs](docs/CONNECTEURS.md), [validation](docs/VALIDATION.md).
 - [Sécurité](docs/SECURITE.md), [sauvegarde et restauration](docs/SAUVEGARDES.md).
 - `AGENTS.md` et `CLAUDE.md` renvoient vers ces mêmes documents.

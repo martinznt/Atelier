@@ -6,6 +6,9 @@ import {inspectConfiguration} from './deploy-check.mjs';
 /** Configuration only: no request, resource creation, migration or deployment. */
 export function productionConfiguration(source,{databaseId,origin,accountId}={}) {
  const config=structuredClone(source);
+ // Remove the obsolete binding even from an existing private production copy.
+ delete config.r2_buckets;
+ config.vars={...config.vars,STORAGE_LIMIT_MB:'20',MAX_FILE_MB:'0.25'};
  const database=config.d1_databases?.find(binding=>binding.binding==='DB');
  if(!database)throw new Error('Le binding D1 DB manque dans la configuration.');
  if(databaseId!==undefined)database.database_id=databaseId.trim();

@@ -1,3 +1,35 @@
+# Validation de la refonte — 21 octobre 2026
+
+Dernière exécution complète : **161 tests locaux réussis** (9 cœur/schéma,
+27 passerelle, 125 régressions incluant stockage et gardes). Aucun test fournisseur
+ou navigateur compris dans ce total.
+
+- tests/storage-store.test.mjs : **11 réussis**, statements de production sur SQLite,
+  isolation A/B, UTF-8/BOM/limites, versions/restauration, conflit concurrent, quotas,
+  rollback, cascade et migration depuis les cinq anciens schémas. Aucun R2 simulé.
+- test:core : **9 réussis**, dont sauvegarde/restauration SQLite isolée réelle.
+- test:bridge : **27 réussis**, HTTP local Request/Response, pas les fournisseurs.
+- Régressions existantes : **111 réussies** après refactorisation. Ajouts ensuite :
+  **1 test configuration** (ancienne copie avec binding retiré) et **2 tests garde**
+  (refus de branche et priorité WORKERS_CI_BRANCH), tous réussis.
+- npm run configure:cloudflare : réussi, fichier privé généré sans r2_buckets et
+  sans toucher aux ressources distantes. Origine et D1 réelles du dépôt conservées.
+- Syntaxe Babel : 58 TS/TSX valides au contrôle effectué. Ce n’est pas un typage.
+- git diff --check : réussi au contrôle effectué.
+- npm run check / npm run build : arrêt 127, tsc absent ; npm test : 127, vitest absent.
+  Aucun nouveau build/Miniflare/navigateur/visuel/PWA ou test fournisseur réussi.
+- Curl terminal vers npm : échec immédiat proxy:8080 ; demande réseau supplémentaire
+  du 19 octobre interrompue sans résultat. Ne pas relancer une attente identique.
+
+Les anciens contenus R2 n’ont pas été lus/migrés, seule la conservation des références
+est testée. Les réponses IA à saturation sont testées au niveau du helper de capture,
+pas par une inférence réelle. Aucun accès Cloudflare configuré et aucune publication
+réalisée. CPU scrypt Workers Free et acceptation complète restent non vérifiés.
+Les résultats ci-dessous décrivent les lots historiques.
+
+
+---
+
 # Contrôles du 19 octobre 2026
 
 ## Livraison du lot applicatif et dernier contrôle consulté

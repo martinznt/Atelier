@@ -9,7 +9,7 @@ export function inspectConfiguration(config) {
  if(config){
   const db=config.d1_databases?.find(x=>x.binding==='DB');
   check('database',typeof db?.database_id==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(db.database_id)&&db.database_id!=='00000000-0000-0000-0000-000000000000','Renseigner l’identifiant D1 réellement retourné par Cloudflare.');
-  check('files',config.r2_buckets?.some(x=>x.binding==='FILES'&&x.bucket_name),'Déclarer FILES sur le bucket R2 privé.');
+  check('no-required-r2',!config.r2_buckets?.length,'Aucun bucket R2 ne doit être requis pour Atelier.');
   const queue=config.queues?.producers?.find(x=>x.binding==='TASKS');
   check('tasks',queue?.queue&&config.queues?.consumers?.some(x=>x.queue===queue.queue),'Déclarer TASKS et son consommateur sur la même Queue.');
   check('maintenance',config.triggers?.crons?.length,'Conserver le planificateur de reprise et suppression des comptes.');
