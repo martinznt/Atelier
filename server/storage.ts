@@ -17,6 +17,12 @@ export async function writeVersion(env:Env,user:string,file:string,bytes:Uint8Ar
 export function isTextFile(name:string,mime:string){return mime.startsWith('text/')||/^(application\/(json|[^;]+\+json|xml|javascript|x-yaml)|image\/svg\+xml)(;|$)/i.test(mime)||/\.(md|txt|json|js|ts|tsx|jsx|css|html|csv|xml|yml|yaml|py|sql|sh|svg|toml|rs|go|c|h|cpp|vue|svelte)$/i.test(name);}
 /** Provider boundary. Callers never access a bucket or an external token. */
 export async function readVersion(env:Env,user:string,version:Row) {
+  if (
+  typeof version.id !== 'string' ||
+  typeof version.sha256 !== 'string' ||
+  !Number.isSafeInteger(version.size) ||
+  version.size < 0
+ ) fail(500, 'Métadonnées de version invalides.');
  try {
   const text=await readTextVersion(env.DB,user,version.id);
   const bytes=new TextEncoder().encode(text);
