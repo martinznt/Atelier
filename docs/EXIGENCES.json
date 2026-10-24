@@ -3264,6 +3264,22 @@
     "limite": null
   },
   {
+    "id": "REQ-27-001",
+    "section": 27,
+    "exigence": "« Je veux que le mot de passe puisse faire min 8 caractere pas 12 c trop et je veux que il faille se connecter avec une adresse mail ».",
+    "statut": "réalisé",
+    "preuve": "migrations/0007_email_identity.sql ; server/account-policy.ts ; server/auth.ts ; server/auth-store.ts ; web/Auth.tsx ; tests/email-identity.test.mjs ; docs/COMPTES.md",
+    "limite": "11 tests identité et un transport exécutés sur helpers/politiques ; compilation, routes HTTP et navigateur non exécutés. Pas de déploiement de ce lot."
+  },
+  {
+    "id": "REQ-27-002",
+    "section": 27,
+    "exigence": "Cette précision remplace les anciennes exigences d’inscription sans email :\nadresse obligatoire à l’inscription et à la connexion, minimum de 8 caractères\npour un nouveau mot de passe. L’absence de validation email obligatoire reste\nconservée ; ne jamais récupérer/fusionner un compte avec une adresse non vérifiée.\nPréserver les comptes existants et leurs données par enrôlement authentifié.\nVoir COMPTES.md et REPRISE_CODEX.md pour l’implémentation et ses preuves.\n",
+    "statut": "réalisé",
+    "preuve": "migrations/0007_email_identity.sql ; server/account-policy.ts ; server/auth.ts ; server/auth-store.ts ; web/Auth.tsx ; tests/email-identity.test.mjs ; docs/COMPTES.md",
+    "limite": "11 tests identité et un transport exécutés sur helpers/politiques ; compilation, routes HTTP et navigateur non exécutés. Pas de déploiement de ce lot."
+  },
+  {
     "id": "RF-00-001",
     "section": 0,
     "source": "REFONTE_GRATUITE.md",

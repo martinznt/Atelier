@@ -1,3 +1,14 @@
+# Lot comptes email en préparation — 24 octobre 2026
+
+Ne pas intégrer/publiciser la branche feat/email-password-eight avant compilation
+et tests HTTP/E2E. Appliquer ensuite les migrations manquantes jusqu’à 0007, après
+sauvegarde, sur la D1 existante : ni recréation ni reset. 0007 préserve les anciens
+comptes ; ils utilisent « J’avais un compte sans email » pour ajouter une adresse
+après authentification. Nouveau minimum : 8 caractères. Voir COMPTES.md.
+Le script de publication reste réservé à main. Aucun nouveau secret mail requis.
+
+---
+
 # Déploiement Cloudflare — refonte sans R2
 
 La branche feat/stockage-gratuit-outils est en développement. Ne pas la publier

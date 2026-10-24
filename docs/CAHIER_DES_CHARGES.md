@@ -699,3 +699,14 @@ formats d’écran avant de revendiquer une meilleure ergonomie.
 Le nouveau périmètre complet est conservé dans [REFONTE_GRATUITE.md](REFONTE_GRATUITE.md).
 Il complète ce document et prévaut sur les anciennes obligations R2/payantes.
 Les exigences RF sont suivies dans la même matrice EXIGENCES.json.
+
+## 27. Email et minimum du mot de passe — 24 octobre 2026
+
+« Je veux que le mot de passe puisse faire min 8 caractere pas 12 c trop et je veux que il faille se connecter avec une adresse mail ».
+
+Cette précision remplace les anciennes exigences d’inscription sans email :
+adresse obligatoire à l’inscription et à la connexion, minimum de 8 caractères
+pour un nouveau mot de passe. L’absence de validation email obligatoire reste
+conservée ; ne jamais récupérer/fusionner un compte avec une adresse non vérifiée.
+Préserver les comptes existants et leurs données par enrôlement authentifié.
+Voir COMPTES.md et REPRISE_CODEX.md pour l’implémentation et ses preuves.

@@ -1,3 +1,11 @@
+> Lot du 24 octobre : email obligatoire et mot de passe de 8 caractères minimum
+> implémentés sur `feat/email-password-eight`, avec transition des anciens comptes.
+> 173 tests locaux réussis ; compilation, HTTP et navigateur restent à exécuter.
+> Pour reprendre dans une autre conversation, lire [REPRISE_CODEX.md](docs/REPRISE_CODEX.md).
+> Les anciennes mentions « sans email » ci-dessous sont remplacées par cette demande.
+
+---
+
 > Refonte gratuite en cours sur `feat/stockage-gratuit-outils` (21 octobre 2026).
 > R2 retiré du serveur et de la configuration ; petits textes privés dans D1,
 > versions préservées. Bibliothèque GitHub complète et Mes outils/Outil-image encore

@@ -40,3 +40,12 @@ additives. Exécuter `npm run test:storage` en plus des contrôles précédents.
 Ne pas rejouer les longues demandes réseau interrompues ; documenter la compilation
 bloquée et poursuivre les tests disponibles. Les secrets Cloudflare sont absents
 de cet environnement ; ne pas utiliser le connecteur GitHub comme jeton applicatif.
+
+Reprise du 24 octobre : lire docs/REPRISE_CODEX.md et docs/COMPTES.md. La nouvelle
+demande utilisateur exige email et mots de passe de 8 caractères minimum ; elle
+remplace les anciennes consignes sans email. Ne pas fusionner/récupérer sur une
+adresse non vérifiée. 0007_email_identity.sql est additive ; conserver IDs et données.
+Branche feat/email-password-eight. Tests natifs passent ; typage/build/HTTP/browser
+restent bloqués par les dépendances absentes. Le workspace local est un snapshot
+SHA-vérifié de main 31c8172, l’historique Git distant doit rester parent des commits
+publiés. Ne pas pousser le root-commit local en remplaçant l’historique du dépôt.
