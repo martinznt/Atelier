@@ -1,3 +1,11 @@
+# Reprise du 24 octobre 2026
+
+GitHub fonctionne de nouveau. Les nouvelles sources de comptes sont sur une branche
+dédiée, avec migration 0007 additive, à compiler/tester avant main. Aucun déploiement
+de ce lot effectué ; aucun secret mail ou R2 à créer. Voir REPRISE_CODEX.md.
+
+---
+
 # Reprise sans R2 — 21 octobre 2026
 
 La mission nouvelle remplace les anciennes consignes de création R2 ci-dessous.

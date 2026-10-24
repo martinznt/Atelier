@@ -10,7 +10,7 @@ beforeAll(async()=>{
  const db=await mf.getD1Database('DB');
  // Exercise the complete application schema, including bridge exports and OAuth tables.
  for(const migration of (await readdir('migrations')).filter(name=>/^\d+.*\.sql$/.test(name)).sort())await db.exec(await readFile(`migrations/${migration}`,'utf8'));
- const first=await json('/auth/register','POST',{username:'alice',password:'phrase-de-test-solide-2026'},'');expect(first.status).toBe(201);a=first.cookie!;const second=await json('/auth/register','POST',{username:'bob',password:'autre-phrase-solide-2026'},'');expect(second.status).toBe(201);b=second.cookie!;
+ const first=await json('/auth/register','POST',{email:'alice@example.test',password:'phrase-de-test-solide-2026'},'');expect(first.status).toBe(201);a=first.cookie!;const second=await json('/auth/register','POST',{email:'bob@example.test',password:'autre-phrase-solide-2026'},'');expect(second.status).toBe(201);b=second.cookie!;
  project=(await json('/projects','POST',{name:'Projet de test'})).body.id;conversation=(await json('/conversations','POST',{project_id:project,title:'Conversation'})).body.id;file=(await json('/files/text','POST',{project_id:project,name:'test.txt',content:'version une'})).body.file_id;
  ownerA=first.body.user.id;ownerB=second.body.user.id;
  const bridgeA=await json(`/bridge/project/${project}`,'POST',{});expect(bridgeA.status).toBe(200);spaceA=bridgeA.body.id;
@@ -22,7 +22,7 @@ beforeAll(async()=>{
 // Prepared for Miniflare/Vitest: native bridge tests do not validate these Hono routes.
 describe('passerelle intégrée : sessions Hono, propriétaires et en-têtes non fiables',()=>{
  it('retrouve la même mémoire de projet et le contenu importé après une nouvelle connexion',async()=>{
-  const login=await json('/auth/login','POST',{username:'alice',password:'phrase-de-test-solide-2026'},'');expect(login.status).toBe(200);expect(login.cookie).toBeTruthy();
+  const login=await json('/auth/login','POST',{email:'alice@example.test',password:'phrase-de-test-solide-2026'},'');expect(login.status).toBe(200);expect(login.cookie).toBeTruthy();
   const linked=await json(`/bridge/project/${project}`,'GET',undefined,login.cookie!);expect(linked.status).toBe(200);expect(linked.body.space.id).toBe(spaceA);
   expect((await json(`/bridge/project/${project}`,'POST',{},login.cookie!)).body.id).toBe(spaceA);
   const history=await json(`/bridge/conversations/${importedConversation}`,'GET',undefined,login.cookie!);expect(history.status).toBe(200);expect(history.body.items.map((message:any)=>message.content)).toContain(importedMessage);
@@ -32,7 +32,7 @@ describe('passerelle intégrée : sessions Hono, propriétaires et en-têtes non
  });
 
  it('refuse les URL de la mémoire d’Alice à Bob, y compris import, export et modification',async()=>{
-  const login=await json('/auth/login','POST',{username:'bob',password:'autre-phrase-solide-2026'},'');expect(login.status).toBe(200);expect(login.cookie).toBeTruthy();
+  const login=await json('/auth/login','POST',{email:'bob@example.test',password:'autre-phrase-solide-2026'},'');expect(login.status).toBe(200);expect(login.cookie).toBeTruthy();
   const cookie=login.cookie!;
   for(const path of [`/bridge/project/${project}`,`/bridge/spaces/${spaceA}`,`/bridge/spaces/${spaceA}/context-history`,`/bridge/spaces/${spaceA}/conversations`,`/bridge/spaces/${spaceA}/handoffs`,`/bridge/spaces/${spaceA}/export`,`/bridge/conversations/${importedConversation}`])expect((await call(path,'GET',undefined,cookie)).status,path).toBe(404);
   for(const [path,method,body] of [
@@ -89,7 +89,7 @@ describe('compte affiché et cookie partagé entre onglets',()=>{
   const response=await call('/auth/logout','POST',{},b,{'X-Atelier-Account':ownerA});
   expect(response.status).toBe(401);expect(response.headers.get('set-cookie')).toBeNull();
   expect((await json('/auth/me','GET',undefined,b)).status).toBe(200);
-  const login=await json('/auth/login','POST',{username:'alice',password:'phrase-de-test-solide-2026'},'');
+  const login=await json('/auth/login','POST',{email:'alice@example.test',password:'phrase-de-test-solide-2026'},'');
   const ended=await call('/auth/logout','POST',{},login.cookie!,{'X-Atelier-Account':ownerA});
   expect(ended.status).toBe(200);expect(ended.headers.get('set-cookie')).toContain('atelier_session=');
   expect((await json('/auth/me','GET',undefined,login.cookie!)).status).toBe(401);
@@ -99,7 +99,7 @@ describe('compte affiché et cookie partagé entre onglets',()=>{
 });
 describe('sécurité et persistance réelles D1 sans R2 locales',()=>{
  it('hachage scrypt bibliothèque, mot de passe incorrect et sel distinct',async()=>{const hash=await hashPassword('test mot de passe 123');expect(await verifyPassword('test mot de passe 123',hash)).toBe(true);expect(await verifyPassword('mauvais',hash)).toBe(false);expect(await hashPassword('test mot de passe 123')).not.toBe(hash);});
- it('compte sans email, sessions sécurisées et refus sans session',async()=>{expect((await json('/auth/me')).body.user.username).toBe('alice');expect((await json('/projects','GET',undefined,'')).status).toBe(401);const login=await call('/auth/login','POST',{username:'alice',password:'phrase-de-test-solide-2026'},'');expect(login.headers.get('set-cookie')).toMatch(/HttpOnly/i);expect(login.headers.get('set-cookie')).toMatch(/SameSite=Strict/i);});
+ it('compte email, sessions sécurisées et refus sans session',async()=>{expect((await json('/auth/me')).body.user.email).toBe('alice@example.test');expect((await json('/projects','GET',undefined,'')).status).toBe(401);const login=await call('/auth/login','POST',{email:'alice@example.test',password:'phrase-de-test-solide-2026'},'');expect(login.headers.get('set-cookie')).toMatch(/HttpOnly/i);expect(login.headers.get('set-cookie')).toMatch(/SameSite=Strict/i);});
  it('refuse explicitement les URL et IDs privés de A pour B',async()=>{for(const path of [`/projects/${project}`,`/conversations/${conversation}/messages`,`/files/${file}/download`,`/files/${file}/versions`,`/files/${file}/preview`])expect((await call(path,'GET',undefined,b)).status,path).toBe(404);expect((await json('/conversations','POST',{project_id:project,title:'Intrusion'},b)).status).toBe(404);expect((await json('/projects','GET',undefined,b)).body.items).toEqual([]);expect((await json('/files/zip','POST',{ids:[file]},b)).status).toBe(404);});
  it('ignore un identifiant utilisateur fourni par le navigateur',async()=>{const me=(await json('/auth/me','GET',undefined,b)).body.user;const result=await json('/projects','POST',{name:'À Alice',user_id:me.id});expect(result.body.user_id).not.toBe(me.id);});
  it('bloque les mutations depuis une origine tierce',async()=>{const response=await mf.dispatchFetch(`${origin}/api/projects`,{method:'POST',headers:{Cookie:a,Origin:'https://evil.example','Content-Type':'application/json'},body:'{"name":"bad"}'});expect(response.status).toBe(403);});
@@ -130,7 +130,7 @@ describe('sécurité et persistance réelles D1 sans R2 locales',()=>{
  it('ZIP intègre des fichiers réels et un manifeste SHA-256',async()=>{const response=await call('/files/zip','POST',{ids:[file]});expect(response.status).toBe(200);const archive=unzipSync(new Uint8Array(await response.arrayBuffer()));const manifest=JSON.parse(strFromU8(archive['integrite.json']));expect(manifest[0].sha256).toHaveLength(64);expect(strFromU8(archive[manifest[0].path])).toBe('version une');});
  it('pagination des longues conversations',async()=>{for(let i=0;i<35;i++)await json(`/conversations/${conversation}/notes`,'POST',{content:`Note ${i}`});const first=(await json(`/conversations/${conversation}/messages`)).body;expect(first.items.length).toBe(30);expect(first.next).not.toBeNull();const second=(await json(`/conversations/${conversation}/messages?before=${first.next}`)).body;expect(second.items.length).toBe(5);expect(new Set([...first.items,...second.items].map(m=>m.id)).size).toBe(35);});
  it('export exclut mots de passe, sessions et secrets fournisseurs',async()=>{const result=await json('/account/export?metadata=true');const text=JSON.stringify(result.body);expect(text).not.toContain('password_hash');expect(text).not.toContain('token_hash');expect(text).not.toContain('code_hash');expect(result.body.projects.length).toBeGreaterThan(0);});
- it('révocation, déconnexion et récupération à usage unique',async()=>{const c=await json('/auth/register','POST',{username:'carole',password:'mot-de-passe-de-carole'},'');const cookie=c.cookie!,code=c.body.recoveryCodes[0];expect(c.body.recoveryCodes.length).toBe(8);expect((await json('/auth/logout','POST',{},cookie)).status).toBe(200);expect((await json('/auth/me','GET',undefined,cookie)).status).toBe(401);const recovered=await json('/auth/recover','POST',{username:'carole',password:'nouveau-mot-de-passe-de-carole',code},'');expect(recovered.status).toBe(200);expect((await json('/auth/recover','POST',{username:'carole',password:'encore-autre-mot-de-passe',code},'')).status).toBe(401);});
+ it('révocation, déconnexion et récupération à usage unique',async()=>{const c=await json('/auth/register','POST',{email:'carole@example.test',password:'mot-de-passe-de-carole'},'');const cookie=c.cookie!,code=c.body.recoveryCodes[0];expect(c.body.recoveryCodes.length).toBe(8);expect((await json('/auth/logout','POST',{},cookie)).status).toBe(200);expect((await json('/auth/me','GET',undefined,cookie)).status).toBe(401);const recovered=await json('/auth/recover','POST',{email:'carole@example.test',password:'nouveau-mot-de-passe-de-carole',code},'');expect(recovered.status).toBe(200);expect((await json('/auth/recover','POST',{email:'carole@example.test',password:'encore-autre-mot-de-passe',code},'')).status).toBe(401);});
 });
 
 // Fixture credentials and catalogues only. No inference or provider test is invoked.
@@ -181,5 +181,30 @@ describe('connexions nommées et propositions de tâches isolées',()=>{
   expect((await json(`/tasks/${started.body.id}`)).body.status).toBe('cancelled');
   await db.prepare('UPDATE connections SET models_revision=models_revision+1 WHERE id=?').bind(connection).run();
   expect((await json('/tasks','POST',{...body,idempotency_key:crypto.randomUUID(),allow_scheduled:true})).status).toBe(409);
+ });
+});
+
+// These routes require Miniflare and actual password hashing; native SQLite tests do not replace them.
+describe('email et mots de passe de huit caractères',()=>{
+ it('refuse sept caractères, email absent/invalide et accepte exactement huit',async()=>{
+  for(const data of [{email:'eight@example.test',password:'1234567'},{username:'legacy-new',password:'12345678'},{email:'not-email',password:'12345678'}])expect((await json('/auth/register','POST',data,'')).status).toBe(400);
+  const registered=await json('/auth/register','POST',{email:' Eight@Example.Test ',password:'abcdefgh'},'');expect(registered.status).toBe(201);expect(registered.body.user.email).toBe('eight@example.test');expect(registered.body.user.needs_email).toBe(false);
+  const login=await json('/auth/login','POST',{email:'EIGHT@example.test',password:'abcdefgh'},'');expect(login.status).toBe(200);
+  expect((await json('/auth/register','POST',{email:'EIGHT@example.test',password:'abcdefgh'},'')).status).toBe(409);
+  expect((await json('/auth/password','POST',{currentPassword:'abcdefgh',newPassword:'1234567'},login.cookie!)).status).toBe(400);
+  const changed=await json('/auth/password','POST',{currentPassword:'abcdefgh',newPassword:'12345678'},login.cookie!);expect(changed.status).toBe(200);
+  const recovered=await json('/auth/recover','POST',{email:'eight@example.test',password:'87654321',code:registered.body.recoveryCodes[0]},'');expect(recovered.status).toBe(200);
+ });
+ it('un ancien compte ajoute son email avec preuve de mot de passe et conserve son propriétaire',async()=>{
+  const db=await mf.getD1Database('DB'),id=crypto.randomUUID(),hash=await hashPassword('legacy-password');
+  await db.prepare('INSERT INTO users(id,username,password_hash,created_at) VALUES(?,?,?,?)').bind(id,'old-account',hash,new Date().toISOString()).run();
+  const old=await json('/auth/legacy-login','POST',{username:'old-account',password:'legacy-password'},'');expect(old.status).toBe(200);expect(old.body.user.needs_email).toBe(true);
+  expect((await call('/projects','GET',undefined,old.cookie!)).status).toBe(403);
+  expect((await json('/auth/email','POST',{email:'old@example.test',password:'wrong'},old.cookie!)).status).toBe(403);
+  expect((await json('/auth/email','POST',{email:'old@example.test',password:'legacy-password'},b)).status).toBe(409);
+  const added=await json('/auth/email','POST',{email:'old@example.test',password:'legacy-password'},old.cookie!);expect(added.status).toBe(200);expect(added.body.user.id).toBe(id);expect(added.body.user.needs_email).toBe(false);
+  expect((await call('/auth/me','GET',undefined,old.cookie!)).status).toBe(401);
+  expect((await json('/auth/legacy-login','POST',{username:'old-account',password:'legacy-password'},'')).status).toBe(401);
+  const again=await json('/auth/login','POST',{email:'old@example.test',password:'legacy-password'},'');expect(again.status).toBe(200);expect(again.body.user.id).toBe(id);
  });
 });

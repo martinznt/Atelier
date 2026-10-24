@@ -1,3 +1,29 @@
+# Comptes email — contrôles du 24 octobre 2026
+
+- **173 tests locaux réussis** : test:core 9 (3 Node + 6 Python), test:bridge 27,
+  test:regressions 137. Les 12 ajouts couvrent minimum exact 8/7, Unicode, adresses
+  invalides/normalisation, transition des anciens comptes, adresse unique/casse,
+  conflit concurrent, propriétaire incorrect, compte désactivé/hash ancien, rollback,
+  session/récupération ancienne après enrôlement et routes publiques de transition.
+- Restauration de la copie locale : **133 blobs conformes aux SHA de main 31c8172**,
+  y compris icônes binaires et correction storage.ts du propriétaire. Aucun ancien
+  workspace applicatif présent ; les changements non enregistrés ne sont pas récupérés.
+- Analyse Babel : **59 sources TS/TSX syntaxiquement valides**, aucun typage déduit.
+- Nouveaux cas Miniflare écrits : email obligatoire/absent/invalide/dupliqué, 8 vs 7,
+  login/changement/récupération, ancien compte/enrôlement, mauvais mot de passe,
+  refus du compte B et révocation de l’ancienne session. **Non exécutés**.
+- E2E actualisé pour email + mot de passe exactement huit ; **non exécuté**.
+- npm run check / npm run build : échec 127, tsc absent. npm test : 127, vitest absent.
+  Curl npm échoue sur proxy:8080. Aucune nouvelle longue demande réseau répétée.
+- Aucun fournisseur, navigateur, CPU scrypt Free, restauration Cloudflare ou déploiement
+  réel validé. La syntaxe et les transactions SQLite ne remplacent pas ces contrôles.
+
+La branche est à vérifier avant intégration. Le journal Cloudflare du 22 octobre
+signalait TS2345 sur readVersion ; la correction manuelle est présente sur main,
+mais un build distant réussi après cette correction n’a pas été fourni.
+
+---
+
 # Validation de la refonte — 21 octobre 2026
 
 Dernière exécution complète : **161 tests locaux réussis** (9 cœur/schéma,

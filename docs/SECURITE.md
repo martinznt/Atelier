@@ -1,3 +1,15 @@
+# Email de connexion — 24 octobre 2026
+
+Email obligatoire mais non vérifié ; aucune authentification, récupération ou fusion
+sur possession alléguée de l’adresse. Le code de récupération reste indispensable.
+Minimum 8 demandé par le propriétaire, scrypt et rate limits conservés. La transition
+des anciens comptes vérifie le mot de passe et son hash actuel dans la transaction,
+refuse un email déjà pris, fait tourner la session et conserve le propriétaire.
+Le vieux parcours est refusé après ajout, y compris ses requêtes retardées. 11 tests
+identité SQLite + un test transport ajoutés ; HTTP/navigateur restent non exécutés.
+
+---
+
 # Refonte du stockage — 21 octobre 2026
 
 Le serveur n’a plus de binding R2. Les versions texte D1 sont immuables et

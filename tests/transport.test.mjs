@@ -61,3 +61,10 @@ test('une ancienne chaîne asynchrone ne démarre plus de lecture ou modificatio
  await assert.rejects(c.api('/tasks',{method:'POST',body:'{}'}),/Connectez-vous/);
  await assert.rejects(c.api('/auth/password',{method:'POST',body:'{}'}),/Connectez-vous/);
 });
+
+test('anciens comptes : connexion et récupération accessibles sans session, ajout email privé',async()=>{
+ let calls=0;const scope=createSessionScope();const cache={user:null,epoch:1,get:async()=>null,put:async()=>assert.fail('auth jamais cachée')};
+ const client=createApiClient({scope,cache,online:()=>true,fetcher:async()=>{calls++;return Response.json({ok:true});}});
+ await client.api('/auth/legacy-login',{method:'POST',body:'{}'});await client.api('/auth/legacy-recover',{method:'POST',body:'{}'});
+ assert.equal(calls,2);await assert.rejects(client.api('/auth/email',{method:'POST',body:'{}'}),/Connectez-vous/);assert.equal(calls,2);
+});

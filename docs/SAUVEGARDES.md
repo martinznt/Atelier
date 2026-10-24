@@ -1,3 +1,13 @@
+# Comptes email — 24 octobre 2026
+
+Conserver users.email dans les sauvegardes D1 et son index unique avec la migration
+0007. L’export ordinaire du compte inclut sa propre adresse, sans secret. Ne jamais
+fusionner les comptes restaurés parce qu’ils indiquent une même adresse non vérifiée.
+Les IDs de propriétaire, hashes et codes des anciens comptes ne sont pas remplacés
+par la migration. Sauvegarder avant d’appliquer les migrations manquantes.
+
+---
+
 # Sauvegardes et restauration — stockage sans R2
 
 Les exports utilisateur incluent projets, conversations, messages, mémoires,

@@ -1,3 +1,31 @@
+# Connexion email et mot de passe de huit caractères — 24 octobre 2026
+
+Branche dédiée : feat/email-password-eight, base distante main 31c8172. La correction
+readVersion ajoutée manuellement par le propriétaire est conservée sans modification.
+Nouvelle demande section 27 du cahier des charges. Reprise complète : REPRISE_CODEX.md.
+
+Réalisé : email obligatoire, mot de passe 8–128 à création/changement/récupération,
+formulaires français, migration additive 0007, enrôlement authentifié des comptes
+historiques, sessions atomiques et ancienne connexion refusée après ajout. Email
+jamais utilisé comme preuve vérifiée, aucun reset/fusion par email. Même user_id,
+projets, fichiers et codes conservés. Export utilisateur inclut son propre email.
+
+Vérifié localement : 173 tests (9 cœur/schéma, 27 passerelle, 137 régressions), dont
+11 identité et un nouveau transport. Syntaxe 59 sources TS/TSX et diff contrôlés.
+Ces contrôles exécutent les helpers de production sur SQLite et les politiques de
+validation ; ils ne valident ni le hachage scrypt réel ni le parcours Hono/navigateur.
+
+Bloqué : proxy npm inaccessible, dépendances absentes. Check/build : tsc absent,
+test Vitest : vitest absent, code 127. Pas de déploiement de ce lot. GitHub fonctionne
+à nouveau, workspace recréé depuis 133 blobs vérifiés ; anciennes modifications non
+commitées de l’explorateur absentes. Aucun accès Cloudflare configuré ici.
+
+Prochaine étape : compilation/tests HTTP/E2E sur la branche, puis intégration main.
+Poursuivre ensuite GitHub/Mes outils/Outil-image et les exigences ouvertes. Le projet
+complet n’est pas livré ; la nouvelle conversation doit lire REPRISE_CODEX.md.
+
+---
+
 # Refonte gratuite — lot stockage du 21 octobre 2026
 
 Branche locale et GitHub : feat/stockage-gratuit-outils. Main distante de référence

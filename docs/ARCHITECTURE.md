@@ -1,3 +1,14 @@
+# Identité des comptes — 24 octobre 2026
+
+La section 27 du cahier des charges remplace l’inscription sans email. Voir COMPTES.md.
+0007 ajoute users.email nullable et unique pour préserver les comptes historiques.
+Normalisation d’adresse, minimum de 8 caractères, garde du hash/sessions inchangée.
+Enrôlement avec mot de passe et transaction D1, rotation de session et même user_id.
+L’adresse non vérifiée n’autorise aucune récupération/fusion. L’export de compte
+contient son propre email ; le coffre hors connexion reste isolé par ID stable.
+
+---
+
 # Architecture de la refonte gratuite — 21 octobre 2026
 
 Le contenu daté ci-dessous décrit les lots précédents et reste historique.

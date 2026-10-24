@@ -25,7 +25,7 @@ export function createApiClient({cache, scope, online, fetcher = fetch, timeoutM
     const method = (init.method || 'GET').toUpperCase();
     const get = method === 'GET';
     const auth = path.startsWith('/auth/');
-    const identityEndpoints = ['/auth/me', '/auth/login', '/auth/register', '/auth/recover', '/auth/logout'];
+    const identityEndpoints = ['/auth/me', '/auth/login', '/auth/register', '/auth/recover', '/auth/legacy-login', '/auth/legacy-recover', '/auth/logout'];
     const privateRequest = !identityEndpoints.includes(path.split('?')[0]);
     const snapshot = scope.snapshot();
     if (privateRequest && !snapshot.owner) throw new ApiError('Connectez-vous pour continuer dans votre compte.', 401);
