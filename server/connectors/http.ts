@@ -8,8 +8,14 @@ export function providerErrorMessage(status:number,code:string):string {
  return 'Le fournisseur a refusé la demande (HTTP '+status+'). L’accès enregistré est conservé ; vérifiez les détails avant de réessayer.';
 }
 export class ProviderError extends Error {
- constructor(public status:number, public code:string, public retryAfter:string|null=null){
+ readonly status:number;
+ readonly code:string;
+ readonly retryAfter:string|null;
+ constructor(status:number,code:string,retryAfter:string|null=null){
   super(providerErrorMessage(status,code));
+  this.status=status;
+  this.code=code;
+  this.retryAfter=retryAfter;
  }
 }
 export const origins:Record<string,string>={github:'https://api.github.com',openai:'https://api.openai.com',anthropic:'https://api.anthropic.com',gemini:'https://generativelanguage.googleapis.com',mistral:'https://api.mistral.ai',cloudflare:'https://api.cloudflare.com',netlify:'https://api.netlify.com'};
