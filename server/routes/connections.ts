@@ -26,7 +26,7 @@ connections.post('/:id/test',async c=>{
 connections.patch('/:id',async c=>{
  const conn=await owned<Connection>(c.env,'connections',c.req.param('id'),userId(c));
  const d=z.object({auto_refresh_models:z.boolean().optional(),label:z.string().trim().min(1).max(80).optional(),secret:z.string().trim().min(10).max(4096).optional(),expires_at:z.string().datetime().nullable().optional()}).strict().refine(value=>value.label!==undefined||value.secret!==undefined||value.auto_refresh_models!==undefined,{message:'Indiquez un nom ou un nouvel accès.'}).parse(await jsonBody(c));
- if(d.auto_refresh_models!==undefined&&!['openai','anthropic','gemini'].includes(conn.provider))fail(400,'Ce service ne propose pas de catalogue de modèles IA.');
+ if(d.auto_refresh_models!==undefined&&!['openai','anthropic','gemini','mistral'].includes(conn.provider))fail(400,'Ce service ne propose pas de catalogue de modèles IA.');
  if(d.secret!==undefined){
   await run(c.env,"UPDATE connections SET label=COALESCE(?,label),secret=?,expires_at=CASE WHEN ? THEN ? ELSE expires_at END,status='untested',models='[]',models_revision=models_revision+1,models_checked_at=NULL,models_refresh_attempted_at=NULL,account_label=NULL,quota=NULL,tested_at=NULL WHERE id=? AND user_id=?",d.label??null,await seal(c.env.MASTER_KEY,d.secret,`${userId(c)}:${conn.id}`),Number(d.expires_at!==undefined),d.expires_at??null,conn.id,userId(c));
  }else if(d.label!==undefined){
