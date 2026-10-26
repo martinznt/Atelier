@@ -3,8 +3,8 @@ type ReadPage=(path:string)=>Promise<CataloguePage>;
 
 /** Official catalogue endpoints only; never returns a silently truncated list. */
 export async function listModels(provider:string,readPage:ReadPage):Promise<{models:string[];quota:unknown}> {
- if(!['openai','anthropic','gemini'].includes(provider))throw new Error('Catalogue non pris en charge.');
- const initial=provider==='openai'?'/v1/models':provider==='anthropic'?'/v1/models?limit=100':'/v1beta/models?pageSize=1000';
+ if(!['openai','anthropic','gemini','mistral'].includes(provider))throw new Error('Catalogue non pris en charge.');
+ const initial=provider==='openai'||provider==='mistral'?'/v1/models':provider==='anthropic'?'/v1/models?limit=100':'/v1beta/models?pageSize=1000';
  let path=initial,count=0;
  const models=new Set<string>(),cursors=new Set<string>();
  for(let page=0;page<10;page++){
@@ -26,7 +26,7 @@ export async function listModels(provider:string,readPage:ReadPage):Promise<{mod
   let cursor:unknown;
   if(provider==='anthropic'&&data.has_more===true)cursor=data.last_id;
   else if(provider==='gemini')cursor=data.nextPageToken;
-  else if(provider==='openai')return {models:[...models].sort(),quota:result.quota};
+  else if(provider==='openai'||provider==='mistral')return {models:[...models].sort(),quota:result.quota};
   if((provider==='anthropic'&&data.has_more!==true)||(provider==='gemini'&&(cursor===undefined||cursor==='')))return {models:[...models].sort(),quota:result.quota};
   if(typeof cursor!=='string'||!cursor||cursor.length>4096||cursors.has(cursor))throw new Error('Pagination fournisseur invalide ; la liste précédente est conservée.');
   cursors.add(cursor);
