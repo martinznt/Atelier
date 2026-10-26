@@ -1,4 +1,6 @@
 export function providerErrorMessage(status:number,code:string):string {
+ if(code==='timeout')return 'Le fournisseur n’a pas répondu dans le délai du test. Aucun appel n’a été relancé automatiquement ; vérifiez son état avant de retester.';
+ if(code==='redirect')return 'Le fournisseur a demandé une redirection HTTP ('+status+'). Atelier ne la suit pas, pour ne jamais transmettre votre jeton à une autre adresse.';
  if(code==='network')return 'Le serveur Atelier ne parvient pas à joindre le fournisseur (réseau ou délai dépassé). La connexion enregistrée est conservée ; consultez le diagnostic avant un nouvel essai.';
  if(status===401||status===403)return 'Le fournisseur refuse cet accès (HTTP '+status+'). Vérifiez que le jeton est valide et autorisé pour le dépôt ; ne lui donnez pas de droits d’écriture supplémentaires.';
  if(status===429)return 'Le fournisseur indique une limite temporaire (HTTP 429). N’insistez pas : vérifiez les quotas avant une nouvelle tentative.';
@@ -28,7 +30,19 @@ export async function request(provider:string,secret:string,path:string,init:Req
  if(provider==='github')headers.set('X-GitHub-Api-Version','2022-11-28');
  if(typeof init.body==='string'&&!headers.has('Content-Type'))headers.set('Content-Type','application/json');
  let response:Response;
- try{response=await fetch(origin+path,{...init,headers,redirect:'error',signal:init.signal??AbortSignal.timeout(90000)});}catch{throw new ProviderError(503,'network');}
+ try{
+  // Cloudflare Workers n'implémente PAS redirect:'error' : cela lève un
+  // TypeError avant le départ. manual empêche la fuite d'Authorization.
+  response=await fetch(origin+path,{...init,headers,redirect:'manual',signal:init.signal??AbortSignal.timeout(90000)});
+ }catch(error){
+  const timedOut=(init.signal?.aborted===true)|| (error instanceof Error && ['TimeoutError','AbortError'].includes(error.name));
+  throw new ProviderError(timedOut?504:503,timedOut?'timeout':'network');
+ }
+ // Ni cookie ni clé API ne peut être envoyé à l'URL d'une redirection.
+ if(response.status>=300&&response.status<400){
+  try{await response.body?.cancel();}catch{}
+  throw new ProviderError(response.status,'redirect');
+ }
  if(!response.ok){try{await response.body?.cancel();}catch{/* garder le code HTTP du fournisseur */}throw new ProviderError(response.status,'http',response.headers.get('retry-after'));}
  return response;
 }
