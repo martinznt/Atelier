@@ -1,6 +1,7 @@
 name: Validation de la chaîne de revues
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - "server/**"
       - "web/**"
@@ -30,8 +31,10 @@ jobs:
       - name: Compilation
         run: npm run build
       - name: Installer Chromium pour les parcours navigateurs
+        if: github.event.pull_request.draft == false
         run: npx playwright install --with-deps chromium
       - name: Tester Atelier en navigateur desktop et Android
+        if: github.event.pull_request.draft == false
         run: npx playwright test --project=chromium-desktop --project=android
       - name: Conserver les captures en cas d'échec
         if: failure()
