@@ -29,3 +29,15 @@ jobs:
         run: npm test
       - name: Compilation
         run: npm run build
+      - name: Installer Chromium pour les parcours navigateurs
+        run: npx playwright install --with-deps chromium
+      - name: Tester Atelier en navigateur desktop et Android
+        run: npx playwright test --project=chromium-desktop --project=android
+      - name: Conserver les captures en cas d'échec
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: captures-navigateur
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 3
