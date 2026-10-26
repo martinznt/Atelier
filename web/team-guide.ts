@@ -1,7 +1,7 @@
 export type TeamMode='individual'|'compare'|'review'|'collaborate';
 export type TeamSelection={selected:string[];models:Record<string,string>;roles:Record<string,string>;mode:TeamMode;rounds:number;consent:boolean};
 export type TeamConnection={id:string;label:string;provider:string;status:string;models:string[];scopes?:string[];api_consent?:number|boolean;expires_at?:string|null;quota?:unknown;tested_at?:string|null;account_label?:string|null;models_checked_at?:string|null;models_revision?:number};
-export const providerName=(provider:string)=>(({openai:'OpenAI API',anthropic:'Claude API',gemini:'Gemini API'} as Record<string,string>)[provider]||provider);
+export const providerName=(provider:string)=>(({openai:'OpenAI API',anthropic:'Claude API',gemini:'Gemini API',mistral:'Mistral API'} as Record<string,string>)[provider]||provider);
 export const teamMethods=[
  {id:'individual',label:'Une réponse',description:'Un assistant répond à votre demande. Un seul appel est prévu.',roles:['Répondre clairement à la demande et signaler les informations manquantes.']},
  {id:'compare',label:'Comparer des idées',description:'Chaque assistant reçoit les mêmes sources et propose sa réponse sans lire celles des autres. Comparez ensuite leurs désaccords.',roles:['Proposer une première solution, avec ses avantages, limites et hypothèses.','Explorer une autre approche et expliquer ses compromis.','Présenter une troisième proposition indépendante et ses limites.']},
