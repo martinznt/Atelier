@@ -1,6 +1,6 @@
 import type { Context } from 'hono';
 export interface Env {
- DB: D1Database; TASKS: Queue<{id:string}>; ASSETS: Fetcher;
+ DB: D1Database; TASKS: Queue<{id:string;kind?:string}>; ASSETS: Fetcher;
  MASTER_KEY: string; APP_ORIGIN: string; ALLOW_REGISTRATION: string;
  STORAGE_LIMIT_MB: string; MAX_FILE_MB: string;
  SITES_AUTHENTICATION?: string;
