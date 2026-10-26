@@ -2,11 +2,11 @@
  * Recommendations are based on existing *tested* API connections, not an invented
  * benchmark or a provider's alleged free allowance. No network request here.
  */
-const unavailableModels=/(embedding|realtime|transcri|whisper|speech|tts|audio|dall-e|imagen|vision-only|moderation)/i;
+const unavailableModels=/(embedding|(^|[-_])embed|realtime|transcri|whisper|speech|tts|audio|dall-e|imagen|vision-only|moderation)/i;
 const economicalHint=/(mini|small|flash|lite|light|haiku|ministral|codestral|devstral)/i;
 export function readableQuota(input){
  if(input && typeof input==='object' && !Array.isArray(input))return input;
- try{return typeof input==='string' ? JSON.parse(input) : {};}catch{return {};}
+ try{const value=typeof input==='string' ? JSON.parse(input) : {};return value&&typeof value==='object'&&!Array.isArray(value)?value:{};}catch{return {};}
 }
 export function activeReviewConnections(connections,at=Date.now()){
  return connections.filter(c=>{
