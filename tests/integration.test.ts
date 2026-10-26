@@ -1,4 +1,5 @@
 import {beforeAll,afterAll,describe,it,expect} from 'vitest';import {Miniflare} from 'miniflare';import {build} from 'esbuild';import {readFile,readdir,mkdir} from 'node:fs/promises';import {unzipSync,strFromU8} from 'fflate';import {hashPassword,verifyPassword} from '../server/password';
+import {normalizeMigrationForD1} from './migration-sql.mjs';
 let mf:Miniflare;let a:string,b:string;const origin='http://localhost:8787';let project:string,conversation:string,file:string;
 let ownerA:string,ownerB:string,spaceA:string,spaceB:string,importedConversation:string;
 const importedMessage='Historique privé Alice : référence CANNELLE-719.';
@@ -11,9 +12,8 @@ beforeAll(async()=>{
  // Exercise the complete application schema, including bridge exports and OAuth tables.
  for(const migration of (await readdir('migrations')).filter(name=>/^\d+.*\.sql$/.test(name)).sort()){
   const sql=await readFile(`migrations/${migration}`,'utf8');
-  // D1 active déjà les contraintes FK et n'autorise pas ce PRAGMA dans une transaction.
-  // On préserve toutes les tables et tous les tests de références réels.
-  await db.exec(sql.replace(/^PRAGMA foreign_keys\s*=\s*ON;\s*/i,''));
+  // Chaque instruction complète tient sur une ligne, triggers SQL compris.
+  await db.exec(normalizeMigrationForD1(sql));
  }
  const first=await json('/auth/register','POST',{email:'alice@example.test',password:'phrase-de-test-solide-2026'},'');expect(first.status).toBe(201);a=first.cookie!;const second=await json('/auth/register','POST',{email:'bob@example.test',password:'autre-phrase-solide-2026'},'');expect(second.status).toBe(201);b=second.cookie!;
  project=(await json('/projects','POST',{name:'Projet de test'})).body.id;conversation=(await json('/conversations','POST',{project_id:project,title:'Conversation'})).body.id;file=(await json('/files/text','POST',{project_id:project,name:'test.txt',content:'version une'})).body.file_id;
