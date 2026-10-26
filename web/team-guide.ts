@@ -24,7 +24,7 @@ export function connectionQuota(connection:Pick<TeamConnection,'quota'>):Record<
 }
 export function connectionIssue(connection:TeamConnection|undefined,model?:string,time=Date.now()):string|null {
  if(!connection)return 'Cette connexion a été retirée. Choisissez un autre assistant.';
- if(!['openai','anthropic','gemini'].includes(connection.provider))return 'Ce service ne propose pas de discussion dans Atelier.';
+ if(!['openai','anthropic','gemini','mistral'].includes(connection.provider))return 'Ce service ne propose pas de discussion dans Atelier.';
  if(connection.expires_at&&(!Number.isFinite(Date.parse(connection.expires_at))||Date.parse(connection.expires_at)<=time))return 'Accès expiré : renouvelez puis testez la connexion.';
  if(connection.status!=='connected')return connection.status==='expired'?'Accès révoqué ou expiré : renouvelez la connexion.':'Testez cette connexion dans Réglages avant de l’utiliser.';
  if(!connection.scopes?.includes('chat')||!(connection.api_consent===1||connection.api_consent===true))return 'Cette connexion n’autorise pas une discussion API.';
