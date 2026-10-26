@@ -11,7 +11,7 @@ export function normalizeMigrationForD1(sql){
   if(/^PRAGMA\s+foreign_keys\s*=\s*ON\s*;/i.test(line))continue;
   if(!current&&/^CREATE\s+(?:TEMP\s+|TEMPORARY\s+)?TRIGGER\b/i.test(line))trigger=true;
   current+=(current?' ':'')+line;
-  const complete=trigger?/\bEND\s*;\s*$/i.test(line):/;\s*$/.test(line);
+  const complete=trigger?(/^END\s*;\s*$/i.test(line)||(/^CREATE\s+(?:TEMP\s+|TEMPORARY\s+)?TRIGGER\b/i.test(line)&&/\bEND\s*;\s*$/i.test(line))):/;\s*$/.test(line);
   if(complete){statements.push(current);current='';trigger=false;}
  }
  if(current.trim())throw Error('Migration SQL incomplète : '+current.slice(0,120));
