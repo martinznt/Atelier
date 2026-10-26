@@ -46,6 +46,11 @@ export function prepareConfiguration({directory=process.cwd(),environment=proces
   origin:environment.ATELIER_PUBLIC_ORIGIN??defaults.origin??undefined,
   accountId:environment.CLOUDFLARE_ACCOUNT_ID??defaults.accountId??undefined,
  });
+ // Workers Builds exposes the actual Git revision only while building. Never
+ // overwrite a previously deployed revision with an invented SHA.
+ const sha=environment.WORKERS_CI_COMMIT_SHA||environment.GITHUB_SHA;
+ if(typeof sha==='string'&&/^[a-f0-9]{40}$/i.test(sha))config.vars.RELEASE_SHA=sha.toLowerCase();
+ else delete config.vars.RELEASE_SHA;
  // Validate everything before touching an existing file or starting migrations.
  writeFileSync(target,JSON.stringify(config,null,2)+'\n',{mode:0o600});
  return config;
