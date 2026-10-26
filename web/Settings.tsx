@@ -32,6 +32,7 @@ function QuotaStatus({value}:{value:unknown}){
 function ConnectionsPanel({connections,usage,onChanged}:{connections:any[];usage:any;onChanged:()=>Promise<void>}){
  const [adding,setAdding]=useState<{provider?:string}|null>(null),[renew,setRenew]=useState<any>(null),[rename,setRename]=useState<any>(null),[label,setLabel]=useState(''),[secret,setSecret]=useState(''),[expires,setExpires]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState<unknown>(null),[notice,setNotice]=useState('');
  const [diagnostic,setDiagnostic]=useState<{ready:boolean;checks:{id:string;label:string;status:'ok'|'error';detail:string}[]}|null>(null),[diagnosing,setDiagnosing]=useState(false);
+ const [githubProbe,setGithubProbe]=useState<{reachable:boolean;http_status:number|null;outcome:string;advice:string}|null>(null),[probingGithub,setProbingGithub]=useState(false);
  const alive=useRef(true),working=useRef(false);
  useEffect(()=>{alive.current=true;return()=>{alive.current=false;};},[]);
  async function act(action:()=>Promise<any>,message:string,done?:()=>void){
@@ -40,6 +41,12 @@ function ConnectionsPanel({connections,usage,onChanged}:{connections:any[];usage
   try{const result=await action();if(!current())return;setNotice(result.message||message);done?.();await onChanged();}
   catch(e){if(current()){setError(e);await onChanged();}}
   finally{working.current=false;if(current())setBusy(false);}
+ }
+ async function probeGithub(){
+  if(probingGithub)return;setProbingGithub(true);setError(null);
+  try{setGithubProbe(await post('/account/github-probe',{}));}
+  catch(error){setError(error);}
+  finally{setProbingGithub(false);}
  }
  async function diagnose(){
   if(diagnosing)return;setDiagnosing(true);setError(null);
@@ -50,6 +57,11 @@ function ConnectionsPanel({connections,usage,onChanged}:{connections:any[];usage
  return <><div className="panel-heading"><div><h2>Vos comptes et services</h2><p>Ajoutez plusieurs comptes du même service et choisissez lequel utiliser dans chaque discussion.</p></div><Button onClick={()=>setAdding({})}><Plus size={17}/>Ajouter un compte</Button></div>
  <div className="panel">
   <div className="panel-heading"><div><h3>Diagnostic d'Atelier</h3><p>Vérifie les prérequis Cloudflare, les migrations D1 et le chiffrement, sans envoyer tes clés ni contacter une IA.</p></div><Button kind="secondary" disabled={diagnosing||!navigator.onLine} onClick={()=>void diagnose()}>{diagnosing?'Vérification…':'Vérifier Atelier'}</Button></div>
+  <div className="stack">
+   <p><strong>Réseau Cloudflare → GitHub :</strong> un test séparé vérifie la sortie vers l’API GitHub sans lire ni envoyer ton jeton.</p>
+   <Button kind="secondary" disabled={probingGithub||!navigator.onLine} onClick={()=>void probeGithub()}>{probingGithub?'Test en cours…':'Tester le réseau GitHub sans jeton'}</Button>
+   {githubProbe&&<div className="notice" role="status"><strong>{githubProbe.reachable?'Réponse reçue':'Connexion impossible'}{githubProbe.http_status?' · HTTP '+githubProbe.http_status:''}</strong><p>{githubProbe.advice}</p></div>}
+  </div>
   {diagnostic&&<div role="status" className="stack"><strong>{diagnostic.ready?'Configuration locale du Worker cohérente. Les fournisseurs externes restent à tester.':'Un ou plusieurs prérequis Cloudflare doivent être corrigés.'}</strong>
    {diagnostic.checks.map(item=><div className="notice" key={item.id}><strong>{item.status==='ok'?'✓':'⚠'} {item.label}</strong><p>{item.detail}</p></div>)}
    <p className="fine-print">Ce diagnostic ne prouve ni la validité de tes jetons GitHub ni l’exécution des tâches chez les fournisseurs. Il ne divulgue jamais le contenu des secrets.</p>
