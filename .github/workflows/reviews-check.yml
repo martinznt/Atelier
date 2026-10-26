@@ -29,6 +29,12 @@ jobs:
         run: node --test tests/review-core.test.mjs tests/review-team.test.mjs tests/migration-sql.test.mjs tests/readiness.test.mjs tests/operational-error.test.mjs
       - name: Typescript
         run: npm run check
+      - name: Vérifications cœur, migrations et sauvegardes
+        run: npm run test:core
+      - name: Passerelle de projets et connexions
+        run: npm run test:bridge
+      - name: Régressions comptes, fichiers, tâches et PWA
+        run: npm run test:regressions
       - name: Tests
         run: npm test
       - name: Compilation
