@@ -1,7 +1,7 @@
 export class ProviderError extends Error {
  constructor(public status:number, public code:string, public retryAfter:string|null=null){super(status===401||status===403?'Accès refusé ou révoqué. Vérifiez les droits et remplacez le jeton.':status===429?'Limite du fournisseur atteinte. L’avancement est conservé ; attendez ou choisissez explicitement un autre assistant.':status===409||status===422?'Le contenu distant a changé ou la demande est incompatible. Rechargez les données.':'Le fournisseur n’a pas terminé la demande. Vérifiez son état avant de réessayer.');}
 }
-export const origins:Record<string,string>={github:'https://api.github.com',openai:'https://api.openai.com',anthropic:'https://api.anthropic.com',gemini:'https://generativelanguage.googleapis.com',cloudflare:'https://api.cloudflare.com',netlify:'https://api.netlify.com'};
+export const origins:Record<string,string>={github:'https://api.github.com',openai:'https://api.openai.com',anthropic:'https://api.anthropic.com',gemini:'https://generativelanguage.googleapis.com',mistral:'https://api.mistral.ai',cloudflare:'https://api.cloudflare.com',netlify:'https://api.netlify.com'};
 export async function request(provider:string,secret:string,path:string,init:RequestInit={}) {
  const origin=origins[provider];if(!origin||!path.startsWith('/')||path.startsWith('//'))throw new Error('Destination non autorisée');
  const headers=new Headers(init.headers);headers.set('Accept','application/json');headers.set('User-Agent','Atelier/0.1');
