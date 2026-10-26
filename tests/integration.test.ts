@@ -9,7 +9,12 @@ beforeAll(async()=>{
  mf=new Miniflare({modules:true,scriptPath:'test-results/worker.mjs',compatibilityDate:'2025-10-24',compatibilityFlags:['nodejs_compat'],d1Databases:['DB'],queueProducers:{TASKS:'atelier-tasks'},bindings:{MASTER_KEY:Buffer.alloc(32,7).toString('base64'),APP_ORIGIN:origin,ALLOW_REGISTRATION:'true',STORAGE_LIMIT_MB:'1',MAX_FILE_MB:'1'}});
  const db=await mf.getD1Database('DB');
  // Exercise the complete application schema, including bridge exports and OAuth tables.
- for(const migration of (await readdir('migrations')).filter(name=>/^\d+.*\.sql$/.test(name)).sort())await db.exec(await readFile(`migrations/${migration}`,'utf8'));
+ for(const migration of (await readdir('migrations')).filter(name=>/^\d+.*\.sql$/.test(name)).sort()){
+  const sql=await readFile(`migrations/${migration}`,'utf8');
+  // D1 active déjà les contraintes FK et n'autorise pas ce PRAGMA dans une transaction.
+  // On préserve toutes les tables et tous les tests de références réels.
+  await db.exec(sql.replace(/^PRAGMA foreign_keys\s*=\s*ON;\s*/i,''));
+ }
  const first=await json('/auth/register','POST',{email:'alice@example.test',password:'phrase-de-test-solide-2026'},'');expect(first.status).toBe(201);a=first.cookie!;const second=await json('/auth/register','POST',{email:'bob@example.test',password:'autre-phrase-solide-2026'},'');expect(second.status).toBe(201);b=second.cookie!;
  project=(await json('/projects','POST',{name:'Projet de test'})).body.id;conversation=(await json('/conversations','POST',{project_id:project,title:'Conversation'})).body.id;file=(await json('/files/text','POST',{project_id:project,name:'test.txt',content:'version une'})).body.file_id;
  ownerA=first.body.user.id;ownerB=second.body.user.id;
