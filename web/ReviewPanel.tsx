@@ -77,7 +77,7 @@ export function ReviewPanel({project}:{project:string}){
    {!repos.length&&githubConnections.length>0&&<Button kind="secondary" disabled={busy} onClick={()=>void linkRecipeRepo()}>Relier mon Livre de recettes automatiquement</Button>}
    {!repos.length&&!githubConnections.length&&<p className="muted">Une seule opération nécessaire : ajouter un jeton GitHub limité au dépôt dans Réglages → Connexions. L'accès GitHub de ChatGPT n'est pas transférable à Atelier.</p>}
    <p><strong>2. IA :</strong> {connections.length?connections.length+' connexion(s) déjà autorisée(s).':'Aucune API IA disponible.'}</p>
-   {suggestion.primary&&<p className="muted">Sélection proposée : {connections.find(c=>c.id===suggestion.primary.connection_id)?.label} · {suggestion.primary.model}{suggestion.secondary?' + '+connections.find(c=>c.id===suggestion.secondary.connection_id)?.label+' · '+suggestion.secondary.model:''}. Cette suggestion n'est pas une garantie de gratuité.</p>}
+   {suggestion.primary&&<p className="muted">Sélection proposée : {connections.find(c=>c.id===suggestion.primary?.connection_id)?.label} · {suggestion.primary.model}{suggestion.secondary?' + '+connections.find(c=>c.id===suggestion.secondary?.connection_id)?.label+' · '+suggestion.secondary.model:''}. Cette suggestion n'est pas une garantie de gratuité.</p>}
    {!connections.length&&<div className="stack">
     <Field label="Clé Mistral Studio déjà autorisée"><input type="password" autoComplete="off" value={apiKey} onChange={e=>setApiKey(e.target.value)} placeholder="Coller la clé directement dans Atelier"/></Field>
     <label className="check"><input type="checkbox" checked={apiAgree} onChange={e=>setApiAgree(e.target.checked)}/>J'ai vérifié mon éligibilité aux conditions d'accès et confirmé que cette clé est utilisable sans paiement.</label>
@@ -90,7 +90,7 @@ export function ReviewPanel({project}:{project:string}){
    <div className="stack">
     <Field label="Dépôt à surveiller"><select value={repo} onChange={e=>{setRepo(e.target.value);setSelectedPR('');setConsent(false);}}>{repos.map(r=><option key={r.id} value={r.id}>{r.full_name}</option>)}</select></Field>
     <Button kind="text" disabled={busy||!suggestion.primary} onClick={()=>{
-     if(suggestion.primary){setPrimary(suggestion.primary.connection_id);setPModel(suggestion.primary.model);setSecondary(suggestion.secondary?.connection_id||'');setSModel(suggestion.secondary?.model||'');}
+     if(suggestion.primary){setPrimary(suggestion.primary?.connection_id);setPModel(suggestion.primary.model);setSecondary(suggestion.secondary?.connection_id||'');setSModel(suggestion.secondary?.model||'');}
     }}>Proposer automatiquement les IA et modèles disponibles</Button>
     <Field label="Première IA — recherche des erreurs">
      <select value={primary} onChange={e=>choose(setPrimary,setPModel,e.target.value)}><option value="">Choisir une API connectée</option>{connections.map(c=><option key={c.id} value={c.id}>{c.label} · {c.provider}</option>)}</select>
