@@ -213,3 +213,19 @@ describe('email et mots de passe de huit caractères',()=>{
   const again=await json('/auth/login','POST',{email:'old@example.test',password:'legacy-password'},'');expect(again.status).toBe(200);expect(again.body.user.id).toBe(id);
  });
 });
+
+
+describe('revues IA des PR : isolation des comptes et consentement',()=>{
+ it('refuse de consulter les rapports privés d’un autre compte',async()=>{
+  const own=await json('/reviews/runs?project='+project);
+  expect(own.status).toBe(200);
+  expect(own.body.items).toEqual([]);
+  expect((await call('/reviews/runs?project='+project,'GET',undefined,b)).status).toBe(404);
+  expect((await call('/reviews/configs?project='+project,'GET',undefined,'')).status).toBe(401);
+ });
+ it('ne crée aucun traitement sans dépôt appartenant au compte',async()=>{
+  const foreign=crypto.randomUUID();
+  expect((await json('/reviews/start','POST',{repository_id:foreign,pr_number:58})).status).toBe(404);
+  expect((await json('/reviews/configs','POST',{repository_id:foreign,primary:{connection_id:crypto.randomUUID(),model:'test'},enabled:true,share_consent:true})).status).toBe(404);
+ });
+});
