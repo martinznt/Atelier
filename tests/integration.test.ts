@@ -270,3 +270,18 @@ describe('configuration IA : limite gratuite, connexion validée et isolation',(
 
  });
 });
+
+
+describe('diagnostic du site : accès et schéma présents',()=>{
+ it('expose les prérequis sans divulguer le secret ni les données d’autres comptes',async()=>{
+  const response=await json('/account/readiness');
+  expect(response.status).toBe(200);
+  expect(response.body.checks.find((c:any)=>c.id==='master-key').status).toBe('ok');
+  expect(response.body.checks.find((c:any)=>c.id==='database').status).toBe('ok');
+  expect(response.body.checks.find((c:any)=>c.id==='review-migration').status).toBe('ok');
+  expect(JSON.stringify(response.body)).not.toContain(Buffer.alloc(32,7).toString('base64'));
+  expect(JSON.stringify(response.body)).not.toContain('alice@example.test');
+  expect((await call('/account/readiness','GET',undefined,'')).status).toBe(401);
+  expect((await json('/account/readiness','GET',undefined,b)).status).toBe(200);
+ });
+});

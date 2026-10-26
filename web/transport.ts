@@ -30,7 +30,7 @@ export function createApiClient({cache, scope, online, fetcher = fetch, timeoutM
     const snapshot = scope.snapshot();
     if (privateRequest && !snapshot.owner) throw new ApiError('Connectez-vous pour continuer dans votre compte.', 401);
     const localEpoch = cache.epoch;
-    const cacheable = get && !binary && !auth && !path.startsWith('/connections') && !path.startsWith('/bridge/oauth') && !path.startsWith('/bridge/access');
+    const cacheable = get && !binary && !auth && !path.startsWith('/connections') && !path.startsWith('/account/readiness') && !path.startsWith('/bridge/oauth') && !path.startsWith('/bridge/access');
     const assertCurrent = () => {
       if (!scope.current(snapshot)) throw new ApiError('Le compte a changé. Cette réponse a été écartée.', 401);
     };
