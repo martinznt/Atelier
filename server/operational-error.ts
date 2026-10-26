@@ -8,7 +8,7 @@ export function operationalFailure(error:unknown):{status:503|500;code:string;me
  if(/MASTER_KEY manquante ou invalide/.test(message)){
   return {status:503,code:'MISSING_MASTER_KEY',message:'Le secret de chiffrement MASTER_KEY est absent ou invalide dans le Worker Cloudflare. Ouvrez Réglages → Connexions → Vérifier Atelier. Ne remplacez pas une clé existante.'};
  }
- if(/(?:no such table|no such column|has no column named):/i.test(message)){
+ if(/(?:no such table:|no such column:|has no column named\\b)/i.test(message)){
   return {status:503,code:'D1_MIGRATION_REQUIRED',message:'Le schéma de la base Cloudflare D1 ne correspond pas au code publié. Ouvrez Réglages → Connexions → Vérifier Atelier ; sauvegardez D1 avant d’appliquer uniquement les migrations manquantes. Ne recréez pas la base.'};
  }
  if(/database.*(?:is locked|busy|temporarily unavailable)/i.test(message)){
