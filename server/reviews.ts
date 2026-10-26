@@ -37,7 +37,7 @@ async function githubToken(env:Env,repo:Repo){
  if(conn.provider!=='github')fail(403,'Connexion GitHub requise.');
  return secret;
 }
-async function queueReview(env:Env,config:Conf,repo:Repo,number:number,sha:string){
+export async function queueReview(env:Env,config:Conf,repo:Repo,number:number,sha:string){
  if(!/^[0-9a-f]{40}$/i.test(sha))return false;
  const status=await one(env,'SELECT quota,status FROM connections WHERE id=? AND user_id=?',config.primary_connection_id,repo.user_id);
  if(!status||status.status!=='connected'||readableQuota(status.quota).status==='rate_limited')return false;
