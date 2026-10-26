@@ -1,3 +1,11 @@
+# 26 octobre 2026 — Chaîne de revue IA des PR (branche, non déployée)
+
+Branche `feature/chaine-revue-ia`, PR #3 (brouillon). Une première version en lecture seule a été ajoutée : migration D1 0008, API de configurations et rapports, revue par IA connectée, déclenchement Queue/cron, panneau « Vérifications IA » et connecteur Mistral. Chaque analyse est rattachée à un SHA de PR. Les alertes ne sont pas des tests exécutés. Aucune écriture GitHub du dépôt inspecté n'est ajoutée.
+
+**Non validé :** compilation TypeScript, exécution des tests dans les dépendances complètes, navigateur, D1/Cloudflare distant, conditions financières des clés, fournisseur réel et captation mobile. Ne pas fusionner/déployer en l'état. Vérifier la CI et les parcours décrits dans [REVUE_IA.md](REVUE_IA.md). Aucun secret n'a été lu ou transféré de Livre de recettes vers Atelier.
+
+---
+
 # Connexion email et mot de passe de huit caractères — 24 octobre 2026
 
 Branche dédiée : feat/email-password-eight, base distante main 31c8172. La correction
