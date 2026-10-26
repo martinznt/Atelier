@@ -3,6 +3,9 @@ import {z} from 'zod';
 import {credentialsFor} from './routes/connections.ts';
 import {jsonRequest} from './connectors/http.ts';
 import {generate} from './connectors/ai.ts';
+import {ProviderError} from './connectors/http.ts';
+import {recordConnectionQuota,rateLimitObservation} from './collaboration.ts';
+import {readableQuota,reviewHandoff} from './review-team.mjs';
 import {fail,jsonBody,many,now,one,owned,run,uid,userId} from './core.ts';
 import {reviewPrompt,parseReviewResult,reviewRisk,type ReviewFile,type ReviewCheck} from './review-core.ts';
 import type {AppEnv,Env} from './types.ts';
@@ -11,12 +14,12 @@ import type {AppEnv,Env} from './types.ts';
 const aiChoice=z.object({connection_id:z.string().uuid(),model:z.string().min(1).max(160)});
 const configuration=z.object({
  repository_id:z.string().uuid(),primary:aiChoice,secondary:aiChoice.nullable().default(null),
- enabled:z.boolean().default(false),share_consent:z.literal(true)
+ enabled:z.boolean().default(false),daily_limit:z.number().int().min(1).max(4).default(2),share_consent:z.literal(true)
 });
 const prInput=z.object({repository_id:z.string().uuid(),pr_number:z.number().int().positive().max(10000000)});
 export const reviews=new Hono<AppEnv>();
 
-type Conf={id:string;user_id:string;project_id:string;repository_id:string;primary_connection_id:string;primary_model:string;secondary_connection_id:string|null;secondary_model:string|null;enabled:number;consent:number};
+type Conf={id:string;user_id:string;project_id:string;repository_id:string;primary_connection_id:string;primary_model:string;secondary_connection_id:string|null;secondary_model:string|null;enabled:number;consent:number;daily_limit:number};
 type Repo={id:string;user_id:string;project_id:string;connection_id:string;full_name:string};
 type ReviewRun={id:string;user_id:string;project_id:string;repository_id:string;pr_number:number;head_sha:string;status:string};
 async function getRepo(env:Env,id:string,user:string){
@@ -27,6 +30,7 @@ async function checkChoice(env:Env,user:string,input:{connection_id:string;model
  if(!['openai','anthropic','gemini','mistral'].includes(conn.provider)||!conn.api_consent||conn.status!=='connected')
   fail(403,'Cette API n’est pas disponible ou autorisée dans Atelier.');
  if(!JSON.parse(conn.models).includes(input.model))fail(400,'Modèle non confirmé : testez la connexion.');
+ if(readableQuota(conn.quota).status==='rate_limited')fail(429,'Cette connexion a signalé une limite : réactivez-la seulement après vérification chez le fournisseur.');
 }
 async function githubToken(env:Env,repo:Repo){
  const {conn,secret}=await credentialsFor(env,repo.connection_id,repo.user_id,'read');
@@ -35,8 +39,12 @@ async function githubToken(env:Env,repo:Repo){
 }
 async function queueReview(env:Env,config:Conf,repo:Repo,number:number,sha:string){
  if(!/^[0-9a-f]{40}$/i.test(sha))return false;
- const id=uid(),at=now();
- const result=await run(env,"INSERT OR IGNORE INTO review_runs(id,user_id,project_id,repository_id,pr_number,head_sha,status,created_at,updated_at) VALUES(?,?,?,?,?,?,'queued',?,?)",id,repo.user_id,repo.project_id,repo.id,number,sha,at,at);
+ const status=await one(env,'SELECT quota,status FROM connections WHERE id=? AND user_id=?',config.primary_connection_id,repo.user_id);
+ if(!status||status.status!=='connected'||readableQuota(status.quota).status==='rate_limited')return false;
+ const id=uid(),at=now(),today=at.slice(0,10)+'T00:00:00.000Z';
+ // Atomic D1 quota check; duplicate and concurrent events cannot overrun the
+ // per-repository daily allowance nor the hard ceiling of eight per user.
+ const result=await run(env,"INSERT OR IGNORE INTO review_runs(id,user_id,project_id,repository_id,pr_number,head_sha,status,created_at,updated_at) SELECT ?,?,?,?,?,?,'queued',?,? WHERE (SELECT COUNT(*) FROM review_runs WHERE user_id=? AND repository_id=? AND created_at>=?)<? AND (SELECT COUNT(*) FROM review_runs WHERE user_id=? AND created_at>=?)<8",id,repo.user_id,repo.project_id,repo.id,number,sha,at,at,repo.user_id,repo.id,today,config.daily_limit||2,repo.user_id,today);
  if(!result.meta.changes)return false;
  try{await env.TASKS.send({id,kind:'review'});}catch{/* Reprise par le cron ; aucun appel fournisseur n’a été fait. */}
  return true;
@@ -46,7 +54,7 @@ async function queueFromGithub(env:Env,config:Conf,repo:Repo,pr:number){
  const result=await jsonRequest('github',token,'/repos/'+repo.full_name+'/pulls/'+pr);
  const data=result.data;
  if(data.state!=='open'||data.head?.repo?.full_name!==repo.full_name)fail(400,'Cette PR est fermée ou provient d’un dépôt externe.');
- return {queued:await queueReview(env,config,repo,data.number,data.head.sha),sha:data.head.sha};
+ return {queued:await queueReview(env,config,repo,data.number,data.head.sha),sha:data.head.sha,message:'Si aucun traitement n’est créé, le commit est déjà analysé ou un plafond journalier a été atteint.'};
 }
 reviews.get('/configs',async c=>{
  const project=z.string().uuid().parse(c.req.query('project'));
@@ -71,7 +79,7 @@ reviews.post('/configs',async c=>{
  await checkChoice(c.env,user,input.primary);
  if(input.secondary){if(input.secondary.connection_id===input.primary.connection_id)fail(400,'Choisissez deux connexions indépendantes.');await checkChoice(c.env,user,input.secondary);}
  const at=now();
- await run(c.env,"INSERT INTO review_configs(id,user_id,project_id,repository_id,primary_connection_id,primary_model,secondary_connection_id,secondary_model,enabled,consent,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,1,?,?) ON CONFLICT(user_id,repository_id) DO UPDATE SET primary_connection_id=excluded.primary_connection_id,primary_model=excluded.primary_model,secondary_connection_id=excluded.secondary_connection_id,secondary_model=excluded.secondary_model,enabled=excluded.enabled,consent=1,updated_at=excluded.updated_at",uid(),user,repo.project_id,repo.id,input.primary.connection_id,input.primary.model,input.secondary?.connection_id||null,input.secondary?.model||null,Number(input.enabled),at,at);
+ await run(c.env,"INSERT INTO review_configs(id,user_id,project_id,repository_id,primary_connection_id,primary_model,secondary_connection_id,secondary_model,enabled,consent,created_at,updated_at,daily_limit) VALUES(?,?,?,?,?,?,?,?,?,1,?,?,?) ON CONFLICT(user_id,repository_id) DO UPDATE SET primary_connection_id=excluded.primary_connection_id,primary_model=excluded.primary_model,secondary_connection_id=excluded.secondary_connection_id,secondary_model=excluded.secondary_model,enabled=excluded.enabled,consent=1,updated_at=excluded.updated_at,daily_limit=excluded.daily_limit",uid(),user,repo.project_id,repo.id,input.primary.connection_id,input.primary.model,input.secondary?.connection_id||null,input.secondary?.model||null,Number(input.enabled),at,at,input.daily_limit);
  return c.json({ok:true,message:input.enabled?'Relecture périodique activée pour les nouvelles versions de PR.':'Configuration enregistrée ; aucun lancement automatique.'});
 });
 reviews.post('/start',async c=>{
@@ -110,9 +118,11 @@ export async function executeReview(env:Env,id:string){
    ...(cfg.secondary_connection_id&&cfg.secondary_model&&risk!=='simple'?[{id:cfg.secondary_connection_id,model:cfg.secondary_model,role:'security' as const}]:[])
   ];
   for(const reviewer of assigned){
+   let activeSecretSnapshot:string|null=null;
    try{
     const {conn,secret}=await credentialsFor(env,reviewer.id,row.user_id,'chat');
-    if(!conn.api_consent||conn.status!=='connected'||!JSON.parse(conn.models).includes(reviewer.model))throw Error('Connexion indisponible.');
+    if(!conn.api_consent||conn.status!=='connected'||!JSON.parse(conn.models).includes(reviewer.model)||readableQuota(conn.quota).status==='rate_limited')throw Error('Connexion indisponible ou limite fournisseur atteinte.');
+    activeSecretSnapshot=conn.secret;
     const prompt=reviewPrompt({repo:repo.full_name,pr:row.pr_number,sha:row.head_sha,title:String(p.title||'').slice(0,200),files,checks,role:reviewer.role});
     const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),45000);
     let output='',model=reviewer.model,tokens=0;
@@ -123,9 +133,15 @@ export async function executeReview(env:Env,id:string){
      }
     }finally{clearTimeout(timer);}
     reports.push({provider:conn.provider,model,role:reviewer.role,coverage:prompt.coverage,review:parseReviewResult(output),input_tokens:tokens});
-   }catch(error){reports.push({role:reviewer.role,error:'Analyse indisponible, quota ou fournisseur à vérifier. Aucun résultat inventé.'});}
+   }catch(error){
+    if(error instanceof ProviderError&&error.status===429&&activeSecretSnapshot){
+     try{await recordConnectionQuota(env.DB,reviewer.id,row.user_id,activeSecretSnapshot,rateLimitObservation(error.retryAfter,now()));}catch{/* conserver le rapport partiel */}
+    }
+    reports.push({role:reviewer.role,error:'Analyse indisponible, quota ou fournisseur à vérifier. Aucun résultat inventé.'});
+   }
   }
   const result={repo:repo.full_name,pr_number:row.pr_number,head_sha:row.head_sha,risk,checks,checks_partial:checkRes.hasNext,files_partial:fileRes.hasNext,reviewers:reports,reviewed_at:now(),warning:'Revue IA seulement : les alertes exigent une reproduction ; aucun test n’a été exécuté par Atelier.'};
+  result.handoff=reviewHandoff(result);
   const success=reports.every(r=>r.review),state=success?'completed':'partial';
   await run(env,'UPDATE review_runs SET status=?,report=?,updated_at=?,completed_at=? WHERE id=?',state,JSON.stringify(result),now(),now(),id);
  }catch(error){
