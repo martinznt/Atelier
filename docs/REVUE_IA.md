@@ -1,3 +1,42 @@
+# Configuration simplifiée de la chaîne IA — 26 octobre 2026
+
+**État : code en PR brouillon, non déployé.** L'assistant dans « Projets → Vérifications IA »
+détecte les connexions déjà testées, propose une équipe selon les modèles réellement
+accessibles, permet de lier automatiquement Livre-de-recettes lorsqu'il est présent
+dans la liste GitHub autorisée, et accepte une clé Mistral autorisée depuis la même
+page. Les secrets ne sont jamais récupérés automatiquement depuis un autre site,
+une autre application ou ChatGPT : ils doivent être saisis dans Atelier une fois.
+Un compte gratuit ChatGPT n'est pas une connexion API gratuite.
+
+Le moteur exécute un raisonnement en **trois étapes**, pour éviter les appels inutiles :
+1. Résultats GitHub Actions, identification du risque, récupération contrôlée du diff.
+2. Analyse IA « justesse/tests », puis, si le changement est significatif et qu'une
+   **autre API autorisée** est configurée, contre-analyse « sécurité/données ».
+3. Déduplication et tri des constats, production sans IA supplémentaire d'un
+   **rapport pour Codex** avec erreurs GitHub, chemins, gravité et reproduction.
+   La synthèse ne valide pas les erreurs : Codex doit les reproduire.
+
+**Coûts et quotas :** toute génération IA est bloquée sans le consentement
+explicite et les connexions préalablement testées. Automatisation désactivée par
+défaut. Plafond par dépôt configurable de 1, 2 (défaut) ou 4 analyses par jour
+UTC ; plafond absolu de 8 par compte. Les requêtes HTTP 429 marquent la connexion
+comme limitée et la sélection automatique l'exclut jusqu'à une vérification
+explicite. Cela borne le nombre d'appels, **pas leur coût** : aucune API payante
+n'est autorisée à l'insu de l'utilisateur et le compte fournisseur doit imposer
+ses propres plafonds de facturation à 0 €.
+
+La sélection automatique est indicative : les identifiants de modèle contenant
+« mini », « flash », etc. sont *présumés* plus économes, sans benchmark de qualité
+ni preuve de gratuité. Une seconde IA ne partage pas la réponse de la première.
+Les API sont utilisées selon leurs conditions d'âge et d'utilisation : aucun
+contournement d'inscription, de vérification d'âge ou de quota.
+
+Ce parcours réduit les interventions manuelles, mais **ne fusionne jamais de PR,
+n'écrit pas de correctifs et ne déploie pas automatiquement**. Les tests de
+l'interface et de Cloudflare doivent réussir avant publication.
+
+---
+
 # Chaîne de revue IA — Atelier
 
 ## Statut
