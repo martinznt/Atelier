@@ -308,3 +308,16 @@ describe('GitHub réel depuis le runtime Cloudflare simulé, sans jeton utilisat
   expect(separate.body.items.some((row:any)=>row.id===created.body.id)).toBe(false);
  });
 });
+
+
+describe('diagnostic GitHub réseau dans le véritable moteur workerd',()=>{
+ it('sonde GitHub sans jeton et impose une session pour déclencher l’appel',async()=>{
+  mockNetwork.get('https://api.github.com').intercept({method:'GET',path:'/zen'}).reply(200,'GitHub egress OK',{headers:{'content-type':'text/plain'}});
+  expect((await json('/account/github-probe','POST',{},'')).status).toBe(401);
+  const result=await json('/account/github-probe','POST',{},a);
+  expect(result.status).toBe(200);
+  expect(result.body.reachable).toBe(true);
+  expect(result.body.outcome).toBe('ok');
+  expect(JSON.stringify(result.body)).not.toContain('Bearer');
+ });
+});
