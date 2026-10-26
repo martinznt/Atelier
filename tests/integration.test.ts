@@ -1,14 +1,14 @@
-import {beforeAll,afterAll,describe,it,expect} from 'vitest';import {Miniflare} from 'miniflare';import {build} from 'esbuild';import {readFile,readdir,mkdir} from 'node:fs/promises';import {unzipSync,strFromU8} from 'fflate';import {hashPassword,verifyPassword} from '../server/password';
+import {beforeAll,afterAll,describe,it,expect} from 'vitest';import {Miniflare,createFetchMock} from 'miniflare';import {build} from 'esbuild';import {readFile,readdir,mkdir} from 'node:fs/promises';import {unzipSync,strFromU8} from 'fflate';import {hashPassword,verifyPassword} from '../server/password';
 import {normalizeMigrationForD1} from './migration-sql.mjs';
 import {queueReview} from '../server/reviews';
-let mf:Miniflare;let a:string,b:string;const origin='http://localhost:8787';let project:string,conversation:string,file:string;
+let mf:Miniflare;const mockNetwork=createFetchMock();mockNetwork.disableNetConnect();let a:string,b:string;const origin='http://localhost:8787';let project:string,conversation:string,file:string;
 let ownerA:string,ownerB:string,spaceA:string,spaceB:string,importedConversation:string;
 const importedMessage='Historique privé Alice : référence CANNELLE-719.';
 async function call(path:string,method='GET',data?:unknown,cookie=a,headers:Record<string,string>={}){const response=await mf.dispatchFetch(`${origin}/api${path}`,{method,headers:{Origin:origin,Cookie:cookie||'',...(data?{'Content-Type':'application/json'}:{}),...headers},body:data?JSON.stringify(data):undefined});return response;}
 async function json(path:string,method='GET',data?:unknown,cookie=a,headers:Record<string,string>={}){const r=await call(path,method,data,cookie,headers);return {status:r.status,body:await r.json() as any,cookie:r.headers.get('set-cookie')?.split(';')[0]};}
 beforeAll(async()=>{
  await mkdir('test-results',{recursive:true});await build({entryPoints:['server/index.ts'],outfile:'test-results/worker.mjs',bundle:true,format:'esm',platform:'browser',target:'es2022'});
- mf=new Miniflare({modules:true,scriptPath:'test-results/worker.mjs',compatibilityDate:'2025-10-24',compatibilityFlags:['nodejs_compat'],d1Databases:['DB'],queueProducers:{TASKS:'atelier-tasks'},bindings:{MASTER_KEY:Buffer.alloc(32,7).toString('base64'),APP_ORIGIN:origin,ALLOW_REGISTRATION:'true',STORAGE_LIMIT_MB:'1',MAX_FILE_MB:'1'}});
+ mf=new Miniflare({modules:true,scriptPath:'test-results/worker.mjs',fetchMock:mockNetwork,compatibilityDate:'2025-10-24',compatibilityFlags:['nodejs_compat'],d1Databases:['DB'],queueProducers:{TASKS:'atelier-tasks'},bindings:{MASTER_KEY:Buffer.alloc(32,7).toString('base64'),APP_ORIGIN:origin,ALLOW_REGISTRATION:'true',STORAGE_LIMIT_MB:'1',MAX_FILE_MB:'1'}});
  const db=await mf.getD1Database('DB');
  // Exercise the complete application schema, including bridge exports and OAuth tables.
  for(const migration of (await readdir('migrations')).filter(name=>/^\d+.*\.sql$/.test(name)).sort()){
@@ -283,5 +283,28 @@ describe('diagnostic du site : accès et schéma présents',()=>{
   expect(JSON.stringify(response.body)).not.toContain('alice@example.test');
   expect((await call('/account/readiness','GET',undefined,'')).status).toBe(401);
   expect((await json('/account/readiness','GET',undefined,b)).status).toBe(200);
+ });
+});
+
+
+describe('GitHub réel depuis le runtime Cloudflare simulé, sans jeton utilisateur réel',()=>{
+ it('création, chiffrement et test API GitHub via une sortie réseau contrôlée par workerd',async()=>{
+  const github=mockNetwork.get('https://api.github.com');
+  github.intercept({method:'GET',path:'/user'}).reply(200,JSON.stringify({login:'atelier-test-api'}),{headers:{'content-type':'application/json'}});
+  const email='cloudflare-github-'+crypto.randomUUID()+'@example.test';
+  const sign=await json('/auth/register','POST',{email,password:'mot-de-passe-robuste'},'');
+  expect(sign.status).toBe(201);
+  const cookie=sign.cookie!;
+  const created=await json('/connections','POST',{provider:'github',label:'GitHub vérifié en workerd',secret:'ghp_FAUX_JETON_TEST_JAMAIS_PUBLIC',scopes:['read']},cookie);
+  expect(created.status).toBe(201);
+  const attempted=await json('/connections/'+created.body.id+'/test','POST',{},cookie);
+  expect(attempted.status).toBe(200);
+  expect(attempted.body.account).toBe('atelier-test-api');
+  const summary=await json('/connections','GET',undefined,cookie);
+  const saved=summary.body.items.find((row:any)=>row.id===created.body.id);
+  expect(saved.status).toBe('connected');
+  expect(JSON.stringify(summary.body)).not.toContain('ghp_FAUX_JETON_TEST_JAMAIS_PUBLIC');
+  const separate=await json('/connections','GET',undefined,b);
+  expect(separate.body.items.some((row:any)=>row.id===created.body.id)).toBe(false);
  });
 });
