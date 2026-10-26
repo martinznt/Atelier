@@ -229,3 +229,30 @@ describe('revues IA des PR : isolation des comptes et consentement',()=>{
   expect((await json('/reviews/configs','POST',{repository_id:foreign,primary:{connection_id:crypto.randomUUID(),model:'test'},enabled:true,share_consent:true})).status).toBe(404);
  });
 });
+
+
+describe('configuration IA : limite gratuite, connexion validée et isolation',()=>{
+ it('préserve les choix et bloque un plafond quotidien abusif',async()=>{
+  const email='review-'+crypto.randomUUID()+'@example.test';
+  const registration=await json('/auth/register','POST',{email,password:'unmotdepassefort'},'');
+  expect(registration.status).toBe(201);const cookie=registration.cookie!;
+  const ownProject=await json('/projects','POST',{name:'Projet revue IA'},cookie);
+  expect(ownProject.status).toBe(201);
+  const ai=await json('/connections','POST',{provider:'mistral',label:'Test IA',secret:'exemple-clé-factice-2026',scopes:['chat'],api_consent:true},cookie);
+  const gh=await json('/connections','POST',{provider:'github',label:'Test GitHub',secret:'exemple-jeton-factice-2026',scopes:['read']},cookie);
+  expect(ai.status).toBe(201);expect(gh.status).toBe(201);
+  const db=await mf.getD1Database('DB');
+  await db.prepare("UPDATE connections SET status='connected',models=? WHERE id=?").bind('["ministral-test"]',ai.body.id).run();
+  const repoId=crypto.randomUUID(),at=new Date().toISOString();
+  await db.prepare('INSERT INTO repositories(id,user_id,project_id,connection_id,full_name,branch,head_sha,created_at) VALUES(?,?,?,?,?,?,?,?)')
+   .bind(repoId,registration.body.user.id,ownProject.body.id,gh.body.id,'martinznt/Livre-de-recettes','main','a'.repeat(40),at).run();
+  const input={repository_id:repoId,primary:{connection_id:ai.body.id,model:'ministral-test'},secondary:null,enabled:false,daily_limit:2,share_consent:true};
+  expect((await json('/reviews/configs','POST',{...input,daily_limit:5},cookie)).status).toBe(400);
+  expect((await json('/reviews/configs','POST',input,cookie)).status).toBe(200);
+  const read=await json('/reviews/configs?project='+ownProject.body.id,'GET',undefined,cookie);
+  expect(read.status).toBe(200);expect(read.body.items).toHaveLength(1);
+  expect(read.body.items[0].daily_limit).toBe(2);
+  expect(read.body.items[0].enabled).toBe(0);
+  expect((await call('/reviews/configs?project='+ownProject.body.id,'GET',undefined,b)).status).toBe(404);
+ });
+});
