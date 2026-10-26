@@ -1,5 +1,6 @@
 import {beforeAll,afterAll,describe,it,expect} from 'vitest';import {Miniflare} from 'miniflare';import {build} from 'esbuild';import {readFile,readdir,mkdir} from 'node:fs/promises';import {unzipSync,strFromU8} from 'fflate';import {hashPassword,verifyPassword} from '../server/password';
 import {normalizeMigrationForD1} from './migration-sql.mjs';
+import {queueReview} from '../server/reviews';
 let mf:Miniflare;let a:string,b:string;const origin='http://localhost:8787';let project:string,conversation:string,file:string;
 let ownerA:string,ownerB:string,spaceA:string,spaceB:string,importedConversation:string;
 const importedMessage='Historique privé Alice : référence CANNELLE-719.';
@@ -254,5 +255,18 @@ describe('configuration IA : limite gratuite, connexion validée et isolation',(
   expect(read.body.items[0].daily_limit).toBe(2);
   expect(read.body.items[0].enabled).toBe(0);
   expect((await call('/reviews/configs?project='+ownProject.body.id,'GET',undefined,b)).status).toBe(404);
+  const config=read.body.items[0];
+  const minimalRepo={id:repoId,user_id:registration.body.user.id,project_id:ownProject.body.id,connection_id:gh.body.id,full_name:'martinznt/Livre-de-recettes'};
+  const sent:string[]=[];
+  const isolatedEnv={DB:db,TASKS:{send:async(payload:any)=>{sent.push(payload.id);}}} as any;
+  const first=await queueReview(isolatedEnv,config,minimalRepo,101,'b'.repeat(40));
+  const second=await queueReview(isolatedEnv,config,minimalRepo,102,'c'.repeat(40));
+  const excess=await queueReview(isolatedEnv,config,minimalRepo,103,'d'.repeat(40));
+  expect([first,second,excess]).toEqual([true,true,false]);
+  const again=await queueReview(isolatedEnv,config,minimalRepo,102,'c'.repeat(40));
+  expect(again).toBe(false);
+  const count=await db.prepare('SELECT COUNT(*) AS n FROM review_runs WHERE user_id=? AND repository_id=?').bind(registration.body.user.id,repoId).first<{n:number}>();
+  expect(count?.n).toBe(2);expect(sent).toHaveLength(2);
+
  });
 });
