@@ -3,7 +3,7 @@ import {listModels} from './model-list.ts';
 export interface AIMessage {role:'user'|'assistant';content:string}
 export interface Delta {text?:string;model?:string;input?:number;output?:number;quota?:unknown}
 export async function testConnection(provider:string,secret:string) {
- if(provider==='github'){const r=await jsonRequest(provider,secret,'/user');return {account:r.data.login,models:[],quota:r.quota};}
+ if(provider==='github'){const r=await jsonRequest(provider,secret,'/user',{signal:AbortSignal.timeout(18000)});return {account:r.data.login,models:[],quota:r.quota};}
  if(provider==='cloudflare'){const r=await jsonRequest(provider,secret,'/client/v4/user/tokens/verify');if(!r.data.success||r.data.result.status!=='active')throw new ProviderError(401,'inactive');return {account:'Jeton actif · droits à vérifier par compte',models:[],quota:r.quota};}
  if(provider==='netlify'){const r=await jsonRequest(provider,secret,'/api/v1/user');return {account:r.data.full_name||r.data.id,models:[],quota:r.quota};}
  const signal=AbortSignal.timeout(20000);
