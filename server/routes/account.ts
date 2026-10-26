@@ -1,10 +1,12 @@
 import {readVersion} from '../storage.ts';
 import {inspectAtelierReadiness} from '../readiness.ts';
+import {probeGithubNetwork} from '../github-probe.ts';
 import {DEFAULT_STORAGE_BYTES,MAX_TEXT_BYTES,SHARED_STORAGE_BYTES} from '../storage-store.ts';
 import {Hono} from 'hono';import {z} from 'zod';import {zipSync,strToU8} from 'fflate';import {deleteCookie} from 'hono/cookie';
 import {verifyPassword} from '../password.ts';import {fail,jsonBody,many,now,run,safeFilename,userId} from '../core.ts';import {rateLimit} from '../auth.ts';import type {AppEnv} from '../types.ts';
 export const account=new Hono<AppEnv>();
 account.get('/readiness',async c=>c.json(await inspectAtelierReadiness(c.env)));
+account.post('/github-probe',async c=>{await rateLimit(c.env,`github-egress:${userId(c)}`,12,3600);return c.json(await probeGithubNetwork());});
 
 account.get('/usage',async c=>c.json({storage:{used:(await many(c.env,'SELECT bytes FROM file_storage_usage WHERE user_id=?',userId(c)))[0]?.bytes||0,limit:Math.min(Number(c.env.STORAGE_LIMIT_MB||20)*1048576,DEFAULT_STORAGE_BYTES),max_file_bytes:MAX_TEXT_BYTES,provider:'d1-text',shared_limit:SHARED_STORAGE_BYTES,notice:'Petits textes UTF-8 uniquement. Les dépôts GitHub et fichiers locaux ont leurs propres limites.'},monthly_token_limit:c.get('user').monthly_tokens,connections:await many(c.env,"SELECT c.id,c.label,c.provider,c.status,c.quota,c.tested_at,SUM(COALESCE(t.input_tokens,0)) AS input_tokens,SUM(COALESCE(t.output_tokens,0)) AS output_tokens FROM connections c LEFT JOIN tasks t ON t.user_id=c.user_id AND t.payload LIKE '%'||c.id||'%' AND t.created_at>=? WHERE c.user_id=? GROUP BY c.id",now().slice(0,7)+'-01T00:00:00.000Z',userId(c)),cost:{kind:'unavailable',message:'Aucun tarif vérifié configuré. Consommation mesurée dans Atelier uniquement ; ne couvre pas le compte global.'}}));
 account.get('/export',async c=>{

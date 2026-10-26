@@ -79,3 +79,14 @@ test('une ancienne copie de production perd son binding R2 sans recréer D1',()=
  const old=structuredClone(template);old.r2_buckets=[{binding:'FILES',bucket_name:'atelier-private-files'}];
  const result=productionConfiguration(old,values);assert.equal(result.r2_buckets,undefined);assert.equal(old.r2_buckets.length,1);assert.equal(result.vars.MAX_FILE_MB,'0.25');
 });
+
+
+test('la version de production mentionne uniquement le SHA réel de Workers Builds',t=>{
+ const directory=checkout(t);
+ const sha='c'.repeat(40);
+ const config=prepareConfiguration({directory,environment:{WORKERS_CI_COMMIT_SHA:sha}});
+ assert.equal(config.vars.RELEASE_SHA,sha);
+ const next=prepareConfiguration({directory,environment:{WORKERS_CI_COMMIT_SHA:'not-a-sha'}});
+ assert.equal(next.vars.RELEASE_SHA,undefined);
+ assert.equal(next.vars.MASTER_KEY,undefined);
+});

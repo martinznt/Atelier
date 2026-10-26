@@ -9,12 +9,19 @@ on:
       - "tests/readiness.test.mjs"
       - "tests/operational-error.test.mjs"
       - "tests/provider-http.test.mjs"
+      - "tests/github-probe.test.mjs"
+      - "tests/configure-cloudflare.test.mjs"
+      - "scripts/**"
+      - ".github/workflows/production-smoke.yml"
       - "tests/integration.test.ts"
       - "migrations/**"
       - "package.json"
       - ".github/workflows/reviews-check.yml"
 permissions:
   contents: read
+concurrency:
+  group: atelier-validation-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -27,7 +34,7 @@ jobs:
       - name: Installer les dépendances
         run: npm install --no-audit --no-fund
       - name: Contrats de relecture
-        run: node --test tests/review-core.test.mjs tests/review-team.test.mjs tests/migration-sql.test.mjs tests/readiness.test.mjs tests/operational-error.test.mjs tests/provider-http.test.mjs
+        run: node --test tests/review-core.test.mjs tests/review-team.test.mjs tests/migration-sql.test.mjs tests/readiness.test.mjs tests/operational-error.test.mjs tests/provider-http.test.mjs tests/github-probe.test.mjs
       - name: Typescript
         run: npm run check
       - name: Vérifications cœur, migrations et sauvegardes
@@ -42,7 +49,7 @@ jobs:
         run: npm run build
       - name: Installer Chromium pour les parcours navigateurs
         if: github.event.pull_request.draft == false
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
       - name: Tester Atelier en navigateur desktop et Android
         if: github.event.pull_request.draft == false
         run: npx playwright test --project=chromium-desktop --project=android
