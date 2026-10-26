@@ -1,5 +1,6 @@
 import {ArrowUp,ArrowDown,RefreshCw,X} from 'lucide-react';
 import {Button,Field} from './ui';
+import {recommendedReviewTeam} from '../server/review-team.mjs';
 import {date} from './api';
 import {applyTeamMethod,connectionIssue,connectionQuota,methodFor,providerName,reflectionStarters,suggestedRole,teamMethods,type TeamConnection,type TeamSelection} from './team-guide';
 
@@ -21,15 +22,33 @@ type Props={
 };
 export function AssistantTeam({selection,connections,onChange,onConnections,onRefresh,refreshing,refreshedAt,onReflection,issue}:Props){
  const {selected,models,roles,mode,consent}=selection,method=methodFor(mode),maximum=mode==='individual'?1:3;
+ const suggested=recommendedReviewTeam(connections);
  function add(id:string){
   const connection=connections.find(c=>c.id===id);if(!connection||selected.includes(id)||selected.length>=maximum||connectionIssue(connection))return;
   onChange({...selection,selected:[...selected,id],models:{...models,[id]:models[id]&&connection.models.includes(models[id])?models[id]:connection.models.length===1?connection.models[0]:''},roles:{...roles,[id]:roles[id]||suggestedRole(mode,selected.length)},consent:false});
+ }
+ function proposeTeam(){
+  const candidates=[suggested.primary,suggested.secondary].filter((c):c is {connection_id:string;model:string}=>!!c);
+  if(!candidates.length)return;
+  const mode=candidates.length>1?'review':'individual';
+  onChange({...selection,mode,rounds:1,
+   selected:candidates.map(c=>c.connection_id),
+   models:Object.fromEntries(candidates.map(c=>[c.connection_id,c.model])),
+   roles:Object.fromEntries(candidates.map((c,index)=>[c.connection_id,suggestedRole(mode,index)])),
+   consent:false
+  });
  }
  function move(index:number,direction:number){const ordered=[...selected];[ordered[index],ordered[index+direction]]=[ordered[index+direction],ordered[index]];onChange({...selection,selected:ordered});}
  return <section className="assistant-team" aria-label="Choisir la méthode et les assistants">
   <div className="team-heading"><h3>Comment avancer ?</h3><button type="button" onClick={onConnections}>Gérer mes connexions</button></div>
   <div className="team-methods" role="group" aria-label="Méthode de travail">{teamMethods.map(item=><button type="button" aria-pressed={mode===item.id} key={item.id} onClick={()=>onChange(applyTeamMethod(selection,item.id))}>{item.label}</button>)}</div>
   <p className="team-method-description">{method.description}</p>
+  <div className="notice">
+   <strong>Parcours de réflexion conseillé</strong>
+   <p>Atelier choisit les connexions testées : la première IA propose, une seconde issue d'un autre fournisseur relit si disponible. Un seul tour ; aucun appel lancé sans ton accord.</p>
+   <Button kind="secondary" disabled={!suggested.primary} onClick={proposeTeam}>{suggested.primary?'Composer automatiquement mon équipe':'Connecter d’abord une API disponible'}</Button>
+   <small>Économie de quota estimée d'après le nom des modèles, pas une garantie de coût nul. Vérifie les limites de tes comptes avant l'envoi.</small>
+  </div>
   <p className="fine-print">Choisir une méthode propose des rôles modifiables. Rien n’est envoyé avant « Envoyer ».</p>
   <ol className="team-members">{selected.map((id,index)=>{
    const connection=connections.find(c=>c.id===id),label=connection?.label||'Connexion retirée',problem=connectionIssue(connection,models[id]||'');

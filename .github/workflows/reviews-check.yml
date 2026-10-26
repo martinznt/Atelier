@@ -1,0 +1,46 @@
+name: Validation de la chaîne de revues
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - "server/**"
+      - "web/**"
+      - "tests/review-core.test.mjs"
+      - "migrations/**"
+      - "package.json"
+      - ".github/workflows/reviews-check.yml"
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Installer les dépendances
+        run: npm install --no-audit --no-fund
+      - name: Contrats de relecture
+        run: node --test tests/review-core.test.mjs tests/review-team.test.mjs tests/migration-sql.test.mjs
+      - name: Typescript
+        run: npm run check
+      - name: Tests
+        run: npm test
+      - name: Compilation
+        run: npm run build
+      - name: Installer Chromium pour les parcours navigateurs
+        if: github.event.pull_request.draft == false
+        run: npx playwright install --with-deps chromium
+      - name: Tester Atelier en navigateur desktop et Android
+        if: github.event.pull_request.draft == false
+        run: npx playwright test --project=chromium-desktop --project=android
+      - name: Conserver les captures en cas d'échec
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: captures-navigateur
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 3

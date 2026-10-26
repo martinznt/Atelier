@@ -10,7 +10,7 @@ export {recordModelCatalogue} from './catalog-store.ts';
 export async function refreshModelCatalogues(env:Env):Promise<void>{
  const date=new Date().toISOString(),old=new Date(Date.now()-86400000).toISOString(),retry=new Date(Date.now()-3600000).toISOString();
  const {results}=await env.DB.prepare(`SELECT c.* FROM connections c JOIN users u ON u.id=c.user_id
-  WHERE c.auto_refresh_models=1 AND c.status='connected' AND c.provider IN ('openai','anthropic','gemini') AND u.deleted_at IS NULL
+  WHERE c.auto_refresh_models=1 AND c.status='connected' AND c.provider IN ('openai','anthropic','gemini','mistral') AND u.deleted_at IS NULL
   AND (c.expires_at IS NULL OR c.expires_at>?) AND (c.models_checked_at IS NULL OR c.models_checked_at<?)
   AND (c.models_refresh_attempted_at IS NULL OR c.models_refresh_attempted_at<?)
   ORDER BY COALESCE(c.models_refresh_attempted_at,'') LIMIT 2`).bind(date,old,retry).all<Record<string,any>>();

@@ -1,4 +1,6 @@
 import {beforeAll,afterAll,describe,it,expect} from 'vitest';import {Miniflare} from 'miniflare';import {build} from 'esbuild';import {readFile,readdir,mkdir} from 'node:fs/promises';import {unzipSync,strFromU8} from 'fflate';import {hashPassword,verifyPassword} from '../server/password';
+import {normalizeMigrationForD1} from './migration-sql.mjs';
+import {queueReview} from '../server/reviews';
 let mf:Miniflare;let a:string,b:string;const origin='http://localhost:8787';let project:string,conversation:string,file:string;
 let ownerA:string,ownerB:string,spaceA:string,spaceB:string,importedConversation:string;
 const importedMessage='Historique privé Alice : référence CANNELLE-719.';
@@ -9,7 +11,11 @@ beforeAll(async()=>{
  mf=new Miniflare({modules:true,scriptPath:'test-results/worker.mjs',compatibilityDate:'2025-10-24',compatibilityFlags:['nodejs_compat'],d1Databases:['DB'],queueProducers:{TASKS:'atelier-tasks'},bindings:{MASTER_KEY:Buffer.alloc(32,7).toString('base64'),APP_ORIGIN:origin,ALLOW_REGISTRATION:'true',STORAGE_LIMIT_MB:'1',MAX_FILE_MB:'1'}});
  const db=await mf.getD1Database('DB');
  // Exercise the complete application schema, including bridge exports and OAuth tables.
- for(const migration of (await readdir('migrations')).filter(name=>/^\d+.*\.sql$/.test(name)).sort())await db.exec(await readFile(`migrations/${migration}`,'utf8'));
+ for(const migration of (await readdir('migrations')).filter(name=>/^\d+.*\.sql$/.test(name)).sort()){
+  const sql=await readFile(`migrations/${migration}`,'utf8');
+  // Chaque instruction complète tient sur une ligne, triggers SQL compris.
+  await db.exec(normalizeMigrationForD1(sql));
+ }
  const first=await json('/auth/register','POST',{email:'alice@example.test',password:'phrase-de-test-solide-2026'},'');expect(first.status).toBe(201);a=first.cookie!;const second=await json('/auth/register','POST',{email:'bob@example.test',password:'autre-phrase-solide-2026'},'');expect(second.status).toBe(201);b=second.cookie!;
  project=(await json('/projects','POST',{name:'Projet de test'})).body.id;conversation=(await json('/conversations','POST',{project_id:project,title:'Conversation'})).body.id;file=(await json('/files/text','POST',{project_id:project,name:'test.txt',content:'version une'})).body.file_id;
  ownerA=first.body.user.id;ownerB=second.body.user.id;
@@ -206,5 +212,61 @@ describe('email et mots de passe de huit caractères',()=>{
   expect((await call('/auth/me','GET',undefined,old.cookie!)).status).toBe(401);
   expect((await json('/auth/legacy-login','POST',{username:'old-account',password:'legacy-password'},'')).status).toBe(401);
   const again=await json('/auth/login','POST',{email:'old@example.test',password:'legacy-password'},'');expect(again.status).toBe(200);expect(again.body.user.id).toBe(id);
+ });
+});
+
+
+describe('revues IA des PR : isolation des comptes et consentement',()=>{
+ it('refuse de consulter les rapports privés d’un autre compte',async()=>{
+  const own=await json('/reviews/runs?project='+project);
+  expect(own.status).toBe(200);
+  expect(own.body.items).toEqual([]);
+  expect((await call('/reviews/runs?project='+project,'GET',undefined,b)).status).toBe(404);
+  expect((await call('/reviews/configs?project='+project,'GET',undefined,'')).status).toBe(401);
+ });
+ it('ne crée aucun traitement sans dépôt appartenant au compte',async()=>{
+  const foreign=crypto.randomUUID();
+  expect((await json('/reviews/start','POST',{repository_id:foreign,pr_number:58})).status).toBe(404);
+  expect((await json('/reviews/configs','POST',{repository_id:foreign,primary:{connection_id:crypto.randomUUID(),model:'test'},enabled:true,share_consent:true})).status).toBe(404);
+ });
+});
+
+
+describe('configuration IA : limite gratuite, connexion validée et isolation',()=>{
+ it('préserve les choix et bloque un plafond quotidien abusif',async()=>{
+  const email='review-'+crypto.randomUUID()+'@example.test';
+  const registration=await json('/auth/register','POST',{email,password:'unmotdepassefort'},'');
+  expect(registration.status).toBe(201);const cookie=registration.cookie!;
+  const ownProject=await json('/projects','POST',{name:'Projet revue IA'},cookie);
+  expect(ownProject.status).toBe(201);
+  const ai=await json('/connections','POST',{provider:'mistral',label:'Test IA',secret:'exemple-clé-factice-2026',scopes:['chat'],api_consent:true},cookie);
+  const gh=await json('/connections','POST',{provider:'github',label:'Test GitHub',secret:'exemple-jeton-factice-2026',scopes:['read']},cookie);
+  expect(ai.status).toBe(201);expect(gh.status).toBe(201);
+  const db=await mf.getD1Database('DB');
+  await db.prepare("UPDATE connections SET status='connected',models=? WHERE id=?").bind('["ministral-test"]',ai.body.id).run();
+  const repoId=crypto.randomUUID(),at=new Date().toISOString();
+  await db.prepare('INSERT INTO repositories(id,user_id,project_id,connection_id,full_name,branch,head_sha,created_at) VALUES(?,?,?,?,?,?,?,?)')
+   .bind(repoId,registration.body.user.id,ownProject.body.id,gh.body.id,'martinznt/Livre-de-recettes','main','a'.repeat(40),at).run();
+  const input={repository_id:repoId,primary:{connection_id:ai.body.id,model:'ministral-test'},secondary:null,enabled:false,daily_limit:2,share_consent:true};
+  expect((await json('/reviews/configs','POST',{...input,daily_limit:5},cookie)).status).toBe(400);
+  expect((await json('/reviews/configs','POST',input,cookie)).status).toBe(200);
+  const read=await json('/reviews/configs?project='+ownProject.body.id,'GET',undefined,cookie);
+  expect(read.status).toBe(200);expect(read.body.items).toHaveLength(1);
+  expect(read.body.items[0].daily_limit).toBe(2);
+  expect(read.body.items[0].enabled).toBe(0);
+  expect((await call('/reviews/configs?project='+ownProject.body.id,'GET',undefined,b)).status).toBe(404);
+  const config=read.body.items[0];
+  const minimalRepo={id:repoId,user_id:registration.body.user.id,project_id:ownProject.body.id,connection_id:gh.body.id,full_name:'martinznt/Livre-de-recettes'};
+  const sent:string[]=[];
+  const isolatedEnv={DB:db,TASKS:{send:async(payload:any)=>{sent.push(payload.id);}}} as any;
+  const first=await queueReview(isolatedEnv,config,minimalRepo,101,'b'.repeat(40));
+  const second=await queueReview(isolatedEnv,config,minimalRepo,102,'c'.repeat(40));
+  const excess=await queueReview(isolatedEnv,config,minimalRepo,103,'d'.repeat(40));
+  expect([first,second,excess]).toEqual([true,true,false]);
+  const again=await queueReview(isolatedEnv,config,minimalRepo,102,'c'.repeat(40));
+  expect(again).toBe(false);
+  const count=await db.prepare('SELECT COUNT(*) AS n FROM review_runs WHERE user_id=? AND repository_id=?').bind(registration.body.user.id,repoId).first<{n:number}>();
+  expect(count?.n).toBe(2);expect(sent).toHaveLength(2);
+
  });
 });

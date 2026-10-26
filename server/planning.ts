@@ -25,7 +25,7 @@ export function planTeam(request:PlanningRequest,connections:PlanningConnection[
    const candidate=mission.candidates[rank],identity=`${candidate.connection_id}\n${candidate.model}`;
    if(seen.has(identity))continue;seen.add(identity);
    const connection=connections.find(c=>c.id===candidate.connection_id);
-   if(!connection||!['openai','anthropic','gemini'].includes(connection.provider)||connection.status!=='connected'||!connection.api_consent||!connection.scopes.includes('chat')||!connection.models.includes(candidate.model))continue;
+   if(!connection||!['openai','anthropic','gemini','mistral'].includes(connection.provider)||connection.status!=='connected'||!connection.api_consent||!connection.scopes.includes('chat')||!connection.models.includes(candidate.model))continue;
    const expiry=connection.expires_at?Date.parse(connection.expires_at):Infinity;
    if(Number.isNaN(expiry)||expiry<=time)continue;
    const quota=quotaOf(connection.quota),observed=Date.parse(quota.observed_at||quota.updated_at),retry=Date.parse(quota.retry_at);

@@ -21,6 +21,7 @@ export async function* generate(provider:string,secret:string,model:string,messa
  let path:string,body:any;
  if(provider==='openai'){path='/v1/responses';body={model,input:messages,max_output_tokens:maxTokens,stream:true,store:false};}
  else if(provider==='anthropic'){path='/v1/messages';body={model,messages,max_tokens:maxTokens,stream:true};}
+ else if(provider==='mistral'){path='/v1/chat/completions';body={model,messages,max_tokens:maxTokens,stream:true};}
  else if(provider==='gemini'){path=`/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`;body={contents:messages.map(m=>({role:m.role==='assistant'?'model':'user',parts:[{text:m.content}]})),generationConfig:{maxOutputTokens:maxTokens}};}
  else throw new ProviderError(400,'unsupported');
  const response=await request(provider,secret,path,{method:'POST',body:JSON.stringify(body),signal});yield {quota:quotaHeaders(response.headers)};
@@ -35,6 +36,12 @@ export async function* generate(provider:string,secret:string,model:string,messa
  if(data.type==='content_block_delta'&&data.delta.type==='text_delta')yield {text:data.delta.text};
  if(data.type==='message_delta')yield {output:data.usage?.output_tokens};
  if(data.type==='message_stop')ended=true;
+ }else if(provider==='mistral'){
+ const choice=data.choices?.[0];
+ if(typeof choice?.delta?.content==='string')yield {text:choice.delta.content};
+ if(data.model)yield {model:data.model};
+ if(data.usage)yield {input:data.usage.prompt_tokens,output:data.usage.completion_tokens};
+ if(choice?.finish_reason){ended=true;if(choice.finish_reason!=='stop')throw new ProviderError(422,'output_limit');}
  }else{
  const candidate=data.candidates?.[0];if(candidate?.content?.parts)for(const p of candidate.content.parts)if(p.text&&!p.thought)yield {text:p.text};
  if(data.modelVersion)yield {model:data.modelVersion};if(data.usageMetadata)yield {input:data.usageMetadata.promptTokenCount,output:data.usageMetadata.candidatesTokenCount};if(candidate?.finishReason){ended=true;if(candidate.finishReason!=='STOP')throw new ProviderError(422,'output_limit');}
