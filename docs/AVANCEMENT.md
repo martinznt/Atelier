@@ -460,3 +460,11 @@ et commit distant, ni publication autorisée et publication réalisée.
 - Cause réelle des interruptions de la PR #105 : NON confirmée (Observability était désactivé). Après déploiement, relancer
   l'analyse une fois : le diagnostic affichera l'étape exacte.
 - Reste à faire : Groq, évaluation Gemini/OpenRouter (conditions officielles), modes économique/équilibré/approfondi, dossier ChatGPT.
+
+## Connecteur Groq (4 novembre 2026)
+- Ajouté : `groq` (API compatible OpenAI sous `https://api.groq.com/openai/v1`) : test de clé et catalogue réel, flux de revue,
+  usage lu dans `usage` ou `x_groq.usage`, coupure par longueur = erreur, 429 + Retry-After = arrêt (quota enregistré),
+  en-têtes `x-ratelimit-*` affichés tels quels, sans extrapolation. Aucun basculement automatique vers un autre modèle/offre.
+- NON vérifié : conditions et limites officielles de l'offre gratuite Groq (domaine bloqué dans l'environnement de développement)
+  et fonctionnement avec une vraie clé. L'utilisateur indique avoir déjà utilisé Groq/Gemini ; il saisit sa propre clé dans Atelier.
+- Gemini : connecteur existant, conditions (région, âge, tarification) non vérifiées ; ne pas l'activer automatiquement.

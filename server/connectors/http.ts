@@ -20,7 +20,7 @@ export class ProviderError extends Error {
   this.retryAfter=retryAfter;
  }
 }
-export const origins:Record<string,string>={github:'https://api.github.com',openai:'https://api.openai.com',anthropic:'https://api.anthropic.com',gemini:'https://generativelanguage.googleapis.com',mistral:'https://api.mistral.ai',cloudflare:'https://api.cloudflare.com',netlify:'https://api.netlify.com'};
+export const origins:Record<string,string>={github:'https://api.github.com',openai:'https://api.openai.com',anthropic:'https://api.anthropic.com',gemini:'https://generativelanguage.googleapis.com',mistral:'https://api.mistral.ai',groq:'https://api.groq.com',cloudflare:'https://api.cloudflare.com',netlify:'https://api.netlify.com'};
 export async function request(provider:string,secret:string,path:string,init:RequestInit={}) {
  const origin=origins[provider];if(!origin||!path.startsWith('/')||path.startsWith('//'))throw new Error('Destination non autorisée');
  const headers=new Headers(init.headers);headers.set('Accept','application/json');headers.set('User-Agent','Atelier/0.1');
