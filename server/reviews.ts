@@ -28,7 +28,7 @@ async function getRepo(env:Env,id:string,user:string){
 }
 async function checkChoice(env:Env,user:string,input:{connection_id:string;model:string}){
  const {conn}=await credentialsFor(env,input.connection_id,user,'chat');
- if(!['openai','anthropic','gemini','mistral'].includes(conn.provider)||!conn.api_consent||conn.status!=='connected')
+ if(!['openai','anthropic','gemini','mistral','groq'].includes(conn.provider)||!conn.api_consent||conn.status!=='connected')
   fail(403,'Cette API n’est pas disponible ou autorisée dans Atelier.');
  if(!JSON.parse(conn.models).includes(input.model))fail(400,'Modèle non confirmé : testez la connexion.');
  if(readableQuota(conn.quota).status==='rate_limited')fail(429,'Cette connexion a signalé une limite : réactivez-la seulement après vérification chez le fournisseur.');

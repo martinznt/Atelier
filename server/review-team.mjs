@@ -12,7 +12,7 @@ export function activeReviewConnections(connections,at=Date.now()){
  return connections.filter(c=>{
   const models=Array.isArray(c.models)?c.models:[];
   const scopes=Array.isArray(c.scopes)?c.scopes:[];
-  if(!['mistral','openai','anthropic','gemini'].includes(c.provider)||c.status!=='connected'||!c.api_consent||!scopes.includes('chat')||!models.some(m=>!unavailableModels.test(m)))return false;
+  if(!['mistral','groq','openai','anthropic','gemini'].includes(c.provider)||c.status!=='connected'||!c.api_consent||!scopes.includes('chat')||!models.some(m=>!unavailableModels.test(m)))return false;
   if(c.expires_at && (Date.parse(c.expires_at)<=at||!Number.isFinite(Date.parse(c.expires_at))))return false;
   const quota=readableQuota(c.quota);
   if(quota.status==='rate_limited')return false; // No automatic retry after a 429, even if a date was suggested.
@@ -22,7 +22,7 @@ export function activeReviewConnections(connections,at=Date.now()){
 export function recommendedReviewTeam(connections,at=Date.now()){
  const available=activeReviewConnections(connections,at);
  const sorted=[...available].sort((a,b)=>{
-  const score=x=>x.provider==='mistral'?0:x.provider==='gemini'?1:x.provider==='openai'?2:3;
+  const score=x=>x.provider==='mistral'?0:x.provider==='gemini'?1:x.provider==='groq'?2:x.provider==='openai'?3:4;
   return score(a)-score(b)||String(a.label).localeCompare(String(b.label));
  });
  const pick=c=>{

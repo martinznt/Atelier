@@ -1,7 +1,7 @@
 export type TeamMode='individual'|'compare'|'review'|'collaborate';
 export type TeamSelection={selected:string[];models:Record<string,string>;roles:Record<string,string>;mode:TeamMode;rounds:number;consent:boolean};
 export type TeamConnection={id:string;label:string;provider:string;status:string;models:string[];scopes?:string[];api_consent?:number|boolean;expires_at?:string|null;quota?:unknown;tested_at?:string|null;account_label?:string|null;models_checked_at?:string|null;models_revision?:number};
-export const providerName=(provider:string)=>(({openai:'OpenAI API',anthropic:'Claude API',gemini:'Gemini API',mistral:'Mistral API'} as Record<string,string>)[provider]||provider);
+export const providerName=(provider:string)=>(({openai:'OpenAI API',anthropic:'Claude API',gemini:'Gemini API',mistral:'Mistral API',groq:'Groq API'} as Record<string,string>)[provider]||provider);
 export const teamMethods=[
  {id:'individual',label:'Une réponse',description:'Un assistant répond à votre demande. Un seul appel est prévu.',roles:['Répondre clairement à la demande et signaler les informations manquantes.']},
  {id:'compare',label:'Comparer des idées',description:'Chaque assistant reçoit les mêmes sources et propose sa réponse sans lire celles des autres. Comparez ensuite leurs désaccords.',roles:['Proposer une première solution, avec ses avantages, limites et hypothèses.','Explorer une autre approche et expliquer ses compromis.','Présenter une troisième proposition indépendante et ses limites.']},
@@ -24,7 +24,7 @@ export function connectionQuota(connection:Pick<TeamConnection,'quota'>):Record<
 }
 export function connectionIssue(connection:TeamConnection|undefined,model?:string,time=Date.now()):string|null {
  if(!connection)return 'Cette connexion a été retirée. Choisissez un autre assistant.';
- if(!['openai','anthropic','gemini','mistral'].includes(connection.provider))return 'Ce service ne propose pas de discussion dans Atelier.';
+ if(!['openai','anthropic','gemini','mistral','groq'].includes(connection.provider))return 'Ce service ne propose pas de discussion dans Atelier.';
  if(connection.expires_at&&(!Number.isFinite(Date.parse(connection.expires_at))||Date.parse(connection.expires_at)<=time))return 'Accès expiré : renouvelez puis testez la connexion.';
  if(connection.status!=='connected')return connection.status==='expired'?'Accès révoqué ou expiré : renouvelez la connexion.':'Testez cette connexion dans Réglages avant de l’utiliser.';
  if(!connection.scopes?.includes('chat')||!(connection.api_consent===1||connection.api_consent===true))return 'Cette connexion n’autorise pas une discussion API.';
