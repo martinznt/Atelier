@@ -12,6 +12,7 @@ on:
       - "tests/github-probe.test.mjs"
       - "tests/review-diagnostics.test.mjs"
       - "tests/groq-connector.test.mjs"
+      - "tests/review-comment.test.mjs"
       - "tests/configure-cloudflare.test.mjs"
       - "scripts/**"
       - ".github/workflows/production-smoke.yml"
@@ -36,7 +37,7 @@ jobs:
       - name: Installer les dépendances
         run: npm install --no-audit --no-fund
       - name: Contrats de relecture
-        run: node --test tests/review-core.test.mjs tests/review-team.test.mjs tests/migration-sql.test.mjs tests/readiness.test.mjs tests/operational-error.test.mjs tests/provider-http.test.mjs tests/github-probe.test.mjs tests/review-diagnostics.test.mjs tests/groq-connector.test.mjs
+        run: node --test tests/review-core.test.mjs tests/review-team.test.mjs tests/migration-sql.test.mjs tests/readiness.test.mjs tests/operational-error.test.mjs tests/provider-http.test.mjs tests/github-probe.test.mjs tests/review-diagnostics.test.mjs tests/groq-connector.test.mjs tests/review-comment.test.mjs
       - name: Typescript
         run: npm run check
       - name: Vérifications cœur, migrations et sauvegardes

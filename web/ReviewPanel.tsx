@@ -12,7 +12,7 @@ export function ReviewPanel({project}:{project:string}){
  const [configs,setConfigs]=useState<any[]>([]),[runs,setRuns]=useState<any[]>([]);
  const [repo,setRepo]=useState(''),[primary,setPrimary]=useState(''),[pModel,setPModel]=useState('');
  const [secondary,setSecondary]=useState(''),[sModel,setSModel]=useState('');
- const [enabled,setEnabled]=useState(false),[consent,setConsent]=useState(false),[dailyLimit,setDailyLimit]=useState(2);
+ const [postComment,setPostComment]=useState(false),[enabled,setEnabled]=useState(false),[consent,setConsent]=useState(false),[dailyLimit,setDailyLimit]=useState(2);
  const [pulls,setPulls]=useState<any[]>([]),[selectedPR,setSelectedPR]=useState('');
  const [busy,setBusy]=useState(false),[error,setError]=useState<unknown>(null),[notice,setNotice]=useState('');
  const load=async()=>{
@@ -28,7 +28,7 @@ export function ReviewPanel({project}:{project:string}){
   setRepo(prev=>prev||r.items[0]?.id||'');
  };
  useEffect(()=>{void load().catch(setError);const timer=setInterval(()=>{if(!document.hidden&&navigator.onLine)void api('/reviews/runs?project='+encodeURIComponent(project)).then(r=>setRuns(r.items)).catch(()=>{});},15000);return()=>clearInterval(timer);},[project]);
- useEffect(()=>{if(!repo){setPulls([]);return;}void api('/reviews/pulls?repository_id='+encodeURIComponent(repo)).then(r=>{setPulls(r.items);setSelectedPR(p=>p||String(r.items[0]?.number||''));}).catch(setError);const cfg=configs.find(c=>c.repository_id===repo);if(cfg){setPrimary(cfg.primary_connection_id);setPModel(cfg.primary_model);setSecondary(cfg.secondary_connection_id||'');setSModel(cfg.secondary_model||'');setEnabled(Boolean(cfg.enabled));setConsent(Boolean(cfg.consent));setDailyLimit(cfg.daily_limit||2);}},[repo,configs]);
+ useEffect(()=>{if(!repo){setPulls([]);return;}void api('/reviews/pulls?repository_id='+encodeURIComponent(repo)).then(r=>{setPulls(r.items);setSelectedPR(p=>p||String(r.items[0]?.number||''));}).catch(setError);const cfg=configs.find(c=>c.repository_id===repo);if(cfg){setPrimary(cfg.primary_connection_id);setPModel(cfg.primary_model);setSecondary(cfg.secondary_connection_id||'');setSModel(cfg.secondary_model||'');setEnabled(Boolean(cfg.enabled));setPostComment(Boolean(cfg.post_comment));setConsent(Boolean(cfg.consent));setDailyLimit(cfg.daily_limit||2);}},[repo,configs]);
  useEffect(()=>{
   if(!connections.length||configs.some(c=>c.repository_id===repo))return;
   const suggestions=recommendedReviewTeam(connections);
@@ -102,9 +102,10 @@ export function ReviewPanel({project}:{project:string}){
     {sConn&&<Field label="Modèle de relecture"><select value={sModel} onChange={e=>setSModel(e.target.value)}>{sConn.models.map((m:string)=><option key={m} value={m}>{m}</option>)}</select></Field>}
     <Field label="Maximum d'analyses par jour pour ce dépôt"><select value={dailyLimit} onChange={e=>setDailyLimit(Number(e.target.value))}><option value={1}>1 par jour · économie maximale</option><option value={2}>2 par jour · recommandé</option><option value={4}>4 par jour · vérifications fréquentes</option></select></Field>
     <label className="check"><input type="checkbox" checked={enabled} onChange={e=>setEnabled(e.target.checked)}/>Analyser automatiquement les nouveaux commits des PR, dans le plafond journalier (8 maximum par compte).</label>
+    <label className="check"><input type="checkbox" checked={postComment} onChange={e=>setPostComment(e.target.checked)}/>Publier le dossier de revue en commentaire de la PR. Nécessite un accès GitHub autorisé en « écriture » dans Atelier, limité aux commentaires côté GitHub. Le commentaire est visible par toutes les personnes ayant accès au dépôt. Aucun agent (Claude Code, ChatGPT) n'est lancé automatiquement.</label>
     <label className="check"><input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)}/>J'autorise l'envoi des extraits de code sélectionnés aux API choisies et j'ai vérifié leurs conditions et leur absence de coût supplémentaire.</label>
     <p className="muted">Les secrets, fichiers sensibles et lignes suspectes sont écartés autant que possible, mais cette protection n'est pas infaillible : n'activez pas l'envoi de dépôts contenant des secrets. Atelier ne peut pas vérifier votre facturation fournisseur. Aucun essai payant n'est activé automatiquement.</p>
-    <Button disabled={busy||!repo||!primary||!pModel||!consent||Boolean(secondary&&!sModel)} onClick={()=>void act(()=>post('/reviews/configs',{repository_id:repo,primary:{connection_id:primary,model:pModel},secondary:secondary?{connection_id:secondary,model:sModel}:null,enabled,daily_limit:dailyLimit,share_consent:true}),'Configuration enregistrée.')}>Enregistrer la chaîne</Button>
+    <Button disabled={busy||!repo||!primary||!pModel||!consent||Boolean(secondary&&!sModel)} onClick={()=>void act(()=>post('/reviews/configs',{repository_id:repo,primary:{connection_id:primary,model:pModel},secondary:secondary?{connection_id:secondary,model:sModel}:null,enabled,post_comment:postComment,daily_limit:dailyLimit,share_consent:true}),'Configuration enregistrée.')}>Enregistrer la chaîne</Button>
    </div>
    <hr/>
    <h3>Lancer une analyse maintenant</h3>
@@ -128,6 +129,7 @@ export function ReviewPanel({project}:{project:string}){
     {(!r.diagnostic||!r.diagnostic.retry_allowed)&&<p className="notice">{r.diagnostic?'La reprise n’est pas jugée sûre (résultat IA incertain ou accès à corriger). ':'Cette analyse est antérieure au diagnostic détaillé : un appel IA a pu avoir lieu. '}Relancer peut consommer du quota du fournisseur.</p>}
     <Button kind="secondary" disabled={busy} onClick={()=>void act(()=>post('/reviews/runs/'+r.id+'/retry',{acknowledge_uncertain:!r.diagnostic||!r.diagnostic.retry_allowed}),'Reprise demandée. Actualisez dans quelques instants.')}>Relancer cette analyse{(!r.diagnostic||!r.diagnostic.retry_allowed)?' (je confirme)':''}</Button>
    </div>}
+   {r.report?.comment&&(r.report.comment.posted?<p className="notice">Dossier publié en commentaire de la PR{r.report.comment.url?<> : <a href={r.report.comment.url} target="_blank" rel="noreferrer">ouvrir sur GitHub</a></>:null}.</p>:<p className="notice">{r.report.comment.message}</p>)}
    {r.report?.checks_unavailable&&<p className="notice">Tests GitHub non lus : {r.report.checks_unavailable}</p>}
    {r.report&&<div className="stack">
     <p>Risque : <strong>{r.report.risk}</strong> · Tests GitHub consultés : {r.report.checks?.length||0} {r.report.checks_partial?'(liste incomplète)':''}</p>

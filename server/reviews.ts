@@ -9,18 +9,19 @@ import {readableQuota,reviewHandoff} from './review-team.mjs';
 import {fail,jsonBody,many,now,one,owned,run,uid,userId} from './core.ts';
 import {reviewPrompt,parseReviewResult,reviewRisk,type ReviewFile,type ReviewCheck} from './review-core.ts';
 import {buildDiagnostic,type Stage} from './review-diagnostics.ts';
+import {postReviewComment,commentFailureMessage} from './review-comment.ts';
 import type {AppEnv,Env} from './types.ts';
 
 /* Seules les connexions autorisées et testées par l’utilisateur sont acceptées. */
 const aiChoice=z.object({connection_id:z.string().uuid(),model:z.string().min(1).max(160)});
 const configuration=z.object({
  repository_id:z.string().uuid(),primary:aiChoice,secondary:aiChoice.nullable().default(null),
- enabled:z.boolean().default(false),daily_limit:z.number().int().min(1).max(4).default(2),share_consent:z.literal(true)
+ enabled:z.boolean().default(false),post_comment:z.boolean().default(false),daily_limit:z.number().int().min(1).max(4).default(2),share_consent:z.literal(true)
 });
 const prInput=z.object({repository_id:z.string().uuid(),pr_number:z.number().int().positive().max(10000000)});
 export const reviews=new Hono<AppEnv>();
 
-type Conf={id:string;user_id:string;project_id:string;repository_id:string;primary_connection_id:string;primary_model:string;secondary_connection_id:string|null;secondary_model:string|null;enabled:number;consent:number;daily_limit:number};
+type Conf={id:string;user_id:string;project_id:string;repository_id:string;primary_connection_id:string;primary_model:string;secondary_connection_id:string|null;secondary_model:string|null;enabled:number;consent:number;daily_limit:number;post_comment?:number};
 type Repo={id:string;user_id:string;project_id:string;connection_id:string;full_name:string};
 type ReviewRun={id:string;user_id:string;project_id:string;repository_id:string;pr_number:number;head_sha:string;status:string;diagnostic?:string|null};
 async function getRepo(env:Env,id:string,user:string){
@@ -80,7 +81,16 @@ reviews.post('/configs',async c=>{
  await checkChoice(c.env,user,input.primary);
  if(input.secondary){if(input.secondary.connection_id===input.primary.connection_id)fail(400,'Choisissez deux connexions indépendantes.');await checkChoice(c.env,user,input.secondary);}
  const at=now();
- await run(c.env,"INSERT INTO review_configs(id,user_id,project_id,repository_id,primary_connection_id,primary_model,secondary_connection_id,secondary_model,enabled,consent,created_at,updated_at,daily_limit) VALUES(?,?,?,?,?,?,?,?,?,1,?,?,?) ON CONFLICT(user_id,repository_id) DO UPDATE SET primary_connection_id=excluded.primary_connection_id,primary_model=excluded.primary_model,secondary_connection_id=excluded.secondary_connection_id,secondary_model=excluded.secondary_model,enabled=excluded.enabled,consent=1,updated_at=excluded.updated_at,daily_limit=excluded.daily_limit",uid(),user,repo.project_id,repo.id,input.primary.connection_id,input.primary.model,input.secondary?.connection_id||null,input.secondary?.model||null,Number(input.enabled),at,at,input.daily_limit);
+ const baseArgs=[uid(),user,repo.project_id,repo.id,input.primary.connection_id,input.primary.model,input.secondary?.connection_id||null,input.secondary?.model||null,Number(input.enabled),at,at,input.daily_limit] as const;
+ if(input.post_comment){
+  // La publication de commentaires exige un accès GitHub explicitement autorisé en écriture dans Atelier.
+  await credentialsFor(c.env,repo.connection_id,user,'write');
+ }
+ try{await run(c.env,"INSERT INTO review_configs(id,user_id,project_id,repository_id,primary_connection_id,primary_model,secondary_connection_id,secondary_model,enabled,consent,created_at,updated_at,daily_limit,post_comment) VALUES(?,?,?,?,?,?,?,?,?,1,?,?,?,?) ON CONFLICT(user_id,repository_id) DO UPDATE SET primary_connection_id=excluded.primary_connection_id,primary_model=excluded.primary_model,secondary_connection_id=excluded.secondary_connection_id,secondary_model=excluded.secondary_model,enabled=excluded.enabled,consent=1,updated_at=excluded.updated_at,daily_limit=excluded.daily_limit,post_comment=excluded.post_comment",...baseArgs,Number(input.post_comment));}
+ catch(error){
+  if(input.post_comment)fail(409,'La migration 0011_review_comment.sql manque : elle est additive, à appliquer avant d’activer les commentaires.');
+  await run(c.env,"INSERT INTO review_configs(id,user_id,project_id,repository_id,primary_connection_id,primary_model,secondary_connection_id,secondary_model,enabled,consent,created_at,updated_at,daily_limit) VALUES(?,?,?,?,?,?,?,?,?,1,?,?,?) ON CONFLICT(user_id,repository_id) DO UPDATE SET primary_connection_id=excluded.primary_connection_id,primary_model=excluded.primary_model,secondary_connection_id=excluded.secondary_connection_id,secondary_model=excluded.secondary_model,enabled=excluded.enabled,consent=1,updated_at=excluded.updated_at,daily_limit=excluded.daily_limit",...baseArgs);
+ }
  return c.json({ok:true,message:input.enabled?'Relecture périodique activée pour les nouvelles versions de PR.':'Configuration enregistrée ; aucun lancement automatique.'});
 });
 reviews.post('/start',async c=>{
@@ -176,6 +186,15 @@ export async function executeReview(env:Env,id:string){
   // Tolérance : si la migration 0010 n'est pas encore appliquée, le rapport est tout de même enregistré.
   try{await run(env,'UPDATE review_runs SET status=?,report=?,stage=NULL,diagnostic=NULL,updated_at=?,completed_at=? WHERE id=?',state,JSON.stringify(result),now(),now(),id);}
   catch{await run(env,'UPDATE review_runs SET status=?,report=?,updated_at=?,completed_at=? WHERE id=?',state,JSON.stringify(result),now(),now(),id);}
+  if(cfg.post_comment===1&&result.handoff){
+   // Le rapport est déjà enregistré : un échec de publication ne peut ni l'effacer ni interrompre la revue.
+   try{
+    const writer=await credentialsFor(env,repo.connection_id,row.user_id,'write'); // droit d'écriture revérifié au moment de publier
+    const posted=await postReviewComment(writer.secret,repo.full_name,row.pr_number,{sha:row.head_sha,handoff:result.handoff});
+    result.comment={posted:true,url:posted.url};
+   }catch(error){result.comment={posted:false,message:commentFailureMessage(error)};}
+   try{await run(env,'UPDATE review_runs SET report=?,updated_at=? WHERE id=?',JSON.stringify(result),now(),id);}catch{/* conserver le rapport déjà enregistré */}
+  }
  }catch(error){
   // Étape et catégorie conservées ; aucun détail brut (URL, en-têtes, secrets) n'est enregistré.
   const d=buildDiagnostic({stage,lastOk,error,provider:stage.startsWith('github')?'github':null,attempts});
