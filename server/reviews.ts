@@ -98,7 +98,12 @@ reviews.post('/runs/:id/retry',async c=>{
  const row=await one<ReviewRun>(c.env,'SELECT * FROM review_runs WHERE id=? AND user_id=?',id,user);
  if(!row)fail(404,'Cette analyse est introuvable ou ne vous appartient pas.');
  const d=row.diagnostic?JSON.parse(row.diagnostic):null;
- if(row.status!=='interrupted'||!d||!d.retry_allowed)fail(409,'Reprise non autorisée : résultat IA incertain, quota ou accès à corriger, ou analyse déjà terminée.');
+ const body=z.object({acknowledge_uncertain:z.boolean().default(false)}).parse(await c.req.json().catch(()=>({})));
+ if(row.status!=='interrupted')fail(409,'Seules les analyses interrompues peuvent être relancées.');
+ if((d?.attempts||0)>=5)fail(409,'Nombre maximal de reprises atteint : corrigez la cause avant de lancer une nouvelle PR.');
+ // Sans diagnostic (analyse antérieure) ou si la reprise n'est pas jugée sûre, l'utilisateur doit confirmer
+ // qu'un appel IA a pu consommer du quota ; la reprise n'est jamais automatique.
+ if((!d||!d.retry_allowed)&&!body.acknowledge_uncertain)fail(409,'Reprise à confirmer : un appel IA a pu être effectué ou la cause (jeton, quota) est à corriger. Confirmez explicitement pour relancer.');
  const changed=await run(c.env,"UPDATE review_runs SET status='queued',error=NULL,completed_at=NULL,updated_at=? WHERE id=? AND user_id=? AND status='interrupted'",now(),id,user);
  if(!changed.meta.changes)fail(409,'Cette analyse a déjà été relancée.');
  try{await c.env.TASKS.send({id,kind:'review'});}catch{/* repris par le cron */}
