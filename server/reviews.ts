@@ -173,7 +173,9 @@ export async function executeReview(env:Env,id:string){
   result.handoff=reviewHandoff(result);
   await mark('save');
   const success=reports.every(r=>r.review),state=success?'completed':'partial';
-  await run(env,'UPDATE review_runs SET status=?,report=?,stage=NULL,diagnostic=NULL,updated_at=?,completed_at=? WHERE id=?',state,JSON.stringify(result),now(),now(),id);
+  // Tolérance : si la migration 0010 n'est pas encore appliquée, le rapport est tout de même enregistré.
+  try{await run(env,'UPDATE review_runs SET status=?,report=?,stage=NULL,diagnostic=NULL,updated_at=?,completed_at=? WHERE id=?',state,JSON.stringify(result),now(),now(),id);}
+  catch{await run(env,'UPDATE review_runs SET status=?,report=?,updated_at=?,completed_at=? WHERE id=?',state,JSON.stringify(result),now(),now(),id);}
  }catch(error){
   // Étape et catégorie conservées ; aucun détail brut (URL, en-têtes, secrets) n'est enregistré.
   const d=buildDiagnostic({stage,lastOk,error,provider:stage.startsWith('github')?'github':null,attempts});
@@ -184,11 +186,12 @@ export async function executeReview(env:Env,id:string){
 /* Activé uniquement après consentement explicite. Maximum deux PR nouvelles à
    chaque passage, pour ne pas monopoliser Cloudflare ni les quotas des API. */
 export async function maintenanceReviews(env:Env){
- const stuck=await many<{id:string;stage:string|null}>(env,"SELECT id,stage FROM review_runs WHERE status='running' AND updated_at<?",new Date(Date.now()-12*60000).toISOString());
+ const stuck=await many<{id:string;stage:string|null}>(env,"SELECT * FROM review_runs WHERE status='running' AND updated_at<?",new Date(Date.now()-12*60000).toISOString());
  for(const r of stuck){
   // Délai d'exécution Worker dépassé : à l'étape IA le résultat est inconnu, donc aucune reprise.
   const stage=(r.stage as Stage)||'config',d=buildDiagnostic({stage,lastOk:null,error:{status:504,code:'timeout'},aiStarted:stage==='ai_call'});
-  await run(env,"UPDATE review_runs SET status='interrupted',error=?,diagnostic=?,updated_at=? WHERE id=? AND status='running'",d.message,JSON.stringify(d),now(),r.id);
+  try{await run(env,"UPDATE review_runs SET status='interrupted',error=?,diagnostic=?,updated_at=? WHERE id=? AND status='running'",d.message,JSON.stringify(d),now(),r.id);}
+  catch{await run(env,"UPDATE review_runs SET status='interrupted',error=?,updated_at=? WHERE id=? AND status='running'",d.message,now(),r.id);}
  }
  const pending=await many(env,"SELECT id FROM review_runs WHERE status='queued' ORDER BY created_at LIMIT 5");
  for(const job of pending)try{await env.TASKS.send({id:job.id,kind:'review'});}catch{}
