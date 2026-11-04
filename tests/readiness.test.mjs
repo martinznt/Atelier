@@ -4,13 +4,14 @@ import {inspectAtelierReadiness} from '../server/readiness.ts';
 import {providerErrorMessage,ProviderError} from '../server/connectors/http.ts';
 
 const tables=['users','sessions','projects','connections','tasks','repositories','file_contents','review_configs','review_runs'];
-function environment({key=Buffer.alloc(32,7).toString('base64'),allTables=tables,hasLimit=true,brokenDb=false}={}){
+function environment({key=Buffer.alloc(32,7).toString('base64'),allTables=tables,hasLimit=true,hasDiagnostic=true,brokenDb=false}={}){
  return {
   MASTER_KEY:key,APP_ORIGIN:'https://atelier.example.workers.dev',
   ASSETS:{fetch:async()=>Response.json({})},TASKS:{send:async()=>{}},
   DB:{prepare:(sql)=>{
    if(brokenDb)throw Error('private D1 connection details');
    if(sql.includes('sqlite_master'))return {all:async()=>({results:allTables.map(name=>({name}))})};
+   if(sql.includes('PRAGMA table_info(review_runs)'))return {all:async()=>({results:hasDiagnostic?[{name:'stage'},{name:'diagnostic'}]:[{name:'other'}]})};
    if(sql.includes('PRAGMA table_info'))return {all:async()=>({results:hasLimit?[{name:'daily_limit'}]:[{name:'other'}]})};
    throw Error('unexpected SQL query');
   }}
@@ -48,4 +49,11 @@ test('les codes GitHub réseau, refus, quota et erreur distante restent distinct
  assert.match(providerErrorMessage(502,'http'),/HTTP 502/);
  assert.match(providerErrorMessage(404,'http'),/HTTP 404/);
  assert.notEqual(new ProviderError(503,'network').message,new ProviderError(503,'http').message);
+});
+test('la migration 0010 manquante est signalée sans bloquer le diagnostic des autres éléments',async()=>{
+ const r=await inspectAtelierReadiness(environment({hasDiagnostic:false}));
+ assert.equal(r.ready,false);
+ const check=r.checks.find(x=>x.id==='review-diagnostics');
+ assert.equal(check?.status,'error');assert.match(check.detail||check.message||JSON.stringify(check),/0010/);
+ assert.equal(r.checks.find(x=>x.id==='review-migration')?.status,'ok');
 });

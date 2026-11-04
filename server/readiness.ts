@@ -53,6 +53,13 @@ export async function inspectAtelierReadiness(env:Env):Promise<{ready:boolean;ch
     ?'La colonne daily_limit est présente.'
     :'La migration 0009_review_daily_limit.sql manque probablement. Ne pas supprimer la base.');
   }else add('review-migration','Plafonds des revues IA',false,'Appliquer les migrations additives 0008 et 0009 après sauvegarde de D1.');
+  if(found.has('review_runs')){
+   const runColumns=await env.DB.prepare('PRAGMA table_info(review_runs)').all<{name:string}>();
+   const hasDiagnostic=runColumns.results.some(c=>c.name==='diagnostic')&&runColumns.results.some(c=>c.name==='stage');
+   add('review-diagnostics','Diagnostic des revues IA',hasDiagnostic,hasDiagnostic
+    ?'Les colonnes de diagnostic (migration 0010) sont présentes.'
+    :'La migration 0010_review_diagnostics.sql manque. Elle est additive : l’appliquer après sauvegarde de D1, sans supprimer la base.');
+  }
  }catch{
   add('database','Base de données D1',false,'Impossible de lire la structure D1. Vérifier le binding DB et les migrations dans Cloudflare.');
   add('review-migration','Plafonds des revues IA',false,'État des migrations inconnu tant que D1 est inaccessible.');
