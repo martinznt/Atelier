@@ -8,6 +8,7 @@ import {recordConnectionQuota,rateLimitObservation} from './collaboration.ts';
 import {readableQuota,reviewHandoff} from './review-team.mjs';
 import {fail,jsonBody,many,now,one,owned,run,uid,userId} from './core.ts';
 import {reviewPrompt,parseReviewResult,reviewRisk,type ReviewFile,type ReviewCheck} from './review-core.ts';
+import {buildDiagnostic,type Stage} from './review-diagnostics.ts';
 import type {AppEnv,Env} from './types.ts';
 
 /* Seules les connexions autorisées et testées par l’utilisateur sont acceptées. */
@@ -21,7 +22,7 @@ export const reviews=new Hono<AppEnv>();
 
 type Conf={id:string;user_id:string;project_id:string;repository_id:string;primary_connection_id:string;primary_model:string;secondary_connection_id:string|null;secondary_model:string|null;enabled:number;consent:number;daily_limit:number};
 type Repo={id:string;user_id:string;project_id:string;connection_id:string;full_name:string};
-type ReviewRun={id:string;user_id:string;project_id:string;repository_id:string;pr_number:number;head_sha:string;status:string};
+type ReviewRun={id:string;user_id:string;project_id:string;repository_id:string;pr_number:number;head_sha:string;status:string;diagnostic?:string|null};
 async function getRepo(env:Env,id:string,user:string){
  return owned<Repo>(env,'repositories',id,user);
 }
@@ -65,7 +66,7 @@ reviews.get('/runs',async c=>{
  const project=z.string().uuid().parse(c.req.query('project'));
  await owned(c.env,'projects',project,userId(c));
  const rows=await many(c.env,'SELECT rr.*,r.full_name FROM review_runs rr JOIN repositories r ON r.id=rr.repository_id WHERE rr.project_id=? AND rr.user_id=? ORDER BY rr.created_at DESC LIMIT 30',project,userId(c));
- return c.json({items:rows.map(r=>({...r,report:r.report?JSON.parse(r.report):null}))});
+ return c.json({items:rows.map(r=>({...r,report:r.report?JSON.parse(r.report):null,diagnostic:r.diagnostic?JSON.parse(r.diagnostic):null}))});
 });
 reviews.get('/pulls',async c=>{
  const id=z.string().uuid().parse(c.req.query('repository_id'));
@@ -92,41 +93,63 @@ reviews.post('/start',async c=>{
  return c.json(await queueFromGithub(c.env,cfg,repo,input.pr_number),202);
 });
 
+reviews.post('/runs/:id/retry',async c=>{
+ const user=userId(c),id=z.string().uuid().parse(c.req.param('id'));
+ const row=await one<ReviewRun>(c.env,'SELECT * FROM review_runs WHERE id=? AND user_id=?',id,user);
+ if(!row)fail(404,'Cette analyse est introuvable ou ne vous appartient pas.');
+ const d=row.diagnostic?JSON.parse(row.diagnostic):null;
+ if(row.status!=='interrupted'||!d||!d.retry_allowed)fail(409,'Reprise non autorisée : résultat IA incertain, quota ou accès à corriger, ou analyse déjà terminée.');
+ const changed=await run(c.env,"UPDATE review_runs SET status='queued',error=NULL,completed_at=NULL,updated_at=? WHERE id=? AND user_id=? AND status='interrupted'",now(),id,user);
+ if(!changed.meta.changes)fail(409,'Cette analyse a déjà été relancée.');
+ try{await c.env.TASKS.send({id,kind:'review'});}catch{/* repris par le cron */}
+ return c.json({ok:true},202);
+});
 /* Les queues transportent uniquement l’identifiant. Le contexte est récupéré
    depuis D1, de sorte qu’un redémarrage ne perd pas les résultats. */
 export async function executeReview(env:Env,id:string){
  const date=now();
  const row=await env.DB.prepare("UPDATE review_runs SET status='running',updated_at=? WHERE id=? AND status='queued' AND EXISTS(SELECT 1 FROM users u WHERE u.id=review_runs.user_id AND u.deleted_at IS NULL) RETURNING *").bind(date,id).first<ReviewRun>();
  if(!row)return;
+ let stage:Stage='config',lastOk:Stage|null=null,previous:{attempts?:number}|null=null;
+ try{previous=row.diagnostic?JSON.parse(row.diagnostic):null;}catch{/* diagnostic antérieur illisible : ignoré */}
+ const attempts=(previous?.attempts||0)+1;
+ const mark=async(next:Stage)=>{lastOk=stage;stage=next;try{await run(env,'UPDATE review_runs SET stage=?,updated_at=? WHERE id=?',next,now(),id);}catch{/* le suivi ne doit pas bloquer l’analyse */}};
  try{
   const cfg=await one<Conf>(env,'SELECT * FROM review_configs WHERE repository_id=? AND user_id=?',row.repository_id,row.user_id);
   const repo=await getRepo(env,row.repository_id,row.user_id);
   if(!cfg||!cfg.consent)throw Error('Configuration ou consentement indisponible.');
   const token=await githubToken(env,repo),base='/repos/'+repo.full_name;
+  await mark('github_pr');
   const p=(await jsonRequest('github',token,base+'/pulls/'+row.pr_number)).data;
   if(p.head?.sha!==row.head_sha||p.state!=='open'||p.head?.repo?.full_name!==repo.full_name){
    await run(env,"UPDATE review_runs SET status='stale',error=?,updated_at=?,completed_at=? WHERE id=?",'La PR a changé avant l’analyse : nouveau commit requis.',now(),now(),id);return;
   }
-  const [fileRes,checkRes]=await Promise.all([
-   jsonRequest('github',token,base+'/pulls/'+row.pr_number+'/files?per_page=60'),
-   jsonRequest('github',token,base+'/commits/'+row.head_sha+'/check-runs?per_page=30')
-  ]);
+  await mark('github_files');
+  const fileRes=await jsonRequest('github',token,base+'/pulls/'+row.pr_number+'/files?per_page=60');
+  // Les tests GitHub sont utiles mais non indispensables : un refus (jeton sans droit Checks)
+  // ne doit pas perdre toute l'analyse. L'absence est signalée au rapport, jamais déguisée en succès.
+  await mark('github_checks');
+  let checkRes:{data:any;hasNext:boolean},checksDiagnostic:ReturnType<typeof buildDiagnostic>|null=null;
+  try{checkRes=await jsonRequest('github',token,base+'/commits/'+row.head_sha+'/check-runs?per_page=30');}
+  catch(error){checkRes={data:{check_runs:[]},hasNext:false};checksDiagnostic=buildDiagnostic({stage:'github_checks',lastOk:'github_files',error,provider:'github'});}
   const files=fileRes.data as ReviewFile[],checks:ReviewCheck[]=(checkRes.data.check_runs||[]).map((x:any)=>({name:x.name,status:x.status,conclusion:x.conclusion}));
+  await mark('ai_call');
   const risk=reviewRisk(files),reports:any[]=[];
   const assigned=[
    {id:cfg.primary_connection_id,model:cfg.primary_model,role:'correctness' as const},
    ...(cfg.secondary_connection_id&&cfg.secondary_model&&risk!=='simple'?[{id:cfg.secondary_connection_id,model:cfg.secondary_model,role:'security' as const}]:[])
   ];
   for(const reviewer of assigned){
-   let activeSecretSnapshot:string|null=null;
+   let activeSecretSnapshot:string|null=null,aiStarted=false,providerName:string|null=null;
    try{
     const {conn,secret}=await credentialsFor(env,reviewer.id,row.user_id,'chat');
     if(!conn.api_consent||conn.status!=='connected'||!JSON.parse(conn.models).includes(reviewer.model)||readableQuota(conn.quota).status==='rate_limited')throw Error('Connexion indisponible ou limite fournisseur atteinte.');
-    activeSecretSnapshot=conn.secret;
+    activeSecretSnapshot=conn.secret;providerName=conn.provider;
     const prompt=reviewPrompt({repo:repo.full_name,pr:row.pr_number,sha:row.head_sha,title:String(p.title||'').slice(0,200),files,checks,role:reviewer.role});
     const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),45000);
     let output='',model=reviewer.model,tokens=0;
     try{
+     aiStarted=true;
      for await(const delta of generate(conn.provider,secret,reviewer.model,[{role:'user',content:prompt.system+'\n\n'+prompt.user}],2800,controller.signal)){
       output+=delta.text||'';if(delta.model)model=delta.model;tokens=delta.input||tokens;
       if(output.length>14000){controller.abort();throw Error('Réponse trop volumineuse.');}
@@ -137,21 +160,31 @@ export async function executeReview(env:Env,id:string){
     if(error instanceof ProviderError&&error.status===429&&activeSecretSnapshot){
      try{await recordConnectionQuota(env.DB,reviewer.id,row.user_id,activeSecretSnapshot,rateLimitObservation(error.retryAfter,now()));}catch{/* conserver le rapport partiel */}
     }
-    reports.push({role:reviewer.role,error:'Analyse indisponible, quota ou fournisseur à vérifier. Aucun résultat inventé.'});
+    const d=buildDiagnostic({stage:'ai_call',lastOk:'github_checks',error,provider:providerName,aiStarted,attempts});
+    reports.push({role:reviewer.role,provider:providerName||undefined,model:reviewer.model,error:d.message,diagnostic:d});
    }
   }
-  const result:{[key:string]:any}={repo:repo.full_name,pr_number:row.pr_number,head_sha:row.head_sha,risk,checks,checks_partial:checkRes.hasNext,files_partial:fileRes.hasNext,reviewers:reports,reviewed_at:now(),warning:'Revue IA seulement : les alertes exigent une reproduction ; aucun test n’a été exécuté par Atelier.'};
+  const result:{[key:string]:any}={repo:repo.full_name,pr_number:row.pr_number,head_sha:row.head_sha,risk,checks,checks_partial:checkRes.hasNext,files_partial:fileRes.hasNext,reviewers:reports,reviewed_at:now(),checks_unavailable:checksDiagnostic?checksDiagnostic.message:null,warning:'Revue IA seulement : les alertes exigent une reproduction ; aucun test n’a été exécuté par Atelier.'};
   result.handoff=reviewHandoff(result);
+  await mark('save');
   const success=reports.every(r=>r.review),state=success?'completed':'partial';
-  await run(env,'UPDATE review_runs SET status=?,report=?,updated_at=?,completed_at=? WHERE id=?',state,JSON.stringify(result),now(),now(),id);
+  await run(env,'UPDATE review_runs SET status=?,report=?,stage=NULL,diagnostic=NULL,updated_at=?,completed_at=? WHERE id=?',state,JSON.stringify(result),now(),now(),id);
  }catch(error){
-  await run(env,"UPDATE review_runs SET status='interrupted',error=?,updated_at=?,completed_at=? WHERE id=?",'La revue n’a pas pu aboutir. Aucun nouvel appel automatique ne sera effectué sans intervention.',now(),now(),id);
+  // Étape et catégorie conservées ; aucun détail brut (URL, en-têtes, secrets) n'est enregistré.
+  const d=buildDiagnostic({stage,lastOk,error,provider:stage.startsWith('github')?'github':null,attempts});
+  try{await run(env,"UPDATE review_runs SET status='interrupted',error=?,stage=?,diagnostic=?,updated_at=?,completed_at=? WHERE id=?",d.message,stage,JSON.stringify(d),now(),now(),id);}
+  catch{await run(env,"UPDATE review_runs SET status='interrupted',error=?,updated_at=?,completed_at=? WHERE id=?",d.message,now(),now(),id);}
  }
 }
 /* Activé uniquement après consentement explicite. Maximum deux PR nouvelles à
    chaque passage, pour ne pas monopoliser Cloudflare ni les quotas des API. */
 export async function maintenanceReviews(env:Env){
- await run(env,"UPDATE review_runs SET status='interrupted',error=?,updated_at=? WHERE status='running' AND updated_at<?",'Traitement interrompu : vérification manuelle requise.',now(),new Date(Date.now()-12*60000).toISOString());
+ const stuck=await many<{id:string;stage:string|null}>(env,"SELECT id,stage FROM review_runs WHERE status='running' AND updated_at<?",new Date(Date.now()-12*60000).toISOString());
+ for(const r of stuck){
+  // Délai d'exécution Worker dépassé : à l'étape IA le résultat est inconnu, donc aucune reprise.
+  const stage=(r.stage as Stage)||'config',d=buildDiagnostic({stage,lastOk:null,error:{status:504,code:'timeout'},aiStarted:stage==='ai_call'});
+  await run(env,"UPDATE review_runs SET status='interrupted',error=?,diagnostic=?,updated_at=? WHERE id=? AND status='running'",d.message,JSON.stringify(d),now(),r.id);
+ }
  const pending=await many(env,"SELECT id FROM review_runs WHERE status='queued' ORDER BY created_at LIMIT 5");
  for(const job of pending)try{await env.TASKS.send({id:job.id,kind:'review'});}catch{}
  const configs=await many<Conf>(env,"SELECT rc.* FROM review_configs rc JOIN users u ON u.id=rc.user_id WHERE rc.enabled=1 AND rc.consent=1 AND u.deleted_at IS NULL ORDER BY rc.updated_at DESC LIMIT 2");
