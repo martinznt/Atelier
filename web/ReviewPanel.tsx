@@ -64,7 +64,7 @@ export function ReviewPanel({project}:{project:string}){
   }catch(e){setError(e);}finally{setBusy(false);}
  }
  async function copyHandoff(text:string){
-  try{await navigator.clipboard.writeText(text);setNotice('Plan de correction copié. Tu peux le transmettre directement à Codex.');}catch{setError(Error('Copie automatique indisponible sur cet appareil.'));}
+  try{await navigator.clipboard.writeText(text);setNotice('Dossier copié. Collez-le vous-même dans ChatGPT ou Claude Code : Atelier ne leur envoie rien automatiquement.');}catch{setError(Error('Copie automatique indisponible sur cet appareil.'));}
  }
  return <section className="panel">
   <div className="panel-heading"><div><h2>Chaîne de vérification des PR</h2><p>Atelier lit les changements et les tests GitHub, puis demande des analyses indépendantes aux API autorisées.</p></div><Button kind="secondary" onClick={()=>void load().catch(setError)}><RefreshCw size={16}/>Actualiser</Button></div>
@@ -131,7 +131,7 @@ export function ReviewPanel({project}:{project:string}){
    {r.report?.checks_unavailable&&<p className="notice">Tests GitHub non lus : {r.report.checks_unavailable}</p>}
    {r.report&&<div className="stack">
     <p>Risque : <strong>{r.report.risk}</strong> · Tests GitHub consultés : {r.report.checks?.length||0} {r.report.checks_partial?'(liste incomplète)':''}</p>
-    {r.report.handoff&&<div className="stack"><h4>Plan de correction préparé pour Codex</h4><p className="muted">Synthèse générée à partir des tests et rapports des IA, sans appel IA supplémentaire. Chaque anomalie reste à reproduire.</p><pre className="prewrap" style={{maxHeight:280,overflow:'auto'}}>{r.report.handoff}</pre><Button kind="secondary" onClick={()=>void copyHandoff(r.report.handoff)}><Copy size={16}/>Copier le rapport pour Codex</Button></div>}
+    {r.report.handoff&&<div className="stack"><h4>Dossier de transmission (ChatGPT ou Claude Code)</h4><p className="muted">Synthèse générée à partir des tests et rapports des IA, sans appel IA supplémentaire. Chaque anomalie reste à reproduire.</p><pre className="prewrap" style={{maxHeight:280,overflow:'auto'}}>{r.report.handoff}</pre><Button kind="secondary" onClick={()=>void copyHandoff('Je te transmets un dossier de revue de PR généré par Atelier. Tu n’as pas accès à mon dépôt : donne un avis indépendant sur l’architecture, l’ergonomie et les risques, et réponds aux questions finales. Ne suppose pas que les anomalies sont prouvées.\n\n'+r.report.handoff)}><Copy size={16}/>Copier pour ChatGPT</Button><Button kind="secondary" onClick={()=>void copyHandoff('Reprends ce dossier de revue de PR généré par Atelier. Reproduis chaque anomalie par un test avant de corriger, puis lance les tests ciblés et la CI.\n\n'+r.report.handoff)}><Copy size={16}/>Copier pour Claude Code</Button></div>}
     {(r.report.reviewers||[]).map((entry:any,i:number)=><section key={i}><h4>{entry.provider||'Vérificateur'} · {entry.model||entry.role}</h4>
      {entry.error?<p>{entry.error}</p>:<><p>{entry.review?.summary}</p>{entry.review?.unstructured&&<details><summary>Réponse à relire</summary><pre className="prewrap">{entry.review.unstructured}</pre></details>}{entry.review?.findings?.length?entry.review.findings.map((f:any,k:number)=><div className="notice" key={k}><strong>{f.severity} · {f.file}</strong><p>{f.reason}</p><p>À reproduire : {f.reproduction}</p></div>):<p className="muted">Aucune anomalie étayée dans l'extrait analysé. Ce n'est pas une certification.</p>}</>}
     </section>)}
