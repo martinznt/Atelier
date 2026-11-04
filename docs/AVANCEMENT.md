@@ -468,3 +468,19 @@ et commit distant, ni publication autorisée et publication réalisée.
 - NON vérifié : conditions et limites officielles de l'offre gratuite Groq (domaine bloqué dans l'environnement de développement)
   et fonctionnement avec une vraie clé. L'utilisateur indique avoir déjà utilisé Groq/Gemini ; il saisit sa propre clé dans Atelier.
 - Gemini : connecteur existant, conditions (région, âge, tarification) non vérifiées ; ne pas l'activer automatiquement.
+
+## État de reprise au 4 novembre 2026 (fin du lot Claude Code)
+**Fusionné dans main (PR #7 à #13) et déployé** : diagnostic par étape des revues (migration additive 0010, tolérée si absente et signalée par « Vérifier Atelier »),
+reprise manuelle confirmée, sonde GitHub corrigée (415 → 200 constaté en production), lecture des checks non bloquante,
+connecteur Groq, builds Cloudflare réparés (lockfile multi-plateformes, `maxParallelFileOps` pour EMFILE), dossier de transmission ChatGPT / Claude Code.
+
+**Constaté en production** : revue de la PR #105 terminée ; cause des anciennes interruptions = HTTP 403 sur les check-runs (jeton sans droit « Checks »).
+Le propriétaire indique que les vérifications IA fonctionnent avec Mistral, Groq et Gemini ajoutés par lui-même (non revérifié ici).
+
+**Connu, sans lien avec le code** : le contrôle Cloudflare des branches de PR échoue à `wrangler preview` (bloc `previews` absent de la configuration).
+Ne pas y brancher de ressources de production ; option : désactiver les builds de branches dans Cloudflare (Settings → Builds).
+
+**Non fait** : modes économique / équilibré / approfondi ; sélection automatique du modèle selon quota et mission ; évaluation réelle de Gemini/OpenRouter
+(conditions officielles non lues : domaines bloqués dans l'environnement de développement) ; activation automatique des revues (à faire par le propriétaire après validation).
+**À ne pas faire** : remplacer MASTER_KEY, recréer D1, copier une clé d'un autre projet, présenter une estimation comme un quota officiel.
+Tests : `tsc --noEmit`, `npx vitest run` (32), `npm run test:regressions`, `node --experimental-strip-types tests/<fichier>.test.mjs`.

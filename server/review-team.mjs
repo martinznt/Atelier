@@ -42,26 +42,40 @@ export function recommendedReviewTeam(connections,at=Date.now()){
 export function reviewHandoff(result){
  const checks=(result.checks||[]).filter(c=>c.conclusion==='failure'||c.conclusion==='timed_out'||c.conclusion==='cancelled');
  const reviewers=result.reviewers||[];
- const unique=new Set(),findings=[];
+ const byKey=new Map();
  for(const reviewer of reviewers){
+  const who=(reviewer.provider?reviewer.provider+' · ':'')+(reviewer.model||reviewer.role||'IA');
   for(const finding of reviewer.review?.findings||[]){
    const key=String(finding.file||'')+'|'+String(finding.reason||'').toLowerCase().trim();
-   if(unique.has(key))continue;unique.add(key);
-   findings.push({severity:finding.severity,file:finding.file,reason:finding.reason,reproduction:finding.reproduction,model:reviewer.model||reviewer.role});
+   const known=byKey.get(key);
+   if(known){if(!known.sources.includes(who))known.sources.push(who);continue;}
+   byKey.set(key,{severity:finding.severity,file:finding.file,reason:finding.reason,reproduction:finding.reproduction,sources:[who]});
   }
  }
+ const findings=[...byKey.values()];
  const rank={P0:0,P1:1,P2:2};
  findings.sort((a,b)=>(rank[a.severity]??3)-(rank[b.severity]??3));
+ const repo=String(result.repo||''),number=String(result.pr_number||'');
+ const link=repo&&number?'https://github.com/'+repo+'/pull/'+number:'';
+ const done=reviewers.filter(r=>r.review),failed=reviewers.filter(r=>r.error);
+ const testsLine=result.checks_unavailable?'Tests GitHub NON lus : '+result.checks_unavailable
+  :checks.length?'Contrôles GitHub en échec : '+checks.map(c=>c.name+' ('+c.conclusion+')').join('; ')
+  :'Aucun contrôle GitHub en échec dans la liste consultée (ne prouve pas leur couverture complète).';
+ const cov=reviewers.map(r=>r.coverage).find(Boolean);
  const lines=[
-  'REVUE DE PR : '+String(result.repo||'')+' #'+String(result.pr_number||''),
+  'DOSSIER DE TRANSMISSION — REVUE DE PR : '+repo+' #'+number,
+  link?'Lien : '+link:'',
   'Commit : '+String(result.head_sha||'')+' ; risque : '+String(result.risk||'non classé'),
-  'Attention : rapport automatisé, aucun correctif exécuté ni erreur prouvée par le seul avis IA.',
+  'Attention : rapport automatisé. Aucun correctif exécuté, aucun test lancé par Atelier, aucune erreur prouvée par le seul avis IA. Une IA qui ne détecte rien ne prouve pas que le code est correct.',
+  'IA ayant analysé : '+(done.length?done.map(r=>(r.provider?r.provider+' · ':'')+(r.model||r.role)+' ('+r.role+')').join(' ; '):'aucune')+(failed.length?' ; sans résultat : '+failed.map(r=>(r.provider||'IA')+' ('+r.role+')').join(', '):''),
+  cov?'Couverture du diff : '+cov.included+' fichier(s) lu(s), '+cov.excluded+' exclu(s), '+cov.redacted+' ligne(s) masquée(s)'+(cov.complete?'.':' — diff incomplet.'):'',
   result.files_partial||result.checks_partial?'Couverture GitHub partielle : vérifier le diff et les contrôles manquants.':'',
-  checks.length?'Contrôles GitHub en échec : '+checks.map(c=>c.name+' ('+c.conclusion+')').join('; '):'Aucun contrôle GitHub en échec dans la liste consultée (ne prouve pas leur couverture complète).',
+  testsLine,
   findings.length?'Anomalies IA proposées à reproduire et corriger :':'Aucune anomalie IA étayée sur le diff transmis.',
-  ...findings.slice(0,20).map((f,i)=>(i+1)+'. ['+f.severity+'] '+f.file+' — '+f.reason+'\n   Reproduction : '+f.reproduction+' ; source : '+f.model),
-  reviewers.some(r=>r.error)?'Une ou plusieurs IA n’ont pas terminé leur analyse.':'',
-  'Pour Codex : confirmer les anomalies par un test, corriger seulement celles reproduites, relancer les tests ciblés puis la CI. Ne pas fusionner sur la seule base du rapport.'
+  ...findings.slice(0,20).map((f,i)=>(i+1)+'. ['+f.severity+'] '+f.file+' — '+f.reason+'\n   Reproduction : '+f.reproduction+' ; source : '+f.sources.join(', ')+(f.sources.length>1?' (concordance de plusieurs IA, non une preuve)':' (une seule IA)')),
+  failed.length?'Une ou plusieurs IA n’ont pas terminé leur analyse : ne pas conclure à partir des seules analyses disponibles.':'',
+  'Questions pour l’assistant qui reprend : (1) lesquelles de ces anomalies sont réelles, avec quel test pour le prouver ? (2) y a-t-il des risques d’architecture, de sécurité ou d’ergonomie que les IA de revue n’ont pas vus ? (3) que faut-il vérifier avant de fusionner ?',
+  'Consigne : confirmer les anomalies par un test, corriger seulement celles reproduites, relancer les tests ciblés puis la CI. Ne pas fusionner sur la seule base de ce rapport.'
  ];
  return lines.filter(Boolean).join('\n').slice(0,12000);
 }
