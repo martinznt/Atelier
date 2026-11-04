@@ -117,6 +117,14 @@ export function ReviewPanel({project}:{project:string}){
   {!runs.length?<p className="muted">Aucune analyse réalisée pour ce projet.</p>:<div className="stack">{runs.map(r=><article className="panel" key={r.id}>
    <div className="panel-heading"><div><strong>{r.full_name} · PR #{r.pr_number}</strong><p>{statuses[r.status]||r.status} · {date(r.created_at)} · commit {r.head_sha.slice(0,8)}</p></div>{r.status==='completed'?<CheckCircle2 size={20}/>:<ShieldAlert size={20}/>}</div>
    {r.error&&<p className="muted">{r.error}</p>}
+   {r.diagnostic&&<details open><summary>Diagnostic de l’interruption</summary><ul>
+    <li>PR #{r.pr_number} · commit {r.head_sha}</li>
+    <li>Dernière étape réussie : {r.diagnostic.last_ok_stage||'aucune'} · Étape en échec : {r.diagnostic.stage}</li>
+    <li>Catégorie : {r.diagnostic.category} · code {r.diagnostic.code}{r.diagnostic.provider?' · '+r.diagnostic.provider:''}</li>
+    <li>Appel IA : {r.diagnostic.ai_result==='unknown'?'commencé, résultat inconnu':r.diagnostic.ai_started?'commencé, aucune génération reçue':'non effectué'}</li>
+    <li>Nouvelle tentative : {r.diagnostic.retry_allowed?'possible (manuelle)':'non autorisée sans intervention'}</li>
+   </ul>{r.diagnostic.retry_allowed&&<Button kind="secondary" disabled={busy} onClick={()=>void act(()=>post('/reviews/runs/'+r.id+'/retry',{}),'Reprise demandée.')}>Relancer cette analyse</Button>}</details>}
+   {r.report?.checks_unavailable&&<p className="notice">Tests GitHub non lus : {r.report.checks_unavailable}</p>}
    {r.report&&<div className="stack">
     <p>Risque : <strong>{r.report.risk}</strong> · Tests GitHub consultés : {r.report.checks?.length||0} {r.report.checks_partial?'(liste incomplète)':''}</p>
     {r.report.handoff&&<div className="stack"><h4>Plan de correction préparé pour Codex</h4><p className="muted">Synthèse générée à partir des tests et rapports des IA, sans appel IA supplémentaire. Chaque anomalie reste à reproduire.</p><pre className="prewrap" style={{maxHeight:280,overflow:'auto'}}>{r.report.handoff}</pre><Button kind="secondary" onClick={()=>void copyHandoff(r.report.handoff)}><Copy size={16}/>Copier le rapport pour Codex</Button></div>}

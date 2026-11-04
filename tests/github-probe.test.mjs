@@ -7,6 +7,8 @@ test('sonde GitHub 200 sans envoyer de jeton',async()=>{
   assert.equal(url,'https://api.github.com/zen');
   assert.equal(options.redirect,'manual');
   assert.equal(options.headers.Authorization,undefined);
+  // Régression HTTP 415 : GitHub n’accepte pas Accept: text/plain sur l’API REST.
+  assert.equal(options.headers.Accept,'application/vnd.github+json');
   return new Response('GitHub Zen',{status:200});
  });
  assert.deepEqual([result.reachable,result.outcome,result.http_status],[true,'ok',200]);
@@ -35,4 +37,10 @@ test('sonde GitHub 302 ne suit pas la redirection',async()=>{
  assert.equal(result.reachable,true);
  assert.equal(result.outcome,'redirect');
  assert.equal(requests,1);
+});
+test('sonde GitHub 415 : message explicite sans accuser le jeton',async()=>{
+ const result=await probeGithubNetwork(async()=>new Response(null,{status:415}));
+ assert.equal(result.http_status,415);
+ assert.match(result.advice,/415/);
+ assert.match(result.advice,/aucun jeton/);
 });

@@ -224,6 +224,21 @@ describe('revues IA des PR : isolation des comptes et consentement',()=>{
   expect((await call('/reviews/runs?project='+project,'GET',undefined,b)).status).toBe(404);
   expect((await call('/reviews/configs?project='+project,'GET',undefined,'')).status).toBe(401);
  });
+ it('conserve le diagnostic d’une interruption et ne permet la reprise que si elle est sûre',async()=>{
+  const db=await mf.getD1Database('DB'),at=new Date().toISOString(),conn=crypto.randomUUID(),repo=crypto.randomUUID();
+  await db.prepare("INSERT INTO connections(id,user_id,provider,label,secret,created_at) VALUES(?,?,'github','gh','x',?)").bind(conn,ownerA,at).run();
+  await db.prepare("INSERT INTO repositories(id,user_id,project_id,connection_id,full_name,branch,head_sha,created_at) VALUES(?,?,?,?,?,?,?,?)").bind(repo,ownerA,project,conn,'o/r','main','0',at).run();
+  const mk=async(sha:string,diag:object)=>{const id=crypto.randomUUID();await db.prepare("INSERT INTO review_runs(id,user_id,project_id,repository_id,pr_number,head_sha,status,stage,diagnostic,error,created_at,updated_at) VALUES(?,?,?,?,105,?,'interrupted','ai_call',?,'x',?,?)").bind(id,ownerA,project,repo,sha,JSON.stringify(diag),at,at).run();return id;};
+  const safe=await mk('a'.repeat(40),{stage:'ai_call',last_ok_stage:'github_checks',category:'provider_down',code:'http_503',retry_allowed:true,ai_started:true,ai_result:'none',attempts:1});
+  const unsafe=await mk('b'.repeat(40),{stage:'ai_call',last_ok_stage:'github_checks',category:'timeout',code:'timeout',retry_allowed:false,ai_started:true,ai_result:'unknown',attempts:1});
+  const list=await json('/reviews/runs?project='+project);
+  expect(list.body.items.find((r:any)=>r.id===unsafe).diagnostic.ai_result).toBe('unknown');
+  expect((await json('/reviews/runs/'+unsafe+'/retry','POST',{})).status).toBe(409);
+  expect((await json('/reviews/runs/'+safe+'/retry','POST',{},b)).status).toBe(404);
+  expect((await json('/reviews/runs/'+safe+'/retry','POST',{})).status).toBe(202);
+  expect((await db.prepare('SELECT status FROM review_runs WHERE id=?').bind(safe).first<any>()).status).toBe('queued');
+  expect((await json('/reviews/runs/'+safe+'/retry','POST',{})).status).toBe(409);
+ });
  it('ne crée aucun traitement sans dépôt appartenant au compte',async()=>{
   const foreign=crypto.randomUUID();
   expect((await json('/reviews/start','POST',{repository_id:foreign,pr_number:58})).status).toBe(404);

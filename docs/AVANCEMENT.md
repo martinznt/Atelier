@@ -448,3 +448,15 @@ préparés comme passés. Continuer sur le dépôt Atelier confirmé sans nouvel
 sur son nom. Les références des commits de livraison sont accessibles avec `git log`
 et sur GitHub lorsque la synchronisation est confirmée ; ne pas confondre commit local
 et commit distant, ni publication autorisée et publication réalisée.
+
+## Reprise du 4 novembre 2026 (Claude Code) — lot 1
+
+- Sonde GitHub : `Accept: application/vnd.github+json` (au lieu de `text/plain`). Le HTTP 415 n'a PAS pu être reproduit
+  depuis l'environnement de développement (proxy 403) ; la correction est probable, à confirmer via « Tester le réseau GitHub ».
+- Revues : migration additive `0010_review_diagnostics.sql` (`stage`, `diagnostic` JSON sans secret). Étape, dernière étape réussie,
+  catégorie, fournisseur, état de l'appel IA (aucun / inconnu) et autorisation de reprise sont enregistrés (`server/review-diagnostics.ts`).
+- Les check-runs refusés (jeton sans droit Checks) n'interrompent plus la revue ; le rapport l'indique.
+- Reprise manuelle `POST /api/reviews/runs/:id/retry` : uniquement si aucun résultat IA incertain, hors 401/403/429, 3 tentatives max.
+- Cause réelle des interruptions de la PR #105 : NON confirmée (Observability était désactivé). Après déploiement, relancer
+  l'analyse une fois : le diagnostic affichera l'étape exacte.
+- Reste à faire : Groq, évaluation Gemini/OpenRouter (conditions officielles), modes économique/équilibré/approfondi, dossier ChatGPT.
