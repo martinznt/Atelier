@@ -110,7 +110,7 @@ export function ReviewPanel({project}:{project:string}){
    <h3>Lancer une analyse maintenant</h3>
    <Field label="Pull request ouverte"><select value={selectedPR} onChange={e=>setSelectedPR(e.target.value)}><option value="">Choisir la PR</option>{pulls.map(p=><option key={p.number} value={p.number}>#{p.number} · {p.title}</option>)}</select></Field>
    {!pulls.length&&<p className="muted">Aucune PR ouverte provenant de ce dépôt.</p>}
-   <Button kind="secondary" disabled={busy||!selectedPR||!configs.some(c=>c.repository_id===repo)} onClick={()=>void act(()=>post('/reviews/start',{repository_id:repo,pr_number:Number(selectedPR)}),'Analyse demandée. Les résultats apparaîtront ci-dessous.')}>Analyser cette PR</Button>
+   <Button kind="secondary" disabled={busy||!selectedPR||!configs.some(c=>c.repository_id===repo)} onClick={()=>void(async()=>{setBusy(true);setError(null);setNotice('');try{const res=await post('/reviews/start',{repository_id:repo,pr_number:Number(selectedPR)});setNotice(res.queued?'Analyse demandée. Les résultats apparaîtront ci-dessous.':'Aucune nouvelle analyse créée : ce commit a déjà une analyse (voir « Rapports récents » : utilisez « Relancer cette analyse » si elle est interrompue) ou un plafond journalier est atteint.');await load();}catch(e){setError(e);}finally{setBusy(false);}})()}>Analyser cette PR</Button>
   </>}
   <hr/>
   <h3>Rapports récents</h3>
@@ -123,7 +123,11 @@ export function ReviewPanel({project}:{project:string}){
     <li>Catégorie : {r.diagnostic.category} · code {r.diagnostic.code}{r.diagnostic.provider?' · '+r.diagnostic.provider:''}</li>
     <li>Appel IA : {r.diagnostic.ai_result==='unknown'?'commencé, résultat inconnu':r.diagnostic.ai_started?'commencé, aucune génération reçue':'non effectué'}</li>
     <li>Nouvelle tentative : {r.diagnostic.retry_allowed?'possible (manuelle)':'non autorisée sans intervention'}</li>
-   </ul>{r.diagnostic.retry_allowed&&<Button kind="secondary" disabled={busy} onClick={()=>void act(()=>post('/reviews/runs/'+r.id+'/retry',{}),'Reprise demandée.')}>Relancer cette analyse</Button>}</details>}
+   </ul></details>}
+   {r.status==='interrupted'&&<div className="stack">
+    {(!r.diagnostic||!r.diagnostic.retry_allowed)&&<p className="notice">{r.diagnostic?'La reprise n’est pas jugée sûre (résultat IA incertain ou accès à corriger). ':'Cette analyse est antérieure au diagnostic détaillé : un appel IA a pu avoir lieu. '}Relancer peut consommer du quota du fournisseur.</p>}
+    <Button kind="secondary" disabled={busy} onClick={()=>void act(()=>post('/reviews/runs/'+r.id+'/retry',{acknowledge_uncertain:!r.diagnostic||!r.diagnostic.retry_allowed}),'Reprise demandée. Actualisez dans quelques instants.')}>Relancer cette analyse{(!r.diagnostic||!r.diagnostic.retry_allowed)?' (je confirme)':''}</Button>
+   </div>}
    {r.report?.checks_unavailable&&<p className="notice">Tests GitHub non lus : {r.report.checks_unavailable}</p>}
    {r.report&&<div className="stack">
     <p>Risque : <strong>{r.report.risk}</strong> · Tests GitHub consultés : {r.report.checks?.length||0} {r.report.checks_partial?'(liste incomplète)':''}</p>

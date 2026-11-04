@@ -234,6 +234,10 @@ describe('revues IA des PR : isolation des comptes et consentement',()=>{
   const list=await json('/reviews/runs?project='+project);
   expect(list.body.items.find((r:any)=>r.id===unsafe).diagnostic.ai_result).toBe('unknown');
   expect((await json('/reviews/runs/'+unsafe+'/retry','POST',{})).status).toBe(409);
+  const legacy=await mk('c'.repeat(40),null as any);await db.prepare('UPDATE review_runs SET diagnostic=NULL WHERE id=?').bind(legacy).run();
+  expect((await json('/reviews/runs/'+legacy+'/retry','POST',{})).status).toBe(409);
+  expect((await json('/reviews/runs/'+legacy+'/retry','POST',{acknowledge_uncertain:true})).status).toBe(202);
+  expect((await json('/reviews/runs/'+unsafe+'/retry','POST',{acknowledge_uncertain:true})).status).toBe(202);
   expect((await json('/reviews/runs/'+safe+'/retry','POST',{},b)).status).toBe(404);
   expect((await json('/reviews/runs/'+safe+'/retry','POST',{})).status).toBe(202);
   expect((await db.prepare('SELECT status FROM review_runs WHERE id=?').bind(safe).first<any>()).status).toBe('queued');
