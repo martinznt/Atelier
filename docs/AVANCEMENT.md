@@ -512,3 +512,15 @@ bouton « J'ai validé, reprendre ». Alertes persistantes dans Activité (`revi
 **Limites réelles** : revues uniquement (les tâches de discussion `worker.ts` ne relaient pas et finissent toujours au statut `quota`) ; pas de notification poussée sur téléphone
 (Web Push exige des clés VAPID et un abonnement, non fait) ; les classes de limite sont déduites des messages/en-têtes renvoyés (peuvent être inexactes selon les fournisseurs) ;
 un seul échec mémorisé par modèle ; aucun test avec de vraies clés ; le relais envoie le code à d'autres fournisseurs autorisés (case décochable par dépôt).
+
+## Mise en service (5 novembre 2026, soir)
+- **Faits vérifiés** : `main` = `8a877a4` déployé (page de santé `release_sha` identique, contrôles « Workers Builds » et « production » verts). L'échec « Workers Builds » sur `8db3aff`
+  (tête de la PR #18) est le build de BRANCHE : `wrangler preview` exige un bloc `previews` ; sans effet sur la production (même échec sur toutes les PR).
+- **Migrations lisibles sans session** : `/api/health` renvoie `schema:{complete,applied,missing}` (numéros seulement). Le contrôle « production » de GitHub l'affiche.
+- **Sélection du diff corrigée** (constat sur la vraie PR #105 : le fichier de code principal `cook.js` était écarté au profit de documents, 0 % du code principal lu) :
+  priorité code > tests > configuration > documents/fichiers générés, troncature explicite, budget de lecture par mode (12 000 / 16 000 / 28 000 caractères).
+  Sur la PR #105 : code source lu 66 % (économique), 89 % (équilibré), 100 % (approfondi). Les fichiers non lus sont nommés dans le rapport.
+- **Rapport** : gravités P0–P3 + information, emplacement, conséquence, reproduction, correction suggérée, désaccords entre IA, « ce qui n'a pas été vérifié », couverture réelle.
+  Textes de transmission distincts pour Claude Code (reproduire, correction ciblée, tests, rien hors périmètre) et ChatGPT (avis indépendant, incertitudes).
+- **Interface** : plus de débordement horizontal à 360, 390, 820 et 1280 px (un bouton de la configuration dépassait de 10 px à 360 px).
+- **Non testé avec le vrai Worker et de vraies connexions** : GitHub OAuth/jeton, clés IA, analyse réelle (aucun accès au compte de l'utilisateur ; aucune clé en session).

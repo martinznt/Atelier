@@ -63,3 +63,18 @@ test('le dossier de transmission contient lien, SHA, IA, tests non lus, concorda
  assert.match(text,/Questions pour l’assistant/);
  assert.match(text,/ne prouve pas que le code est correct/);
 });
+import {notVerified,disagreements} from '../server/review-team.mjs';
+test('le dossier indique couverture, ce qui n’a pas été vérifié et les désaccords entre IA',()=>{
+ const result={repo:'o/r',pr_number:5,head_sha:'a'.repeat(40),risk:'functional',checks:[],checks_unavailable:'HTTP 403 sur les checks.',files_partial:false,
+  reviewers:[
+   {provider:'mistral',model:'m1',role:'correctness',coverage:{complete:false,percent:42,included:5,excluded:3,redacted:1,files:[{name:'docs/a.md',state:'excluded',reason:'au-delà du budget de lecture'},{name:'.env',state:'excluded',reason:'fichier sensible : jamais transmis'}]},review:{findings:[{severity:'P1',file:'src/a.ts',location:'save()',reason:'Perte possible',impact:'Recette perdue',reproduction:'Test X',fix:'Verrouiller'}]}},
+   {provider:'groq',model:'g1',role:'security',review:{findings:[]}},
+   {provider:'gemini',role:'security',error:'x',partial:{complete:false,text:'début'}}]};
+ const text=reviewHandoff(result);
+ assert.match(text,/Couverture du diff : 42 %/);assert.match(text,/Conséquence : Recette perdue/);assert.match(text,/Correction suggérée : Verrouiller/);
+ assert.match(text,/save\(\)/);assert.match(text,/Désaccords entre les IA/);assert.match(text,/non signalé par groq/);
+ assert.match(text,/Ce qui n’a PAS été vérifié/);assert.match(text,/Aucun test n’a été exécuté par Atelier/);
+ assert.match(text,/Diff incomplet : 42 %.*docs\/a\.md/);assert.doesNotMatch(text,/\.env/);
+ assert.match(text,/Tests GitHub non lus/);assert.match(text,/réponse interrompue/);
+ assert.equal(disagreements(result).length,1);assert.ok(notVerified(result).length>=5);
+});

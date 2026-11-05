@@ -12,6 +12,7 @@ import {buildDiagnostic,type Stage} from './review-diagnostics.ts';
 import {postReviewComment,commentFailureMessage} from './review-comment.ts';
 import {planReview,REVIEW_MODES,type ReviewMode} from './review-plan.ts';
 import {reviewEffort} from './review-effort.ts';
+import {notVerified,disagreements} from './review-team.mjs';
 import {availabilityOf,estimateTokens,storedFailure,failureLabel,type Availability,type FailureKind} from './ai-availability.ts';
 import {selectCandidates,runWithRelay,AttemptError,type RelayResult} from './ai-relay.ts';
 import {recordObservation,loadAiConnections,recentCalls,recordUsage,unavailable} from './ai-persist.ts';
@@ -27,6 +28,8 @@ const prInput=z.object({repository_id:z.string().uuid(),pr_number:z.number().int
 export const reviews=new Hono<AppEnv>();
 /* Protection contre les boucles : au plus 6 reprises automatiques par analyse, pendant 24 h au plus. */
 const MAX_RESUMES=6,MAX_RESUME_AGE_MS=24*3600*1000;
+/* Budget de lecture du diff par mode : plus de contexte seulement quand le mode le justifie (jetons = quota). */
+const READ_BUDGET:Record<string,number>={economique:12000,equilibre:16000,approfondi:28000};
 
 type Conf={id:string;user_id:string;project_id:string;repository_id:string;primary_connection_id:string;primary_model:string;secondary_connection_id:string|null;secondary_model:string|null;enabled:number;consent:number;daily_limit:number;post_comment?:number;review_mode?:string;relay?:number;relay_max_attempts?:number};
 type Repo={id:string;user_id:string;project_id:string;connection_id:string;full_name:string};
@@ -218,7 +221,7 @@ export async function executeReview(env:Env,id:string){
    if(doneRoles.has(planned.role))continue;
    const configured=[{connection_id:cfg.primary_connection_id,model:cfg.primary_model},...(hasSecondary?[{connection_id:cfg.secondary_connection_id as string,model:cfg.secondary_model as string}]:[])];
    const preferred=planned.use==='secondary'&&hasSecondary?[configured[1],configured[0]]:configured;
-   const prompt=reviewPrompt({repo:repo.full_name,pr:row.pr_number,sha:row.head_sha,title:String(p.title||'').slice(0,200),files,checks,role:planned.role});
+   const prompt=reviewPrompt({repo:repo.full_name,pr:row.pr_number,sha:row.head_sha,title:String(p.title||'').slice(0,200),files,checks,role:planned.role,maxChars:READ_BUDGET[mode]});
    const estimate=estimateTokens(prompt.system.length+prompt.user.length,2800);
    const budget=Math.min(maxAttempts,MAX_CALLS_PER_REVIEW-totalCalls);
    const selection=selectCandidates({connections:aiConnections,preferred,allowRelay:relayOn,now:now(),estimateTokens:estimate,avoidProviders:planned.role==='correctness'?[]:usedProviders,usage:usage24});
@@ -285,6 +288,8 @@ export async function executeReview(env:Env,id:string){
    }
   }
   const result:{[key:string]:any}={repo:repo.full_name,pr_number:row.pr_number,head_sha:row.head_sha,risk,checks,checks_partial:checkRes.hasNext,files_partial:fileRes.hasNext,reviewers:reports,plan:{mode:plan.mode,summary:plan.summary,skipped:plan.skipped},relay:{enabled:relayOn,max_attempts_per_role:maxAttempts,calls:totalCalls},reviewed_at:now(),checks_unavailable:checksDiagnostic?checksDiagnostic.message:null,warning:'Revue IA seulement : les alertes exigent une reproduction ; aucun test n’a été exécuté par Atelier.'};
+  result.coverage=reports.map((r:any)=>r.coverage).find(Boolean)||null;
+  result.not_verified=notVerified(result);result.disagreements=disagreements(result);
   if(resumes>0)result.resumed={count:resumes};
   // « À faire de votre part » : ce qui attend une validation ou une autorisation, sans bloquer les autres analyses.
   const todo:{what:string;action:string}[]=[];

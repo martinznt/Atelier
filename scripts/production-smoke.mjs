@@ -37,6 +37,9 @@ for(let attempt=1;attempt<=max;attempt++){
     if(home.status!==200)throw Error('Accueil inaccessible : HTTP '+home.status);
     console.log('✓ Cloudflare publie exactement le commit '+expected.slice(0,12)+'.');
     console.log('✓ Health, accueil et accès privé refusés sans session.');
+    const schema=data.schema;
+    if(schema&&schema.complete===true)console.log('✓ Migrations D1 présentes : '+schema.applied.join(', ')+'.');
+    else console.log('⚠ Migrations D1 : '+(schema&&schema.complete===false?'manquantes '+schema.missing.join(', ')+' (additives, à appliquer).':'état inconnu.'));
     console.log('Attention : les jetons GitHub personnels et API IA ne sont pas testés ici.');
     process.exit(0);
    }
