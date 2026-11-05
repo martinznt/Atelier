@@ -9,16 +9,29 @@ export function providerErrorMessage(status:number,code:string):string {
  if(status>=500)return 'Le service distant ou sa passerelle a échoué (HTTP '+status+'). L’accès enregistré est conservé. Consultez l’état du fournisseur avant de réessayer.';
  return 'Le fournisseur a refusé la demande (HTTP '+status+'). L’accès enregistré est conservé ; vérifiez les détails avant de réessayer.';
 }
+export interface ProviderErrorExtra{headers?:Record<string,string>;detail?:string}
 export class ProviderError extends Error {
  readonly status:number;
  readonly code:string;
  readonly retryAfter:string|null;
- constructor(status:number,code:string,retryAfter:string|null=null){
+ /** En-têtes de limites réellement renvoyés avec le refus (jamais de valeur inventée). */
+ readonly headers:Record<string,string>;
+ /** Extrait nettoyé du message d'erreur du fournisseur : sert à classer la limite, jamais affiché tel quel dans les journaux. */
+ readonly detail:string;
+ constructor(status:number,code:string,retryAfter:string|null=null,extra:ProviderErrorExtra={}){
   super(providerErrorMessage(status,code));
   this.status=status;
   this.code=code;
   this.retryAfter=retryAfter;
+  this.headers=extra.headers||{};
+  this.detail=extra.detail||'';
  }
+}
+/** Extrait lisible et sans secret du corps d'erreur d'un fournisseur (240 caractères maximum). */
+export function safeProviderDetail(raw:string):string{
+ let text=raw.slice(0,4000);
+ try{const data=JSON.parse(text);const m=data?.error?.message??data?.error?.status??data?.message??data?.error;if(typeof m==='string')text=m;else if(data?.error?.code&&typeof data.error.code==='string')text=data.error.code;}catch{/* corps non JSON : texte brut */}
+ return String(text).replace(/\s+/g,' ').replace(/[A-Za-z0-9_\-]{24,}/g,'[masqué]').trim().slice(0,240);
 }
 export const origins:Record<string,string>={github:'https://api.github.com',openai:'https://api.openai.com',anthropic:'https://api.anthropic.com',gemini:'https://generativelanguage.googleapis.com',mistral:'https://api.mistral.ai',groq:'https://api.groq.com',cloudflare:'https://api.cloudflare.com',netlify:'https://api.netlify.com'};
 export async function request(provider:string,secret:string,path:string,init:RequestInit={}) {
@@ -43,7 +56,11 @@ export async function request(provider:string,secret:string,path:string,init:Req
   try{await response.body?.cancel();}catch{}
   throw new ProviderError(response.status,'redirect');
  }
- if(!response.ok){try{await response.body?.cancel();}catch{/* garder le code HTTP du fournisseur */}throw new ProviderError(response.status,'http',response.headers.get('retry-after'));}
+ if(!response.ok){
+  let raw='';
+  try{raw=(await response.text()).slice(0,4000);}catch{/* garder le code HTTP du fournisseur */}
+  throw new ProviderError(response.status,'http',response.headers.get('retry-after'),{headers:quotaHeaders(response.headers).values as Record<string,string>,detail:safeProviderDetail(raw)});
+ }
  return response;
 }
 export function quotaHeaders(headers:Headers){const values:Record<string,string>={};for(const [key,value] of headers)if(/^(x-ratelimit-|anthropic-ratelimit-|ratelimit-)/.test(key)&&value.length<150)values[key]=value;return {kind:Object.keys(values).length?'official':'unavailable',scope:'API, pas abonnement grand public',values,updated_at:new Date().toISOString()};}

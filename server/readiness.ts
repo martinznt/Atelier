@@ -59,6 +59,10 @@ export async function inspectAtelierReadiness(env:Env):Promise<{ready:boolean;ch
    add('review-diagnostics','Diagnostic des revues IA',hasDiagnostic,hasDiagnostic
     ?'Les colonnes de diagnostic (migration 0010) sont présentes.'
     :'La migration 0010_review_diagnostics.sql manque. Elle est additive : l’appliquer après sauvegarde de D1, sans supprimer la base.');
+   const hasRelay=runColumns.results.some(c=>c.name==='resume_at')&&runColumns.results.some(c=>c.name==='resume_state');
+   add('ai-relay','Relais et reprise automatique des IA',hasRelay,hasRelay
+    ?'Les colonnes de reprise (migration 0013) sont présentes.'
+    :'La migration 0013_ai_relay.sql manque. Elle est additive : l’appliquer après sauvegarde de D1, sans supprimer la base. Sans elle, le relais fonctionne mais la reprise automatique est désactivée.');
   }
  }catch{
   add('database','Base de données D1',false,'Impossible de lire la structure D1. Vérifier le binding DB et les migrations dans Cloudflare.');

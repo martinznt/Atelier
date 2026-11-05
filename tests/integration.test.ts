@@ -1,6 +1,6 @@
 import {beforeAll,afterAll,describe,it,expect} from 'vitest';import {Miniflare,createFetchMock} from 'miniflare';import {build} from 'esbuild';import {readFile,readdir,mkdir} from 'node:fs/promises';import {unzipSync,strFromU8} from 'fflate';import {hashPassword,verifyPassword} from '../server/password';
 import {normalizeMigrationForD1} from './migration-sql.mjs';
-import {queueReview} from '../server/reviews';
+import {queueReview,executeReview} from '../server/reviews';
 let mf:Miniflare;const mockNetwork=createFetchMock();mockNetwork.disableNetConnect();let a:string,b:string;const origin='http://localhost:8787';let project:string,conversation:string,file:string;
 let ownerA:string,ownerB:string,spaceA:string,spaceB:string,importedConversation:string;
 const importedMessage='Historique privé Alice : référence CANNELLE-719.';
@@ -349,5 +349,135 @@ describe('diagnostic GitHub réseau dans le véritable moteur workerd',()=>{
   expect(result.body.reachable).toBe(true);
   expect(result.body.outcome).toBe('ok');
   expect(JSON.stringify(result.body)).not.toContain('Bearer');
+ });
+});
+
+
+describe('relais automatique entre IA : analyse réelle (base D1 de test) avec fournisseurs simulés',()=>{
+ let relayAccount:{cookie:string;id:string}|null=null;
+ const SHA=(n:number)=>String(n).repeat(40).slice(0,40);
+ type Hit={github:number;mistral:number;gemini:number;groq:number};
+ async function setup(withSecondary=false){
+  // Un seul compte de test (la création de comptes est limitée par l'application) ; ses données de test sont nettoyées à chaque scénario.
+  if(!relayAccount){
+   // Base de test uniquement : la limite anti-abus des inscriptions a été atteinte par les scénarios précédents.
+   await (await mf.getD1Database('DB')).prepare('DELETE FROM auth_limits').run();
+   const reg=await json('/auth/register','POST',{email:'relay-'+crypto.randomUUID()+'@example.test',password:'unmotdepassefort'},'');expect(reg.status).toBe(201);
+   relayAccount={cookie:reg.cookie!,id:reg.body.user.id};
+  }
+  const reg={body:{user:{id:relayAccount.id}}},cookie=relayAccount.cookie;
+  const clean=await mf.getD1Database('DB');
+  await clean.prepare('DELETE FROM review_runs WHERE user_id=?').bind(relayAccount.id).run();
+  await clean.prepare('DELETE FROM review_configs WHERE user_id=?').bind(relayAccount.id).run();
+  await clean.prepare('DELETE FROM repositories WHERE user_id=?').bind(relayAccount.id).run();
+  await clean.prepare('DELETE FROM ai_usage WHERE user_id=?').bind(relayAccount.id).run();
+  await clean.prepare('DELETE FROM connections WHERE user_id=?').bind(relayAccount.id).run();
+  const project=await json('/projects','POST',{name:'Relais'},cookie);
+  const mk=async(provider:string,scopes:string[],models?:string[])=>{
+   const r=await json('/connections','POST',{provider,label:provider+'-test',secret:'exemple-secret-factice-'+provider,scopes,api_consent:provider!=='github'},cookie);expect(r.status).toBe(201);
+   const db=await mf.getD1Database('DB');
+   await db.prepare("UPDATE connections SET status='connected',models=? WHERE id=?").bind(JSON.stringify(models||[]),r.body.id).run();return r.body.id as string;
+  };
+  const gh=await mk('github',['read']),m=await mk('mistral',['chat'],['ministral-test']),g=await mk('gemini',['chat'],['gemini-flash-test']),q=await mk('groq',['chat'],['openai/gpt-oss-120b']);
+  const db=await mf.getD1Database('DB'),repoId=crypto.randomUUID(),at=new Date().toISOString();
+  await db.prepare('INSERT INTO repositories(id,user_id,project_id,connection_id,full_name,branch,head_sha,created_at) VALUES(?,?,?,?,?,?,?,?)').bind(repoId,reg.body.user.id,project.body.id,gh,'martinznt/Livre-de-recettes','main','a'.repeat(40),at).run();
+  const cfg=await json('/reviews/configs','POST',{repository_id:repoId,primary:{connection_id:m,model:'ministral-test'},secondary:withSecondary?{connection_id:g,model:'gemini-flash-test'}:null,enabled:false,daily_limit:4,share_consent:true},cookie);expect(cfg.status).toBe(200);
+  return {db,user:reg.body.user.id as string,project:project.body.id as string,repoId,ids:{gh,m,g,q}};
+ }
+ async function runReview(ctx:Awaited<ReturnType<typeof setup>>,pr:number,behaviour:{mistral:'limit'|'ok'|'ok_then_limit';gemini:'limit'|'ok';groq:'limit'|'ok'},opts:{retryAfter?:string;existingId?:string}={}){
+  const sha=SHA(pr%9+1),id=opts.existingId||crypto.randomUUID(),at=new Date().toISOString();
+  if(!opts.existingId)await ctx.db.prepare("INSERT INTO review_runs(id,user_id,project_id,repository_id,pr_number,head_sha,status,created_at,updated_at) VALUES(?,?,?,?,?,?,'queued',?,?)").bind(id,ctx.user,ctx.project,ctx.repoId,pr,sha,at,at).run();
+  const hits:Hit={github:0,mistral:0,gemini:0,groq:0};
+  const original=globalThis.fetch;
+  const sse=(text:string)=>new Response('data: '+JSON.stringify({choices:[{delta:{content:text}}],model:'m'})+'\n\n'+'data: '+JSON.stringify({choices:[{delta:{},finish_reason:'stop'}],usage:{prompt_tokens:90,completion_tokens:10}})+'\n\ndata: [DONE]\n\n',{status:200});
+  globalThis.fetch=(async(input:any)=>{
+   const url=String(typeof input==='string'?input:input.url);
+   if(url.startsWith('https://api.github.com/')){
+    hits.github++;
+    if(url.endsWith('/pulls/'+pr))return Response.json({state:'open',number:pr,title:'PR',head:{sha,repo:{full_name:'martinznt/Livre-de-recettes'}}});
+    if(url.includes('/files'))return Response.json([{filename:'src/a.ts',status:'modified',patch:'+const a=1;'}]);
+    return Response.json({check_runs:[{name:'CI',status:'completed',conclusion:'success'}]});
+   }
+   const limit=()=>new Response(JSON.stringify({error:{message:'Rate limit reached on requests per minute (RPM)'}}),{status:429,headers:{'retry-after':opts.retryAfter||'30','content-type':'application/json'}});
+   const good=()=>sse('{"findings":[],"summary":"Rien d\'étayé dans cet extrait."}');
+   if(url.startsWith('https://api.mistral.ai/')){hits.mistral++;return behaviour.mistral==='limit'||(behaviour.mistral==='ok_then_limit'&&hits.mistral>1)?limit():good();}
+   const geminiGood=()=>new Response('data: '+JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify({findings:[],summary:'Rien detaye dans cet extrait.'})}]},finishReason:'STOP'}],modelVersion:'gemini-flash-test',usageMetadata:{promptTokenCount:90,candidatesTokenCount:10}})+'\n\n',{status:200});
+   if(url.includes('generativelanguage.googleapis.com')){hits.gemini++;return behaviour.gemini==='limit'?limit():geminiGood();}
+   if(url.startsWith('https://api.groq.com/')){hits.groq++;return behaviour.groq==='limit'?limit():good();}
+   throw new Error('Appel réseau inattendu : '+url);
+  }) as any;
+  try{await executeReview({DB:ctx.db,MASTER_KEY:Buffer.alloc(32,7).toString('base64'),TASKS:{send:async()=>{}}} as any,id);}finally{globalThis.fetch=original;}
+  const row=await ctx.db.prepare('SELECT status,report,error,resume_at,resume_state FROM review_runs WHERE id=?').bind(id).first<any>();
+  return {row,report:row.report?JSON.parse(row.report):null,hits,id};
+ }
+ it('Mistral limité : Groq prend le relais, Gemini n’est pas sollicité, la pause de Mistral est mémorisée et respectée par la tâche suivante',async()=>{
+  const ctx=await setup();
+  const first=await runReview(ctx,201,{mistral:'limit',gemini:'ok',groq:'ok'});
+  expect(first.row.status).toBe('completed');
+  const reviewer=first.report.reviewers[0];
+  expect(reviewer.provider).toBe('gemini'); // ordre de préférence existant : Mistral, puis Gemini, puis Groq
+  expect(reviewer.relayed).toBe(true);
+  expect(reviewer.attempts.map((a:any)=>[a.provider,a.outcome])).toEqual([['mistral','refused'],['gemini','completed']]);
+  expect(reviewer.attempts[0].kind).toBe('rate_limit_requests');expect(reviewer.attempts[0].until_source).toBe('provider');
+  expect(first.hits).toMatchObject({mistral:1,gemini:1,groq:0});
+  const quota=JSON.parse((await ctx.db.prepare('SELECT quota FROM connections WHERE id=?').bind(ctx.ids.m).first<any>()).quota);
+  expect(quota.holds['ministral-test'].kind).toBe('rate_limit_requests');expect(quota.holds['ministral-test'].hold_source).toBe('provider');
+  const geminiQuota=(await ctx.db.prepare('SELECT quota FROM connections WHERE id=?').bind(ctx.ids.g).first<any>()).quota;
+  expect(geminiQuota===null||!JSON.parse(geminiQuota).holds?.['gemini-flash-test']).toBe(true); // quotas jamais mélangés entre clés
+  const rows=(await ctx.db.prepare('SELECT provider,outcome,failure_kind,input_tokens FROM ai_usage WHERE user_id=? ORDER BY started_at,rowid').bind(ctx.user).all<any>()).results;
+  expect(rows.map((r:any)=>[r.provider,r.outcome])).toEqual([['mistral','refused'],['gemini','completed']]);
+  expect(rows[0].input_tokens).toBeNull(); // un refus n'a consommé aucun jeton connu
+  // Seconde tâche : Mistral est en pause, il n'est même pas appelé.
+  const second=await runReview(ctx,202,{mistral:'limit',gemini:'ok',groq:'ok'});
+  expect(second.hits.mistral).toBe(0);
+  expect(second.report.reviewers[0].provider).toBe('gemini');
+  expect(second.report.reviewers[0].excluded.some((e:any)=>e.provider==='mistral'&&e.kind==='rate_limit_requests'&&e.until_source==='provider')).toBe(true);
+ });
+ it('Mistral et Gemini limités : Groq répond ; chaque fournisseur est appelé une seule fois',async()=>{
+  const ctx=await setup();
+  const r=await runReview(ctx,203,{mistral:'limit',gemini:'limit',groq:'ok'});
+  expect(r.row.status).toBe('completed');
+  expect(r.report.reviewers[0].provider).toBe('groq');
+  expect(r.hits).toMatchObject({mistral:1,gemini:1,groq:1});
+ });
+ it('tous les fournisseurs limités : analyse partielle claire, aucun résultat inventé, aucun appel répété',async()=>{
+  const ctx=await setup();
+  const r=await runReview(ctx,204,{mistral:'limit',gemini:'limit',groq:'limit'});
+  // Les refus fournissent une date (Retry-After) : l'analyse attend la réinitialisation au lieu d'échouer.
+  expect(r.row.status).toBe('queued');expect(r.row.resume_at).toBeTruthy();
+  const rev=r.report.reviewers[0];
+  expect(rev.review).toBeUndefined();expect(rev.error).toMatch(/limitées ou indisponibles/);
+  expect(r.report.waiting.source).toBe('provider');expect(r.report.waiting.roles).toEqual(['correctness']);
+  expect(r.hits).toMatchObject({mistral:1,gemini:1,groq:1});
+  expect(rev.attempts.filter((a:any)=>a.outcome==='refused')).toHaveLength(3);
+  // Avant la date de reprise, relancer l'exécution ne fait aucun appel (aucune consommation inutile).
+  const again=await runReview(ctx,204,{mistral:'ok',gemini:'ok',groq:'ok'},{existingId:r.id});
+  expect(again.hits).toMatchObject({github:0,mistral:0,gemini:0,groq:0});expect(again.row.status).toBe('queued');
+ });
+ it('relais désactivé : seule l’IA choisie est appelée, même limitée',async()=>{
+  const ctx=await setup();
+  await ctx.db.prepare('UPDATE review_configs SET relay=0 WHERE repository_id=?').bind(ctx.repoId).run();
+  const r=await runReview(ctx,205,{mistral:'limit',gemini:'ok',groq:'ok'});
+  expect(r.hits).toMatchObject({mistral:1,gemini:0,groq:0});expect(r.row.status).toBe('queued');
+ });
+ it('limite atteinte en cours de route : reprise automatique après réinitialisation, seule la vérification restante est refaite',async()=>{
+  const ctx=await setup(true);
+  // Vérification 1 (Mistral) réussie ; vérification 2 : Gemini, Mistral puis Groq refusent avec Retry-After de 1 s.
+  const first=await runReview(ctx,206,{mistral:'ok_then_limit',gemini:'limit',groq:'limit'},{retryAfter:'1'});
+  expect(first.row.status).toBe('queued');
+  expect(first.report.waiting.roles).toEqual(['security']);
+  expect(first.report.reviewers.find((x:any)=>x.role==='correctness').provider).toBe('mistral');
+  expect(first.hits).toMatchObject({mistral:2,gemini:1,groq:1});
+  const state=JSON.parse(first.row.resume_state);
+  expect(state.done.map((x:any)=>x.role)).toEqual(['correctness']);expect(state.resumes).toBe(1);
+  await new Promise(r=>setTimeout(r,1400)); // la limite fournie par le fournisseur est réinitialisée
+  const resumed=await runReview(ctx,206,{mistral:'ok',gemini:'ok',groq:'ok'},{existingId:first.id});
+  expect(resumed.row.status).toBe('completed');
+  expect(resumed.report.resumed.count).toBe(1);
+  // Reprise à l'endroit de l'arrêt : un seul appel IA (la vérification restante), Mistral n'est pas rappelé pour la première.
+  expect(resumed.hits.mistral+resumed.hits.gemini+resumed.hits.groq).toBe(1);
+  expect(resumed.report.reviewers.map((x:any)=>x.role).sort()).toEqual(['correctness','security']);
+  expect(resumed.report.reviewers.every((x:any)=>x.review)).toBe(true);
+  expect(resumed.row.resume_at).toBeNull();
  });
 });
