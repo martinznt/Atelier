@@ -1,6 +1,6 @@
 import {beforeAll,afterAll,describe,it,expect} from 'vitest';import {Miniflare,createFetchMock} from 'miniflare';import {build} from 'esbuild';import {readFile,readdir,mkdir} from 'node:fs/promises';import {unzipSync,strFromU8} from 'fflate';import {hashPassword,verifyPassword} from '../server/password';
 import {normalizeMigrationForD1} from './migration-sql.mjs';
-import {queueReview,executeReview,maintenanceReviews} from '../server/reviews';
+import {queueReview,executeReview,maintenanceReviews,publishReport} from '../server/reviews';
 import {executeTask} from '../server/worker';
 let mf:Miniflare;const mockNetwork=createFetchMock();mockNetwork.disableNetConnect();let a:string,b:string;const origin='http://localhost:8787';let project:string,conversation:string,file:string;
 let ownerA:string,ownerB:string,spaceA:string,spaceB:string,importedConversation:string;
@@ -555,6 +555,30 @@ describe('relais automatique entre IA : analyse réelle (base D1 de test) avec f
   expect(r.posted.join('')).not.toMatch(/@claude/);
   expect(r.report.comment.posted).toBe(true);
   expect(r.report.comment.urls.claude_code).toMatch(/^https:\/\/github\.com\//);expect(r.report.comment.urls.chatgpt).toMatch(/issuecomment-2$/);
+ });
+ it('publier un rapport terminé sur la PR : refus sans accès écriture, puis deux commentaires, jamais deux fois',async()=>{
+  const ctx=await setup();
+  const done=await runReview(ctx,320,{mistral:'ok',gemini:'ok',groq:'ok'});
+  expect(done.row.status).toBe('completed');expect(done.report.handoff).toBeTruthy();expect(done.report.comment).toBeUndefined();
+  const refused=await json('/reviews/runs/'+done.id+'/publish','POST',{},ctx.cookie);
+  expect(refused.status).toBe(403);expect(JSON.stringify(refused.body)).toContain('écriture');
+  await ctx.db.prepare("UPDATE connections SET scopes='[\"read\",\"write\"]' WHERE id=?").bind(ctx.ids.gh).run();
+  const posted:string[]=[],original=globalThis.fetch;
+  globalThis.fetch=(async(input:any,init?:any)=>{
+   const url=String(typeof input==='string'?input:input.url);
+   if(url.startsWith('https://api.github.com/')&&init?.method==='POST'&&url.includes('/issues/')){posted.push(JSON.parse(init.body).body);return Response.json({html_url:'https://github.com/martinznt/Livre-de-recettes/pull/320#issuecomment-'+posted.length},{status:201});}
+   throw new Error('Appel réseau inattendu : '+url);
+  }) as any;
+  try{
+   const env={DB:ctx.db,MASTER_KEY:Buffer.alloc(32,7).toString('base64'),TASKS:{send:async()=>{}}} as any;
+   const comment=await publishReport(env,ctx.user,done.id);
+   expect(comment.posted).toBe(true);
+   expect(posted).toHaveLength(2);expect(posted[0]).toMatch(/Pour Claude Code/);expect(posted[1]).toMatch(/Pour ChatGPT/);
+   await expect(publishReport(env,ctx.user,done.id)).rejects.toThrow();
+   expect(posted).toHaveLength(2);
+  }finally{globalThis.fetch=original;}
+  const saved=await ctx.db.prepare('SELECT report FROM review_runs WHERE id=?').bind(done.id).first<any>();
+  expect(JSON.parse(saved.report).comment.posted).toBe(true);
  });
  it('analyse automatique « travail de Claude Code » : seules les PR de Claude Code sont mises en file ; réglage conservé',async()=>{
   const ctx=await setup();
