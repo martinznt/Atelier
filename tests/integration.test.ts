@@ -1,6 +1,7 @@
 import {beforeAll,afterAll,describe,it,expect} from 'vitest';import {Miniflare,createFetchMock} from 'miniflare';import {build} from 'esbuild';import {readFile,readdir,mkdir} from 'node:fs/promises';import {unzipSync,strFromU8} from 'fflate';import {hashPassword,verifyPassword} from '../server/password';
 import {normalizeMigrationForD1} from './migration-sql.mjs';
 import {queueReview,executeReview} from '../server/reviews';
+import {executeTask} from '../server/worker';
 let mf:Miniflare;const mockNetwork=createFetchMock();mockNetwork.disableNetConnect();let a:string,b:string;const origin='http://localhost:8787';let project:string,conversation:string,file:string;
 let ownerA:string,ownerB:string,spaceA:string,spaceB:string,importedConversation:string;
 const importedMessage='Historique privé Alice : référence CANNELLE-719.';
@@ -382,7 +383,7 @@ describe('relais automatique entre IA : analyse réelle (base D1 de test) avec f
   const db=await mf.getD1Database('DB'),repoId=crypto.randomUUID(),at=new Date().toISOString();
   await db.prepare('INSERT INTO repositories(id,user_id,project_id,connection_id,full_name,branch,head_sha,created_at) VALUES(?,?,?,?,?,?,?,?)').bind(repoId,reg.body.user.id,project.body.id,gh,'martinznt/Livre-de-recettes','main','a'.repeat(40),at).run();
   const cfg=await json('/reviews/configs','POST',{repository_id:repoId,primary:{connection_id:m,model:'ministral-test'},secondary:withSecondary?{connection_id:g,model:'gemini-flash-test'}:null,enabled:false,daily_limit:4,share_consent:true},cookie);expect(cfg.status).toBe(200);
-  return {db,user:reg.body.user.id as string,project:project.body.id as string,repoId,ids:{gh,m,g,q}};
+  return {db,cookie,user:reg.body.user.id as string,project:project.body.id as string,repoId,ids:{gh,m,g,q}};
  }
  async function runReview(ctx:Awaited<ReturnType<typeof setup>>,pr:number,behaviour:{mistral:'limit'|'ok'|'ok_then_limit';gemini:'limit'|'ok';groq:'limit'|'ok'},opts:{retryAfter?:string;existingId?:string}={}){
   const sha=SHA(pr%9+1),id=opts.existingId||crypto.randomUUID(),at=new Date().toISOString();
@@ -487,5 +488,50 @@ describe('relais automatique entre IA : analyse réelle (base D1 de test) avec f
   expect(health.body.schema.missing).toEqual([]);
   expect(health.body.schema.applied).toContain('0013');
   expect(JSON.stringify(health.body)).not.toMatch(/@|secret|token/i);
+ });
+ it('discussion : Mistral refuse avant le flux, Gemini prend le relais ; sans consentement de partage, aucun relais',async()=>{
+  const ctx=await setup();
+  const conv=await json('/conversations','POST',{project_id:ctx.project,title:'Relais discussion'},ctx.cookie);expect(conv.status).toBe(201);
+  const hits={mistral:0,gemini:0,groq:0};
+  const original=globalThis.fetch;
+  globalThis.fetch=(async(input:any)=>{
+   const url=String(typeof input==='string'?input:input.url);
+   if(url.startsWith('https://api.mistral.ai/')){hits.mistral++;return new Response(JSON.stringify({error:{message:'Rate limit reached on requests per minute (RPM)'}}),{status:429,headers:{'retry-after':'60','content-type':'application/json'}});}
+   if(url.includes('generativelanguage.googleapis.com')){hits.gemini++;return new Response('data: '+JSON.stringify({candidates:[{content:{parts:[{text:'Réponse relayée par Gemini.'}]},finishReason:'STOP'}],modelVersion:'gemini-flash-test',usageMetadata:{promptTokenCount:20,candidatesTokenCount:6}})+'\n\n',{status:200});}
+   if(url.startsWith('https://api.groq.com/')){hits.groq++;}
+   throw new Error('Appel réseau inattendu : '+url);
+  }) as any;
+  const env={DB:ctx.db,MASTER_KEY:Buffer.alloc(32,7).toString('base64'),TASKS:{send:async()=>{}},STORAGE_LIMIT_MB:'1',MAX_FILE_MB:'1'} as any;
+  const makeTask=async(share:boolean)=>{
+   const id=crypto.randomUUID(),at=new Date().toISOString();
+   await ctx.db.prepare('INSERT INTO tasks(id,user_id,project_id,conversation_id,idempotency_key,request_hash,payload,context,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?)').bind(id,ctx.user,ctx.project,conv.body.id,crypto.randomUUID(),'h',JSON.stringify({mode:'individual',rounds:1,message:'Bonjour',max_tokens:200,share_consent:share,assistants:[{connection_id:ctx.ids.m,model:'ministral-test'}]}),JSON.stringify({notice:'',text:''}),at,at).run();
+   return id;
+  };
+  try{
+   const ok=await makeTask(true);await executeTask(env,ok);
+   const task=await ctx.db.prepare('SELECT status,error FROM tasks WHERE id=?').bind(ok).first<any>();
+   expect(task.status).toBe('completed');
+   const msg=await ctx.db.prepare("SELECT provider,assistant_label,content,status,model FROM messages WHERE task_id=? AND role='assistant'").bind(ok).first<any>();
+   expect(msg.provider).toBe('gemini');expect(msg.content).toContain('Réponse relayée par Gemini.');expect(msg.status).toBe('final');
+   expect(hits).toMatchObject({mistral:1,gemini:1,groq:0});
+   const ev=await ctx.db.prepare("SELECT detail FROM events WHERE task_id=? AND kind='relay'").bind(ok).first<any>();
+   expect(ev.detail).toMatch(/Relais automatique/);
+   const mq=JSON.parse((await ctx.db.prepare('SELECT quota FROM connections WHERE id=?').bind(ctx.ids.m).first<any>()).quota);
+   expect(mq.holds['ministral-test'].kind).toBe('rate_limit_requests');
+   // Sans consentement de partage : le contexte ne part jamais vers un autre fournisseur.
+   hits.mistral=0;hits.gemini=0;
+   await ctx.db.prepare('UPDATE connections SET quota=NULL WHERE id=?').bind(ctx.ids.m).run();
+   const noShare=await makeTask(false);await executeTask(env,noShare);
+   const t2=await ctx.db.prepare('SELECT status FROM tasks WHERE id=?').bind(noShare).first<any>();
+   expect(t2.status).toBe('quota');expect(hits).toMatchObject({mistral:1,gemini:0,groq:0});
+  }finally{globalThis.fetch=original;}
+ });
+ it('suppression de compte : l’historique de consommation IA est effacé avec le compte (cascade D1)',async()=>{
+  const db=await mf.getD1Database('DB'),u=crypto.randomUUID(),at=new Date().toISOString();
+  await db.prepare('INSERT INTO users(id,username,password_hash,created_at) VALUES(?,?,?,?)').bind(u,'cascade-'+u.slice(0,8),'x',at).run();
+  await db.prepare("INSERT INTO ai_usage(id,user_id,connection_id,provider,model,task_kind,outcome,started_at,ended_at) VALUES(?,?,?,?,?,?,?,?,?)").bind(crypto.randomUUID(),u,'c','groq','m','review','completed',at,at).run();
+  expect((await db.prepare('SELECT COUNT(*) AS n FROM ai_usage WHERE user_id=?').bind(u).first<any>()).n).toBe(1);
+  await db.prepare('DELETE FROM users WHERE id=?').bind(u).run();
+  expect((await db.prepare('SELECT COUNT(*) AS n FROM ai_usage WHERE user_id=?').bind(u).first<any>()).n).toBe(0);
  });
 });

@@ -39,7 +39,8 @@ IA et modèles utilisés, relais, IA sans résultat. Une anomalie est une **pist
 
 ## Limites
 - Aucun test n'est exécuté par Atelier ; l'absence d'anomalie ne prouve pas l'absence de bug.
-- Relais et reprise testés avec des fournisseurs simulés (vraie base D1 de test), pas en épuisant de vrais quotas. Revues seulement : les discussions ne relaient pas.
+- Relais et reprise testés avec des fournisseurs simulés (vraie base D1 de test), pas en épuisant de vrais quotas.
+- Discussions : relais avant le début de la réponse seulement, et uniquement si la tâche a le consentement de partage (le contexte peut partir vers un autre fournisseur) ; jamais vers une connexion déjà utilisée par un autre assistant de la tâche. Pas de reprise automatique : la tâche s'arrête au statut « limite atteinte ».
 - Pas de notification poussée sur téléphone (écran Activité + notification du navigateur si Atelier est ouvert).
 - Claude Code et Codex ne sont pas lancés par Atelier.
 - Atelier ne peut pas connaître la facturation réelle : voir `LIMITES_GRATUITES.md` et régler les plafonds chez chaque fournisseur.

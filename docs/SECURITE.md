@@ -78,3 +78,13 @@ automatique et redirections OAuth/PKCE (aucun OAuth n’est encore proposé).
 Les protections de permissions sont applicatives : les agents futurs ne recevront
 aucun accès direct général aux bindings DB/R2/MASTER_KEY. L’environnement isolé et
 la validation des artefacts avant leur exécution ne sont pas encore implémentés.
+
+## Audit ciblé du 5 novembre 2026 (relais, rapports, santé publique)
+Vérifié dans le code : CSP stricte (`script-src 'self'`), `nosniff`, `X-Frame-Options: DENY`, HSTS en HTTPS, `Cache-Control: no-store` sur l'API ; contrôle d'origine exact sur toute requête
+modifiante (CSRF) ; `/api/*` derrière `requireAuth` sauf `/api/auth` et la page de santé ; limitation des tentatives de connexion ; aucune écriture `console.*` ; aucune injection HTML
+(`innerHTML`, `eval`) dans l'interface ; toutes les requêtes des nouvelles routes (`runs/:id/retry`, `runs/:id/resume`, `usage`, relais, `ai_usage`) filtrent par `user_id` ;
+un extrait d'erreur de fournisseur est nettoyé (séquences de 24 caractères ou plus masquées, 240 caractères au plus) avant d'être conservé ; les liens de commentaire sont limités à
+`github.com` ; la suppression d'un compte efface son historique `ai_usage` (cascade, testée sur D1) ; `npm audit --omit=dev` : 0 vulnérabilité.
+Points d'attention (non corrigés, acceptés) : la page de santé publique expose la version et le numéro des migrations (aucune donnée de compte) ; `style-src 'unsafe-inline'` (styles React) ;
+le relais peut envoyer des extraits de code à d'autres fournisseurs autorisés par l'utilisateur (option décochable) ; Gemini gratuit peut utiliser le contenu pour améliorer les produits de Google.
+Non fait : audit complet de tout le projet par un outil dédié, test d'intrusion, revue du code du Livre de recettes.
