@@ -32,3 +32,11 @@
 .run-card>:not(summary){margin-left:14px;margin-right:14px}
 .run-card>:last-child{margin-bottom:14px}
 .run-icon{display:flex;flex:none}
+
+/* Sections dépliables (Disponibilité, Surveillance, Réglages, Installation, Consommation) : repliées par défaut, résumé en une ligne. */
+.fold{border:1px solid var(--line);border-radius:12px;background:var(--surface);margin:10px 0}
+.fold-summary{display:flex;flex-direction:column;gap:2px;padding:12px 40px 12px 14px;cursor:pointer;min-height:44px;list-style:none;position:relative}
+.fold-summary::-webkit-details-marker{display:none}
+.fold-summary::after{content:"▾";position:absolute;right:14px;top:50%;margin-top:-10px;color:var(--muted);transition:transform .15s}
+.fold[open]>.fold-summary::after{transform:rotate(180deg)}
+.fold-body{padding:0 14px 14px}
