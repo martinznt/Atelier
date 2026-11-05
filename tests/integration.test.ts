@@ -526,4 +526,12 @@ describe('relais automatique entre IA : analyse réelle (base D1 de test) avec f
    expect(t2.status).toBe('quota');expect(hits).toMatchObject({mistral:1,gemini:0,groq:0});
   }finally{globalThis.fetch=original;}
  });
+ it('suppression de compte : l’historique de consommation IA est effacé avec le compte (cascade D1)',async()=>{
+  const db=await mf.getD1Database('DB'),u=crypto.randomUUID(),at=new Date().toISOString();
+  await db.prepare('INSERT INTO users(id,username,password_hash,created_at) VALUES(?,?,?,?)').bind(u,'cascade-'+u.slice(0,8),'x',at).run();
+  await db.prepare("INSERT INTO ai_usage(id,user_id,connection_id,provider,model,task_kind,outcome,started_at,ended_at) VALUES(?,?,?,?,?,?,?,?,?)").bind(crypto.randomUUID(),u,'c','groq','m','review','completed',at,at).run();
+  expect((await db.prepare('SELECT COUNT(*) AS n FROM ai_usage WHERE user_id=?').bind(u).first<any>()).n).toBe(1);
+  await db.prepare('DELETE FROM users WHERE id=?').bind(u).run();
+  expect((await db.prepare('SELECT COUNT(*) AS n FROM ai_usage WHERE user_id=?').bind(u).first<any>()).n).toBe(0);
+ });
 });
