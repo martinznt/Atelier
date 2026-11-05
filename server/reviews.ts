@@ -55,31 +55,51 @@ async function githubToken(env:Env,repo:Repo){
  if(conn.provider!=='github')fail(403,'Connexion GitHub requise.');
  return secret;
 }
-export async function queueReview(env:Env,config:Conf,repo:Repo,number:number,sha:string){
- if(!/^[0-9a-f]{40}$/i.test(sha))return false;
+export type QueueReason='queued'|'bad_sha'|'no_ai'|'exists'|'cap_repo'|'cap_user';
+/** Mise en file avec la raison d'un refus. `manual` : demande explicite de l'utilisateur, non bornée par le plafond du dépôt (celui du compte, 8 par jour, reste appliqué). */
+export async function queueReviewDetailed(env:Env,config:Conf,repo:Repo,number:number,sha:string,opts:{manual?:boolean}={}):Promise<{queued:boolean;reason:QueueReason;status?:string}>{
+ if(!/^[0-9a-f]{40}$/i.test(sha))return {queued:false,reason:'bad_sha'};
  const nowIso=now();
+ const existing=await one<{status:string}>(env,'SELECT status FROM review_runs WHERE user_id=? AND repository_id=? AND pr_number=? AND head_sha=?',repo.user_id,repo.id,number,sha);
+ if(existing)return {queued:false,reason:'exists',status:existing.status};
  if(config.relay!==0){
   // Relais actif : une analyse n'est créée que si au moins une IA autorisée est utilisable maintenant (aucun appel ni plafond gaspillé sinon).
   const connections=await loadAiConnections(env.DB,repo.user_id);
-  if(!connections.some(c=>availabilityOf(c,{now:nowIso}).usable))return false;
+  if(!connections.some(c=>availabilityOf(c,{now:nowIso}).usable))return {queued:false,reason:'no_ai'};
  }else{
   const status=await one(env,'SELECT quota,status FROM connections WHERE id=? AND user_id=?',config.primary_connection_id,repo.user_id);
-  if(!status||status.status!=='connected'||readableQuota(status.quota).status==='rate_limited')return false;
+  if(!status||status.status!=='connected'||readableQuota(status.quota).status==='rate_limited')return {queued:false,reason:'no_ai'};
  }
  const id=uid(),at=now(),today=at.slice(0,10)+'T00:00:00.000Z';
  // Atomic D1 quota check; duplicate and concurrent events cannot overrun the
- // per-repository daily allowance nor the hard ceiling of eight per user.
- const result=await run(env,"INSERT OR IGNORE INTO review_runs(id,user_id,project_id,repository_id,pr_number,head_sha,status,created_at,updated_at) SELECT ?,?,?,?,?,?,'queued',?,? WHERE (SELECT COUNT(*) FROM review_runs WHERE user_id=? AND repository_id=? AND created_at>=?)<? AND (SELECT COUNT(*) FROM review_runs WHERE user_id=? AND created_at>=?)<8",id,repo.user_id,repo.project_id,repo.id,number,sha,at,at,repo.user_id,repo.id,today,config.daily_limit||2,repo.user_id,today);
- if(!result.meta.changes)return false;
+ // per-repository daily allowance (automatique) nor the hard ceiling of eight per user.
+ const repoCap=opts.manual?1000000:(config.daily_limit||2);
+ const result=await run(env,"INSERT OR IGNORE INTO review_runs(id,user_id,project_id,repository_id,pr_number,head_sha,status,created_at,updated_at) SELECT ?,?,?,?,?,?,'queued',?,? WHERE (SELECT COUNT(*) FROM review_runs WHERE user_id=? AND repository_id=? AND created_at>=?)<? AND (SELECT COUNT(*) FROM review_runs WHERE user_id=? AND created_at>=?)<8",id,repo.user_id,repo.project_id,repo.id,number,sha,at,at,repo.user_id,repo.id,today,repoCap,repo.user_id,today);
+ if(!result.meta.changes){
+  const userToday=(await one<{n:number}>(env,'SELECT COUNT(*) AS n FROM review_runs WHERE user_id=? AND created_at>=?',repo.user_id,today))?.n||0;
+  return {queued:false,reason:userToday>=8?'cap_user':'cap_repo'};
+ }
  try{await env.TASKS.send({id,kind:'review'});}catch{/* Reprise par le cron ; aucun appel fournisseur n’a été fait. */}
- return true;
+ return {queued:true,reason:'queued'};
 }
+export async function queueReview(env:Env,config:Conf,repo:Repo,number:number,sha:string){
+ return (await queueReviewDetailed(env,config,repo,number,sha)).queued;
+}
+const queueMessages:Record<QueueReason,string>={
+ queued:'Analyse de la version actuelle de la PR mise en file.',
+ bad_sha:'Version de la PR illisible : actualisez la liste puis réessayez.',
+ no_ai:'Aucune IA autorisée n’est utilisable maintenant (limite atteinte ou accès à corriger) : rien n’a été lancé.',
+ exists:'Cette version exacte de la PR (même commit) est déjà analysée : consultez son rapport. Une nouvelle analyse n’est possible qu’après un nouveau commit.',
+ cap_repo:'Plafond d’analyses du jour atteint pour ce dépôt.',
+ cap_user:'Plafond de 8 analyses par jour pour le compte atteint : reprise demain.'
+};
 async function queueFromGithub(env:Env,config:Conf,repo:Repo,pr:number){
  const token=await githubToken(env,repo);
  const result=await jsonRequest('github',token,'/repos/'+repo.full_name+'/pulls/'+pr);
  const data=result.data;
  if(data.state!=='open'||data.head?.repo?.full_name!==repo.full_name)fail(400,'Cette PR est fermée ou provient d’un dépôt externe.');
- return {queued:await queueReview(env,config,repo,data.number,data.head.sha),sha:data.head.sha,message:'Si aucun traitement n’est créé, le commit est déjà analysé, un plafond journalier a été atteint ou aucune IA autorisée n’est disponible pour le moment.'};
+ const r=await queueReviewDetailed(env,config,repo,data.number,data.head.sha,{manual:true});
+ return {queued:r.queued,reason:r.reason,sha:data.head.sha,title:data.title,message:queueMessages[r.reason]};
 }
 reviews.get('/configs',async c=>{
  const project=z.string().uuid().parse(c.req.query('project'));
@@ -119,7 +139,7 @@ reviews.get('/watch',async c=>{
  const aiUsable=config?.relay!==0?(await loadAiConnections(c.env.DB,user)).some(x=>availabilityOf(x,{now:now()}).usable):true;
  const items=result.data.filter((p:any)=>p.head?.repo?.full_name===repo.full_name).map((p:any)=>{
   const pr={number:p.number,sha:p.head.sha,claude_code:isClaudeCodeWork(p)};
-  return {number:p.number,title:p.title,branch:p.head.ref,draft:Boolean(p.draft),claude_code:pr.claude_code,...watchVerdict({config,pr,runs,todayRepo,todayUser,aiUsable})};
+  return {number:p.number,title:p.title,branch:p.head.ref,sha:p.head.sha,draft:Boolean(p.draft),claude_code:pr.claude_code,...watchVerdict({config,pr,runs,todayRepo,todayUser,aiUsable})};
  });
  return c.json({configured:Boolean(config),enabled:Boolean(config?.enabled),scope:config?.auto_scope||'all',today:{repo:todayRepo,user:todayUser,limit:config?.daily_limit||2},items,
   note:'Atelier ne surveille que les PR ouvertes : une branche sans PR n’est pas analysée. Passage automatique toutes les 5 minutes environ.'});

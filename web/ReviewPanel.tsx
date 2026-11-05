@@ -48,7 +48,19 @@ export function ReviewPanel({project}:{project:string}){
   }
   if(fresh.length){try{localStorage.setItem('atelier-notified',JSON.stringify([...seen,...fresh].slice(-100)));}catch{/* stockage indisponible */}}
  },[runs]);
- useEffect(()=>{if(!repo){setPulls([]);setWatch(null);return;}void api('/reviews/watch?repository_id='+encodeURIComponent(repo)).then(setWatch).catch(()=>setWatch(null));void api('/reviews/pulls?repository_id='+encodeURIComponent(repo)).then(r=>{setPulls(r.items);setSelectedPR(p=>p||String(r.items[0]?.number||''));}).catch(setError);const cfg=configs.find(c=>c.repository_id===repo);if(cfg){setPrimary(cfg.primary_connection_id);setPModel(cfg.primary_model);setSecondary(cfg.secondary_connection_id||'');setSModel(cfg.secondary_model||'');setEnabled(Boolean(cfg.enabled));setPostComment(Boolean(cfg.post_comment));setMode(cfg.review_mode||'equilibre');setRelay(cfg.relay!==0);setAutoScope(cfg.auto_scope||'all');setRelayMax(cfg.relay_max_attempts||3);setConsent(Boolean(cfg.consent));setDailyLimit(cfg.daily_limit||2);}},[repo,configs]);
+ const [tick,setTick]=useState(0);
+ // Liste des PR et état de la surveillance : relus au changement de dépôt, au clic sur « Actualiser » et toutes les 30 s (la version d'une PR change à chaque commit).
+ useEffect(()=>{
+  if(!repo){setPulls([]);setWatch(null);return;}
+  let alive=true;
+  const go=()=>{
+   void api('/reviews/watch?repository_id='+encodeURIComponent(repo)).then(w=>{if(alive)setWatch(w);}).catch(()=>{if(alive)setWatch(null);});
+   void api('/reviews/pulls?repository_id='+encodeURIComponent(repo)).then(r=>{if(alive){setPulls(r.items);setSelectedPR(p=>r.items.some((x:any)=>String(x.number)===p)?p:String(r.items[0]?.number||''));}}).catch(()=>{});
+  };
+  go();const t=setInterval(()=>{if(!document.hidden&&navigator.onLine)go();},30000);
+  return()=>{alive=false;clearInterval(t);};
+ },[repo,tick]);
+ useEffect(()=>{if(!repo)return;const cfg=configs.find(c=>c.repository_id===repo);if(cfg){setPrimary(cfg.primary_connection_id);setPModel(cfg.primary_model);setSecondary(cfg.secondary_connection_id||'');setSModel(cfg.secondary_model||'');setEnabled(Boolean(cfg.enabled));setPostComment(Boolean(cfg.post_comment));setMode(cfg.review_mode||'equilibre');setRelay(cfg.relay!==0);setAutoScope(cfg.auto_scope||'all');setRelayMax(cfg.relay_max_attempts||3);setConsent(Boolean(cfg.consent));setDailyLimit(cfg.daily_limit||2);}},[repo,configs]);
  useEffect(()=>{
   if(!connections.length||configs.some(c=>c.repository_id===repo))return;
   const suggestions=recommendedReviewTeam(connections);
@@ -170,9 +182,10 @@ export function ReviewPanel({project}:{project:string}){
    </>:<p className="muted">État de la surveillance indisponible.</p>}
    <hr/>
    <h3>Lancer une analyse maintenant</h3>
-   <Field label="Pull request ouverte"><select value={selectedPR} onChange={e=>setSelectedPR(e.target.value)}><option value="">Choisir la PR</option>{pulls.map(p=><option key={p.number} value={p.number}>#{p.number} · {p.title}{p.claude_code?' · Claude Code':''}</option>)}</select></Field>
+   <Field label="Pull request ouverte"><select value={selectedPR} onChange={e=>setSelectedPR(e.target.value)}><option value="">Choisir la PR</option>{pulls.map(p=>{const w=watch?.items?.find((x:any)=>x.number===p.number);const st=w?(w.state==='analysed'?' · déjà analysé':w.state==='pending'?' · en cours':' · à analyser'):'';return <option key={p.number} value={p.number}>#{p.number} · {p.title} · commit {String(p.sha).slice(0,7)}{p.claude_code?' · Claude Code':''}{st}</option>;})}</select></Field>
+   <Button kind="text" disabled={busy||!repo} onClick={()=>setTick(t=>t+1)}>Actualiser la liste des PR (relit GitHub : nouveaux commits, nouvelles PR)</Button>
    {!pulls.length&&<p className="muted">Aucune PR ouverte provenant de ce dépôt.</p>}
-   <Button kind="secondary" disabled={busy||!selectedPR||!configs.some(c=>c.repository_id===repo)} onClick={()=>void(async()=>{setBusy(true);setError(null);setNotice('');try{const res=await post('/reviews/start',{repository_id:repo,pr_number:Number(selectedPR)});setNotice(res.queued?'Analyse demandée. Les résultats apparaîtront ci-dessous.':'Aucune nouvelle analyse créée : ce commit a déjà une analyse (voir « Rapports récents » : utilisez « Relancer cette analyse » si elle est interrompue) ou un plafond journalier est atteint.');await load();}catch(e){setError(e);}finally{setBusy(false);}})()}>Analyser cette PR</Button>
+   <Button kind="secondary" disabled={busy||!selectedPR||!configs.some(c=>c.repository_id===repo)} onClick={()=>void(async()=>{setBusy(true);setError(null);setNotice('');try{const res=await post('/reviews/start',{repository_id:repo,pr_number:Number(selectedPR)});setNotice((res.title?'PR « '+res.title+' », commit '+String(res.sha).slice(0,7)+' : ':'')+(res.message||(res.queued?'Analyse demandée.':'Aucune analyse créée.')));setTick(t=>t+1);await load();}catch(e){setError(e);}finally{setBusy(false);}})()}>Analyser cette PR</Button>
   </>}
   <hr/>
   <h3>Disponibilité de vos IA</h3>

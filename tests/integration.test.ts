@@ -1,6 +1,6 @@
 import {beforeAll,afterAll,describe,it,expect} from 'vitest';import {Miniflare,createFetchMock} from 'miniflare';import {build} from 'esbuild';import {readFile,readdir,mkdir} from 'node:fs/promises';import {unzipSync,strFromU8} from 'fflate';import {hashPassword,verifyPassword} from '../server/password';
 import {normalizeMigrationForD1} from './migration-sql.mjs';
-import {queueReview,executeReview,maintenanceReviews,publishReport} from '../server/reviews';
+import {queueReview,queueReviewDetailed,executeReview,maintenanceReviews,publishReport} from '../server/reviews';
 import {executeTask} from '../server/worker';
 let mf:Miniflare;const mockNetwork=createFetchMock();mockNetwork.disableNetConnect();let a:string,b:string;const origin='http://localhost:8787';let project:string,conversation:string,file:string;
 let ownerA:string,ownerB:string,spaceA:string,spaceB:string,importedConversation:string;
@@ -591,6 +591,23 @@ describe('relais automatique entre IA : analyse réelle (base D1 de test) avec f
   }finally{globalThis.fetch=original;}
   const saved=await ctx.db.prepare('SELECT report FROM review_runs WHERE id=?').bind(done.id).first<any>();
   expect(JSON.parse(saved.report).comment.posted).toBe(true);
+ });
+ it('relancer une analyse : nouvelle version mise en file, même commit refusé avec sa raison, demande manuelle non bornée par le plafond du dépôt',async()=>{
+  const ctx=await setup();
+  const env={DB:ctx.db,MASTER_KEY:Buffer.alloc(32,7).toString('base64'),TASKS:{send:async()=>{}}} as any;
+  const cfg:any=await ctx.db.prepare('SELECT * FROM review_configs WHERE repository_id=?').bind(ctx.repoId).first();
+  const repo={id:ctx.repoId,user_id:ctx.user,project_id:ctx.project,connection_id:ctx.ids.gh,full_name:'martinznt/Livre-de-recettes'};
+  const v1='b'.repeat(40),v2='c'.repeat(40),v3='d'.repeat(40);
+  expect((await queueReviewDetailed(env,{...cfg,daily_limit:2},repo,111,v1)).reason).toBe('queued');
+  const same=await queueReviewDetailed(env,{...cfg,daily_limit:2},repo,111,v1,{manual:true});
+  expect(same.queued).toBe(false);expect(same.reason).toBe('exists');expect(same.status).toBe('queued');
+  expect((await queueReviewDetailed(env,{...cfg,daily_limit:1},repo,111,v2)).reason).toBe('cap_repo');
+  const manual=await queueReviewDetailed(env,{...cfg,daily_limit:1},repo,111,v2,{manual:true});
+  expect(manual.queued).toBe(true);
+  expect((await queueReviewDetailed(env,cfg,repo,111,'pas-un-sha')).reason).toBe('bad_sha');
+  const today=new Date().toISOString();
+  for(let i=0;i<6;i++)await ctx.db.prepare("INSERT INTO review_runs(id,user_id,project_id,repository_id,pr_number,head_sha,status,created_at,updated_at) VALUES(?,?,?,?,?,?,'completed',?,?)").bind(crypto.randomUUID(),ctx.user,ctx.project,ctx.repoId,200+i,'e'.repeat(40),today,today).run();
+  expect((await queueReviewDetailed(env,cfg,repo,111,v3,{manual:true})).reason).toBe('cap_user');
  });
  it('analyse automatique « travail de Claude Code » : seules les PR de Claude Code sont mises en file ; réglage conservé',async()=>{
   const ctx=await setup();
