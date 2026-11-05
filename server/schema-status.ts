@@ -10,7 +10,8 @@ const checks:{id:string;table:string;columns:string[]}[]=[
  {id:'0012',table:'review_configs',columns:['review_mode']},
  {id:'0013',table:'review_configs',columns:['relay','relay_max_attempts']},
  {id:'0013',table:'review_runs',columns:['resume_at','resume_state']},
- {id:'0013',table:'ai_usage',columns:['connection_id','outcome']}
+ {id:'0013',table:'ai_usage',columns:['connection_id','outcome']},
+ {id:'0014',table:'review_configs',columns:['auto_scope']}
 ];
 let cache:{at:number;value:SchemaStatus}|null=null;
 /** Cache de 60 s par instance : la page de santé est publique, elle ne doit pas solliciter D1 à chaque appel. */

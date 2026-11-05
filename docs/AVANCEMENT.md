@@ -533,3 +533,8 @@ Les 14 branches d'Atelier sont toutes entièrement fusionnées (0 commit d'avanc
 
 ## Relais pour les discussions (5 novembre 2026)
 `worker.ts` : relais avant le début de la réponse (même orchestrateur que les revues), avec `share_consent` obligatoire, sans reprise automatique (l'état d'une discussion en cours n'est pas reprenable sans doublon). Observations de limites fusionnées par modèle (plus d'écrasement de l'état d'une connexion), historique `ai_usage` (`task_kind='chat'`), événement `relay` dans Activité. Test D1 : Mistral refuse → Gemini répond ; sans consentement → statut `quota`, aucun autre fournisseur appelé.
+
+## Publication automatique par rôle et analyses du travail de Claude Code (5 novembre 2026)
+Migration additive `0014_auto_scope.sql` (`review_configs.auto_scope` : `all` | `claude_code`). `server/review-roles.ts` (rôles, consignes, détection du travail de Claude Code),
+`postRoleComments` (deux commentaires), planificateur filtré par portée. Tests D1 : analyse automatique limitée aux PR de Claude Code, publication des deux commentaires avec les bons rôles.
+Limites : vérification toutes les 5 minutes (pas de webhook), détection par convention de nom, plafonds journaliers, aucun agent lancé par les commentaires, publication exigeant des droits d'écriture non testés avec le vrai GitHub.
