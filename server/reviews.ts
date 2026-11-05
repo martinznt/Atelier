@@ -9,6 +9,7 @@ import {readableQuota,reviewHandoff} from './review-team.mjs';
 import {event,fail,jsonBody,many,now,one,owned,run,uid,userId} from './core.ts';
 import {reviewPrompt,parseReviewResult,reviewRisk,type ReviewFile,type ReviewCheck} from './review-core.ts';
 import {watchVerdict,SAFETY_CEILING} from './watch-status.ts';
+import {hasMark} from './pr-mark.ts';
 import {loadChecks} from './github-checks.ts';
 import {buildDiagnostic,type Stage} from './review-diagnostics.ts';
 import {postRoleComments,commentFailureMessage} from './review-comment.ts';
@@ -25,7 +26,7 @@ import type {AppEnv,Env} from './types.ts';
 const aiChoice=z.object({connection_id:z.string().uuid(),model:z.string().min(1).max(160)});
 const configuration=z.object({
  repository_id:z.string().uuid(),primary:aiChoice,secondary:aiChoice.nullable().default(null),
- enabled:z.boolean().default(false),post_comment:z.boolean().default(false),mode:z.enum(['economique','equilibre','approfondi']).default('equilibre'),relay:z.boolean().default(true),relay_max_attempts:z.number().int().min(1).max(5).default(3),auto_scope:z.enum(['all','claude_code']).default('all'),daily_limit:z.number().int().min(1).max(4).default(2),no_daily_cap:z.boolean().default(false),share_consent:z.literal(true)
+ enabled:z.boolean().default(false),post_comment:z.boolean().default(false),mode:z.enum(['economique','equilibre','approfondi']).default('equilibre'),relay:z.boolean().default(true),relay_max_attempts:z.number().int().min(1).max(5).default(3),auto_scope:z.enum(['all','claude_code']).default('all'),daily_limit:z.number().int().min(1).max(4).default(2),no_daily_cap:z.boolean().default(false),auto_mark:z.string().trim().min(1).max(40).nullable().default(null),share_consent:z.literal(true)
 });
 const prInput=z.object({repository_id:z.string().uuid(),pr_number:z.number().int().positive().max(10000000)});
 export const reviews=new Hono<AppEnv>();
@@ -34,7 +35,7 @@ const MAX_RESUMES=6,MAX_RESUME_AGE_MS=24*3600*1000;
 /* Budget de lecture du diff par mode : plus de contexte seulement quand le mode le justifie (jetons = quota). */
 const READ_BUDGET:Record<string,number>={economique:12000,equilibre:16000,approfondi:28000};
 
-type Conf={id:string;user_id:string;project_id:string;repository_id:string;primary_connection_id:string;primary_model:string;secondary_connection_id:string|null;secondary_model:string|null;enabled:number;consent:number;daily_limit:number;post_comment?:number;review_mode?:string;relay?:number;relay_max_attempts?:number;auto_scope?:string;no_daily_cap?:number};
+type Conf={id:string;user_id:string;project_id:string;repository_id:string;primary_connection_id:string;primary_model:string;secondary_connection_id:string|null;secondary_model:string|null;enabled:number;consent:number;daily_limit:number;post_comment?:number;review_mode?:string;relay?:number;relay_max_attempts?:number;auto_scope?:string;no_daily_cap?:number;auto_mark?:string|null};
 type Repo={id:string;user_id:string;project_id:string;connection_id:string;full_name:string};
 type ReviewRun={id:string;user_id:string;project_id:string;repository_id:string;pr_number:number;head_sha:string;status:string;diagnostic?:string|null;resume_state?:string|null;created_at?:string};
 async function getRepo(env:Env,id:string,user:string){
@@ -157,10 +158,10 @@ reviews.get('/watch',async c=>{
   aiPause={until:dated?.until??null,source:dated?.until_source??null};
  }
  const items=result.data.filter((p:any)=>p.head?.repo?.full_name===repo.full_name).map((p:any)=>{
-  const pr={number:p.number,sha:p.head.sha,claude_code:isClaudeCodeWork(p)};
+  const pr={number:p.number,sha:p.head.sha,claude_code:isClaudeCodeWork(p),title:String(p.title||'')};
   return {number:p.number,title:p.title,branch:p.head.ref,sha:p.head.sha,draft:Boolean(p.draft),claude_code:pr.claude_code,...watchVerdict({config,pr,runs,todayRepo,todayUser,aiUsable,aiPause})};
  });
- return c.json({configured:Boolean(config),enabled:Boolean(config?.enabled),scope:config?.auto_scope||'all',today:{repo:todayRepo,user:todayUser,limit:config?.no_daily_cap===1?null:(config?.daily_limit||2),safety_ceiling:SAFETY_CEILING},ai_pause:aiPause,items,
+ return c.json({configured:Boolean(config),enabled:Boolean(config?.enabled),scope:config?.auto_scope||'all',mark:config?.auto_mark||null,today:{repo:todayRepo,user:todayUser,limit:config?.no_daily_cap===1?null:(config?.daily_limit||2),safety_ceiling:SAFETY_CEILING},ai_pause:aiPause,items,
   note:'Atelier ne surveille que les PR ouvertes : une branche sans PR n’est pas analysée. Passage automatique toutes les 5 minutes environ.'});
 });
 reviews.post('/configs',async c=>{
@@ -184,10 +185,11 @@ reviews.post('/configs',async c=>{
   {col:'relay',value:Number(input.relay),needed:!input.relay},
   {col:'relay_max_attempts',value:input.relay_max_attempts,needed:input.relay_max_attempts!==3},
   {col:'auto_scope',value:input.auto_scope,needed:input.auto_scope!=='all'},
-  {col:'no_daily_cap',value:Number(input.no_daily_cap),needed:input.no_daily_cap}
+  {col:'no_daily_cap',value:Number(input.no_daily_cap),needed:input.no_daily_cap},
+  {col:'auto_mark',value:input.auto_mark,needed:Boolean(input.auto_mark)}
  ];
  // Colonnes de la plus ancienne à la plus récente migration : on retire les plus récentes d'abord si elles manquent, sans jamais perdre un réglage non défaut.
- const variants=[0,1,2,3,4,5,6].map(drop=>optional.slice(0,optional.length-drop)).filter(v=>optional.every(o=>!o.needed||v.some(x=>x.col===o.col)));
+ const variants=[0,1,2,3,4,5,6,7].map(drop=>optional.slice(0,optional.length-drop)).filter(v=>optional.every(o=>!o.needed||v.some(x=>x.col===o.col)));
  let saved=false;
  for(const variant of variants){
   const cols=variant.map(o=>','+o.col).join(''),marks=variant.map(()=>',?').join(''),updates=variant.map(o=>','+o.col+'=excluded.'+o.col).join('');
@@ -196,7 +198,7 @@ reviews.post('/configs',async c=>{
    saved=true;break;
   }catch{/* colonne absente : variante suivante */}
  }
- if(!saved)fail(409,'Une migration récente manque (0011 commentaires, 0012 modes, 0013 relais, 0014 portée automatique, 0015 sans plafond) : elle est additive, à appliquer avant d’activer cette option.');
+ if(!saved)fail(409,'Une migration récente manque (0011 commentaires, 0012 modes, 0013 relais, 0014 portée automatique, 0015 sans plafond, 0016 marque de titre) : elle est additive, à appliquer avant d’activer cette option.');
  return c.json({ok:true,message:input.enabled?'Relecture périodique activée pour les nouvelles versions de PR.':'Configuration enregistrée ; aucun lancement automatique.'});
 });
 reviews.post('/start',async c=>{
@@ -454,11 +456,12 @@ export async function maintenanceReviews(env:Env){
    const repo=await getRepo(env,cfg.repository_id,cfg.user_id),token=await githubToken(env,repo);
    // Portée « Claude Code » : on regarde plus de PR récentes pour y trouver celles qui viennent de son travail.
    const onlyClaude=cfg.auto_scope==='claude_code';
-   const prs=(await jsonRequest('github',token,'/repos/'+repo.full_name+'/pulls?state=open&sort=updated&per_page='+(onlyClaude?20:5))).data;
+   const prs=(await jsonRequest('github',token,'/repos/'+repo.full_name+'/pulls?state=open&sort=updated&per_page='+((onlyClaude||cfg.auto_mark)?30:5))).data;
    for(const p of prs){
     if(scheduled>=2)break;
     if(p.head?.repo?.full_name!==repo.full_name)continue;
     if(onlyClaude&&!isClaudeCodeWork(p))continue;
+    if(cfg.auto_mark&&!hasMark(p.title,cfg.auto_mark))continue;
     if(await queueReview(env,cfg,repo,p.number,p.head.sha))scheduled++;
    }
   }catch{/* Une connexion expirée ne doit pas bloquer les autres tâches Atelier. */}
