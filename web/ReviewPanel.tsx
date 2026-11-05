@@ -16,7 +16,7 @@ export function ReviewPanel({project}:{project:string}){
  const [repo,setRepo]=useState(''),[primary,setPrimary]=useState(''),[pModel,setPModel]=useState('');
  const [secondary,setSecondary]=useState(''),[sModel,setSModel]=useState('');
  const [autoScope,setAutoScope]=useState('all'),[relay,setRelay]=useState(true),[relayMax,setRelayMax]=useState(3),[usage,setUsage]=useState<any>(null),[notifyState,setNotifyState]=useState<string>(typeof Notification==='undefined'?'indisponible':Notification.permission),[mode,setMode]=useState('equilibre'),[postComment,setPostComment]=useState(false),[enabled,setEnabled]=useState(false),[consent,setConsent]=useState(false),[dailyLimit,setDailyLimit]=useState(2);
- const [pulls,setPulls]=useState<any[]>([]),[selectedPR,setSelectedPR]=useState('');
+ const [watch,setWatch]=useState<any>(null),[pulls,setPulls]=useState<any[]>([]),[selectedPR,setSelectedPR]=useState('');
  const [busy,setBusy]=useState(false),[error,setError]=useState<unknown>(null),[notice,setNotice]=useState('');
  const load=async()=>{
   const [r,c,cfg,history]=await Promise.all([
@@ -44,7 +44,7 @@ export function ReviewPanel({project}:{project:string}){
   }
   if(fresh.length){try{localStorage.setItem('atelier-notified',JSON.stringify([...seen,...fresh].slice(-100)));}catch{/* stockage indisponible */}}
  },[runs]);
- useEffect(()=>{if(!repo){setPulls([]);return;}void api('/reviews/pulls?repository_id='+encodeURIComponent(repo)).then(r=>{setPulls(r.items);setSelectedPR(p=>p||String(r.items[0]?.number||''));}).catch(setError);const cfg=configs.find(c=>c.repository_id===repo);if(cfg){setPrimary(cfg.primary_connection_id);setPModel(cfg.primary_model);setSecondary(cfg.secondary_connection_id||'');setSModel(cfg.secondary_model||'');setEnabled(Boolean(cfg.enabled));setPostComment(Boolean(cfg.post_comment));setMode(cfg.review_mode||'equilibre');setRelay(cfg.relay!==0);setAutoScope(cfg.auto_scope||'all');setRelayMax(cfg.relay_max_attempts||3);setConsent(Boolean(cfg.consent));setDailyLimit(cfg.daily_limit||2);}},[repo,configs]);
+ useEffect(()=>{if(!repo){setPulls([]);setWatch(null);return;}void api('/reviews/watch?repository_id='+encodeURIComponent(repo)).then(setWatch).catch(()=>setWatch(null));void api('/reviews/pulls?repository_id='+encodeURIComponent(repo)).then(r=>{setPulls(r.items);setSelectedPR(p=>p||String(r.items[0]?.number||''));}).catch(setError);const cfg=configs.find(c=>c.repository_id===repo);if(cfg){setPrimary(cfg.primary_connection_id);setPModel(cfg.primary_model);setSecondary(cfg.secondary_connection_id||'');setSModel(cfg.secondary_model||'');setEnabled(Boolean(cfg.enabled));setPostComment(Boolean(cfg.post_comment));setMode(cfg.review_mode||'equilibre');setRelay(cfg.relay!==0);setAutoScope(cfg.auto_scope||'all');setRelayMax(cfg.relay_max_attempts||3);setConsent(Boolean(cfg.consent));setDailyLimit(cfg.daily_limit||2);}},[repo,configs]);
  useEffect(()=>{
   if(!connections.length||configs.some(c=>c.repository_id===repo))return;
   const suggestions=recommendedReviewTeam(connections);
@@ -135,6 +135,13 @@ export function ReviewPanel({project}:{project:string}){
     <p className="muted">Les secrets, fichiers sensibles et lignes suspectes sont écartés autant que possible, mais cette protection n'est pas infaillible : n'activez pas l'envoi de dépôts contenant des secrets. Atelier ne peut pas vérifier votre facturation fournisseur. Aucun essai payant n'est activé automatiquement.</p>
     <Button disabled={busy||!repo||!primary||!pModel||!consent||Boolean(secondary&&!sModel)} onClick={()=>void act(()=>post('/reviews/configs',{repository_id:repo,primary:{connection_id:primary,model:pModel},secondary:secondary?{connection_id:secondary,model:sModel}:null,enabled,post_comment:postComment,mode,relay,relay_max_attempts:relayMax,auto_scope:autoScope,daily_limit:dailyLimit,share_consent:true}),'Configuration enregistrée.')}>Enregistrer la chaîne</Button>
    </div>
+   <hr/>
+   <h3>Surveillance automatique</h3>
+   {watch?<>
+    <p className="muted">{watch.enabled?'Activée':'Désactivée'} · portée : {watch.scope==='claude_code'?'Claude Code seulement':'toutes les PR'} · analyses aujourd’hui : {watch.today.repo}/{watch.today.limit} sur ce dépôt ({watch.today.user}/8 au total)</p>
+    {watch.items.length?<ul className="stack">{watch.items.map((p:any)=><li key={p.number}><strong>#{p.number}</strong> {p.title}{p.draft?' (brouillon)':''} · <span className="muted">{p.branch}</span><br/>{p.label}</li>)}</ul>:<p className="muted">Aucune PR ouverte venant de ce dépôt.</p>}
+    <p className="muted">{watch.note}</p>
+   </>:<p className="muted">État de la surveillance indisponible.</p>}
    <hr/>
    <h3>Lancer une analyse maintenant</h3>
    <Field label="Pull request ouverte"><select value={selectedPR} onChange={e=>setSelectedPR(e.target.value)}><option value="">Choisir la PR</option>{pulls.map(p=><option key={p.number} value={p.number}>#{p.number} · {p.title}{p.claude_code?' · Claude Code':''}</option>)}</select></Field>

@@ -8,6 +8,8 @@ import {recordConnectionQuota,rateLimitObservation} from './collaboration.ts';
 import {readableQuota,reviewHandoff} from './review-team.mjs';
 import {event,fail,jsonBody,many,now,one,owned,run,uid,userId} from './core.ts';
 import {reviewPrompt,parseReviewResult,reviewRisk,type ReviewFile,type ReviewCheck} from './review-core.ts';
+import {watchVerdict} from './watch-status.ts';
+import {loadChecks} from './github-checks.ts';
 import {buildDiagnostic,type Stage} from './review-diagnostics.ts';
 import {postRoleComments,commentFailureMessage} from './review-comment.ts';
 import {isClaudeCodeWork} from './review-roles.ts';
@@ -99,6 +101,24 @@ reviews.get('/pulls',async c=>{
  const repo=await getRepo(c.env,id,userId(c)),token=await githubToken(c.env,repo);
  const result=await jsonRequest('github',token,'/repos/'+repo.full_name+'/pulls?state=open&per_page=30');
  return c.json({items:result.data.filter((p:any)=>p.head?.repo?.full_name===repo.full_name).map((p:any)=>({number:p.number,title:p.title,sha:p.head.sha,draft:p.draft,updated_at:p.updated_at,claude_code:isClaudeCodeWork(p)}))});
+});
+/* Surveillance automatique : ce qu'Atelier voit sur le dépôt et ce qu'il fera au prochain passage (aucun appel IA). */
+reviews.get('/watch',async c=>{
+ const id=z.string().uuid().parse(c.req.query('repository_id'));
+ const user=userId(c),repo=await getRepo(c.env,id,user),token=await githubToken(c.env,repo);
+ const config=await one<Conf>(c.env,'SELECT * FROM review_configs WHERE repository_id=? AND user_id=?',repo.id,user);
+ const result=await jsonRequest('github',token,'/repos/'+repo.full_name+'/pulls?state=open&sort=updated&per_page=30');
+ const today=now().slice(0,10)+'T00:00:00.000Z';
+ const runs=await many<{pr_number:number;head_sha:string;status:string}>(c.env,'SELECT pr_number,head_sha,status FROM review_runs WHERE user_id=? AND repository_id=? ORDER BY created_at DESC LIMIT 200',user,repo.id);
+ const todayRepo=(await one<{n:number}>(c.env,'SELECT COUNT(*) AS n FROM review_runs WHERE user_id=? AND repository_id=? AND created_at>=?',user,repo.id,today))?.n||0;
+ const todayUser=(await one<{n:number}>(c.env,'SELECT COUNT(*) AS n FROM review_runs WHERE user_id=? AND created_at>=?',user,today))?.n||0;
+ const aiUsable=config?.relay!==0?(await loadAiConnections(c.env.DB,user)).some(x=>availabilityOf(x,{now:now()}).usable):true;
+ const items=result.data.filter((p:any)=>p.head?.repo?.full_name===repo.full_name).map((p:any)=>{
+  const pr={number:p.number,sha:p.head.sha,claude_code:isClaudeCodeWork(p)};
+  return {number:p.number,title:p.title,branch:p.head.ref,draft:Boolean(p.draft),claude_code:pr.claude_code,...watchVerdict({config,pr,runs,todayRepo,todayUser,aiUsable})};
+ });
+ return c.json({configured:Boolean(config),enabled:Boolean(config?.enabled),scope:config?.auto_scope||'all',today:{repo:todayRepo,user:todayUser,limit:config?.daily_limit||2},items,
+  note:'Atelier ne surveille que les PR ouvertes : une branche sans PR n’est pas analysée. Passage automatique toutes les 5 minutes environ.'});
 });
 reviews.post('/configs',async c=>{
  const input=configuration.parse(await jsonBody(c));
@@ -202,10 +222,9 @@ export async function executeReview(env:Env,id:string){
   // Les tests GitHub sont utiles mais non indispensables : un refus (jeton sans droit Checks)
   // ne doit pas perdre toute l'analyse. L'absence est signalée au rapport, jamais déguisée en succès.
   await mark('github_checks');
-  let checkRes:{data:any;hasNext:boolean},checksDiagnostic:ReturnType<typeof buildDiagnostic>|null=null;
-  try{checkRes=await jsonRequest('github',token,base+'/commits/'+row.head_sha+'/check-runs?per_page=30');}
-  catch(error){checkRes={data:{check_runs:[]},hasNext:false};checksDiagnostic=buildDiagnostic({stage:'github_checks',lastOk:'github_files',error,provider:'github'});}
-  const files=fileRes.data as ReviewFile[],checks:ReviewCheck[]=(checkRes.data.check_runs||[]).map((x:any)=>({name:x.name,status:x.status,conclusion:x.conclusion}));
+  const loaded=await loadChecks(path=>jsonRequest('github',token,path),base,row.head_sha);
+  const checksDiagnostic=loaded.error?buildDiagnostic({stage:'github_checks',lastOk:'github_files',error:loaded.error,provider:'github'}):null;
+  const files=fileRes.data as ReviewFile[],checks:ReviewCheck[]=loaded.checks;
   await mark('ai_call');
   const risk=reviewRisk(files),reports:any[]=[];
   const mode=(REVIEW_MODES as string[]).includes(String(cfg.review_mode))?cfg.review_mode as ReviewMode:'equilibre';
@@ -294,7 +313,7 @@ export async function executeReview(env:Env,id:string){
     reports.push({...base,...(earliest?{waiting:{until:earliest.at,source:earliest.source}}:{}),...(needsUser?{needs_user:blockers.slice(0,4).map(b=>({connection:b.label,kind:b.kind,failure:failureLabel[b.kind as FailureKind],action:'Vérifiez ou remplacez l’accès « '+b.label+' » dans Réglages → Connexions, puis cliquez sur « Tester l’accès ».'}))}:{}),provider:last?.provider,model:last?.model,error:message,diagnostic:{stage:'ai_call',last_ok_stage:'github_checks',category:last?.kind&&/rate|quota/.test(last.kind)?'rate_limit':last?.kind==='auth'||last?.kind==='billing'?'auth':last?.kind==='permission'?'permission':'unknown',code:last?.kind||relay.status,provider:last?.provider||null,http_status:null,ai_started:false,ai_result:'none',retry_allowed:true,message,attempts}});
    }
   }
-  const result:{[key:string]:any}={repo:repo.full_name,pr_number:row.pr_number,head_sha:row.head_sha,risk,checks,checks_partial:checkRes.hasNext,files_partial:fileRes.hasNext,reviewers:reports,plan:{mode:plan.mode,summary:plan.summary,skipped:plan.skipped},relay:{enabled:relayOn,max_attempts_per_role:maxAttempts,calls:totalCalls},reviewed_at:now(),checks_unavailable:checksDiagnostic?checksDiagnostic.message:null,warning:'Revue IA seulement : les alertes exigent une reproduction ; aucun test n’a été exécuté par Atelier.'};
+  const result:{[key:string]:any}={repo:repo.full_name,pr_number:row.pr_number,head_sha:row.head_sha,risk,checks,checks_partial:loaded.partial,files_partial:fileRes.hasNext,reviewers:reports,plan:{mode:plan.mode,summary:plan.summary,skipped:plan.skipped},relay:{enabled:relayOn,max_attempts_per_role:maxAttempts,calls:totalCalls},reviewed_at:now(),checks_unavailable:checksDiagnostic?checksDiagnostic.message:null,warning:'Revue IA seulement : les alertes exigent une reproduction ; aucun test n’a été exécuté par Atelier.'};
   result.coverage=reports.map((r:any)=>r.coverage).find(Boolean)||null;
   result.not_verified=notVerified(result);result.disagreements=disagreements(result);
   if(resumes>0)result.resumed={count:resumes};
