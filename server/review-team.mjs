@@ -2,7 +2,7 @@
  * Recommendations are based on existing *tested* API connections, not an invented
  * benchmark or a provider's alleged free allowance. No network request here.
  */
-const unavailableModels=/(embedding|(^|[-_])embed|realtime|transcri|whisper|speech|tts|audio|dall-e|imagen|vision-only|moderation)/i;
+const unavailableModels=/(embedding|(^|[-_])embed|realtime|transcri|whisper|speech|tts|audio|dall-e|imagen|vision-only|moderation|computer-use|(^|[-_])live([-_]|$)|image|veo|video|robotics)/i;
 const economicalHint=/(mini|small|flash|lite|light|haiku|ministral|codestral|devstral)/i;
 /** Modèle économique et adapté au texte d'une connexion : celui que le fournisseur liste, sans classement inventé. */
 export function pickReviewModel(connection){
