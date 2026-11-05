@@ -185,6 +185,27 @@ reviews.post('/runs/:id/retry',async c=>{
  try{await c.env.TASKS.send({id,kind:'review'});}catch{/* repris par le cron */}
  return c.json({ok:true},202);
 });
+export async function publishReport(env:Env,user:string,id:string){
+ const row=await one<ReviewRun&{report?:string|null}>(env,'SELECT * FROM review_runs WHERE id=? AND user_id=?',id,user);
+ if(!row)fail(404,'Cette analyse est introuvable ou ne vous appartient pas.');
+ if(row.status!=='completed'&&row.status!=='partial')fail(409,'Seule une analyse terminée peut être publiée.');
+ let result:any=null;try{result=row.report?JSON.parse(row.report):null;}catch{/* rapport illisible */}
+ if(!result?.handoff)fail(409,'Ce rapport n’a pas de dossier de transmission à publier.');
+ if(result.comment?.posted)fail(409,'Ce rapport est déjà publié sur la PR.');
+ const repo=await getRepo(env,row.repository_id,user);
+ const gh=await owned<{label:string;scopes:string}>(env,'connections',repo.connection_id,user);
+ let ghScopes:string[]=[];try{ghScopes=JSON.parse(gh.scopes);}catch{/* illisible : refus ci-dessous */}
+ if(!ghScopes.includes('write'))fail(403,'Publier exige l’accès « écriture » sur la connexion GitHub « '+gh.label+' » (Connexions dans Atelier).');
+ const writer=await credentialsFor(env,repo.connection_id,user,'write');
+ const posted=await postRoleComments(writer.secret,repo.full_name,row.pr_number,{sha:row.head_sha,handoff:result.handoff});
+ const urls:{[k:string]:string|null}={},errors:string[]=[];
+ for(const role of ['claude_code','chatgpt'] as const){const r:any=posted[role];if(r.error)errors.push((role==='claude_code'?'Claude Code : ':'ChatGPT : ')+r.error);else urls[role]=r.url;}
+ result.comment={posted:Object.keys(urls).length>0,urls,url:urls.claude_code||urls.chatgpt||null,...(errors.length?{message:errors.join(' ')}:{})};
+ await run(env,'UPDATE review_runs SET report=?,updated_at=? WHERE id=?',JSON.stringify(result),now(),id);
+ return result.comment;
+}
+/* Publier sur la PR un rapport déjà terminé (analyse faite alors que la publication était désactivée). Action explicite de l'utilisateur. */
+reviews.post('/runs/:id/publish',async c=>c.json({comment:await publishReport(c.env,userId(c),z.string().uuid().parse(c.req.param('id')))}));
 /* « J'ai validé, reprendre » : relance uniquement les vérifications non terminées d'une analyse partielle qui attendait une action de l'utilisateur. */
 reviews.post('/runs/:id/resume',async c=>{
  const user=userId(c),id=z.string().uuid().parse(c.req.param('id'));
