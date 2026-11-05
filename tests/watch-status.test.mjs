@@ -32,3 +32,9 @@ test('toutes les IA en pause : état no_ai avec l’heure de reprise',()=>{
  assert.equal(v.state,'no_ai');assert.equal(v.until,'2026-11-06T00:00:00.000Z');assert.equal(v.until_source,'provider');
  assert.match(v.label,/toutes les IA/);
 });
+test('marque de titre : une PR au titre non marqué est ignorée, une PR marquée suit le parcours normal',()=>{
+ const cfg={...base.config,auto_scope:'all',auto_mark:'EN VÉRIFICATION'};
+ assert.equal(st({config:cfg,pr:{...base.pr,title:'A FUSIONNER — x'}}),'unmarked');
+ assert.equal(st({config:cfg,pr:{...base.pr,title:'EN VÉRIFICATION — x'}}),'will_queue');
+ assert.equal(st({config:{...cfg,auto_mark:null},pr:{...base.pr,title:'A FUSIONNER — x'}}),'will_queue');
+});

@@ -1,11 +1,12 @@
+import {hasMark} from './pr-mark.ts';
 /* Ce qu'Atelier voit et fera au prochain passage automatique (toutes les 5 minutes), PR par PR.
    Fonction pure : elle reprend, dans le même ordre, les conditions de maintenanceReviews et queueReview. */
 /** Plafond de sécurité du compte quand aucun plafond d'analyses n'est choisi (protège contre une boucle). */
 export const SAFETY_CEILING=100;
-export type WatchState='no_config'|'off'|'no_consent'|'out_of_scope'|'analysed'|'pending'|'no_ai'|'cap'|'will_queue';
+export type WatchState='no_config'|'off'|'no_consent'|'out_of_scope'|'unmarked'|'analysed'|'pending'|'no_ai'|'cap'|'will_queue';
 export interface WatchInput{
- config:{enabled:number;consent:number;auto_scope?:string|null;daily_limit?:number|null;no_daily_cap?:number|null}|null;
- pr:{number:number;sha:string;claude_code:boolean};
+ config:{enabled:number;consent:number;auto_scope?:string|null;daily_limit?:number|null;no_daily_cap?:number|null;auto_mark?:string|null}|null;
+ pr:{number:number;sha:string;claude_code:boolean;title?:string};
  runs:{pr_number:number;head_sha:string;status:string}[];
  todayRepo:number;todayUser:number;aiUsable:boolean;
  /** Première reprise connue quand aucune IA n'est utilisable (heure indiquée par le fournisseur ou pause de prudence). */
@@ -16,6 +17,7 @@ const LABELS:Record<WatchState,string>={
  off:'Analyse automatique désactivée dans les réglages.',
  no_consent:'Consentement non coché : aucune analyse automatique.',
  out_of_scope:'Ignorée : pas reconnue comme travail de Claude Code (branche « claude/… » ou mention « Generated with Claude Code » attendue).',
+ unmarked:'Ignorée : le titre ne commence pas par la marque choisie dans les réglages.',
  analysed:'Ce commit a déjà une analyse.',
  pending:'Analyse en file ou en cours pour ce commit.',
  no_ai:'En pause : toutes les IA autorisées ont atteint leur limite ou sont indisponibles. L’analyse repart toute seule dès qu’une IA redevient utilisable.',
@@ -29,6 +31,7 @@ export function watchVerdict(i:WatchInput):{state:WatchState;label:string;run_st
  if(!c.enabled)return done('off');
  if(!c.consent)return done('no_consent');
  if(c.auto_scope==='claude_code'&&!i.pr.claude_code)return done('out_of_scope');
+ if(c.auto_mark&&!hasMark(i.pr.title,c.auto_mark))return done('unmarked');
  const run=i.runs.find(r=>r.pr_number===i.pr.number&&r.head_sha===i.pr.sha);
  if(run)return done(run.status==='queued'||run.status==='running'?'pending':'analysed',run.status);
  if(!i.aiUsable)return {...done('no_ai'),until:i.aiPause?.until??null,until_source:i.aiPause?.source??null};

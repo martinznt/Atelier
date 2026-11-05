@@ -631,6 +631,26 @@ describe('relais automatique entre IA : analyse réelle (base D1 de test) avec f
   const row:any=await ctx.db.prepare('SELECT status,resume_at,report FROM review_runs WHERE repository_id=? AND pr_number=121').bind(ctx.repoId).first();
   expect(row.status).toBe('queued');expect(row.resume_at).toBe(until);expect(JSON.parse(row.report).waiting.until).toBe(until);
  });
+ it('marque de titre : seules les PR dont le titre commence par la marque sont mises en file ; enregistrement et retrait de la marque',async()=>{
+  const ctx=await setup();
+  const base={repository_id:ctx.repoId,primary:{connection_id:ctx.ids.m,model:'ministral-test'},secondary:null,enabled:true,auto_scope:'all',daily_limit:4,share_consent:true};
+  expect((await json('/reviews/configs','POST',{...base,auto_mark:''},ctx.cookie)).status).toBe(400);
+  expect((await json('/reviews/configs','POST',{...base,auto_mark:'x'.repeat(41)},ctx.cookie)).status).toBe(400);
+  expect((await json('/reviews/configs','POST',{...base,auto_mark:'EN VÉRIFICATION'},ctx.cookie)).status).toBe(200);
+  expect((await json('/reviews/configs?project='+ctx.project,'GET',undefined,ctx.cookie)).body.items[0].auto_mark).toBe('EN VÉRIFICATION');
+  const repoName='martinznt/Livre-de-recettes',mk=(n:number,title:string)=>({number:n,title,body:null,state:'open',head:{ref:'claude/x'+n,sha:String(n%9+1).repeat(40),repo:{full_name:repoName}}});
+  const original=globalThis.fetch;
+  globalThis.fetch=(async(input:any)=>{
+   const url=String(typeof input==='string'?input:input.url);
+   if(url.includes('/pulls?state=open'))return Response.json([mk(401,'EN VÉRIFICATION — Version 4.6.0'),mk(402,'A FUSIONNER — Version 4.5.0'),mk(403,'en verification : autre')]);
+   throw new Error('Appel inattendu : '+url);
+  }) as any;
+  try{await maintenanceReviews({DB:ctx.db,MASTER_KEY:Buffer.alloc(32,7).toString('base64'),TASKS:{send:async()=>{}}} as any);}finally{globalThis.fetch=original;}
+  expect((await ctx.db.prepare('SELECT pr_number FROM review_runs WHERE repository_id=? ORDER BY pr_number').bind(ctx.repoId).all<any>()).results.map((x:any)=>x.pr_number)).toEqual([401,403]);
+  // Retrait de la marque : la valeur est bien effacée (pas conservée par l'ancien enregistrement).
+  expect((await json('/reviews/configs','POST',{...base,auto_mark:null},ctx.cookie)).status).toBe(200);
+  expect((await json('/reviews/configs?project='+ctx.project,'GET',undefined,ctx.cookie)).body.items[0].auto_mark).toBeNull();
+ });
  it('analyse automatique « travail de Claude Code » : seules les PR de Claude Code sont mises en file ; réglage conservé',async()=>{
   const ctx=await setup();
   expect((await json('/reviews/configs','POST',{repository_id:ctx.repoId,primary:{connection_id:ctx.ids.m,model:'ministral-test'},secondary:null,enabled:true,auto_scope:'turbo',daily_limit:4,share_consent:true},ctx.cookie)).status).toBe(400);

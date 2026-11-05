@@ -553,3 +553,9 @@ Option « Sans plafond » dans les réglages : plus de plafond par dépôt ni de
 Une demande manuelle n'est plus bornée par le plafond du dépôt (ni les 8 du compte : 100 de sécurité). Quand toutes les IA sont à leur limite : l'automatique n'ouvre rien et attend (état affiché dans « Surveillance automatique » avec l'heure de reprise connue), une demande manuelle est créée en pause (`resume_at`) et démarre à la première réinitialisation connue.
 Limite : si aucun fournisseur ne donne d'heure, Atelier affiche sa pause de prudence ; sans heure connue du tout, une demande manuelle n'est pas mise en pause.
 Testé : tests purs (`watch-status`, `schema-status`) et scénarios D1 (sans plafond, sécurité à 100, pause manuelle). Non testé : un vrai épuisement de quota chez un fournisseur.
+
+## Analyse automatique limitée aux PR marquées (5 novembre 2026)
+
+Migration additive `0016_auto_mark.sql` (`review_configs.auto_mark`, texte de 1 à 40 caractères ou vide). Réglage « Analyser seulement les PR dont le titre commence par une marque » (ex. « EN VÉRIFICATION ») : comparaison sans accents ni casse, au début du titre (crochets et espaces de tête ignorés). Combinable avec la portée « Claude Code » (les deux conditions s'appliquent). Une PR « A FUSIONNER » n'est plus analysée automatiquement ; un lancement manuel reste possible. La « Surveillance automatique » indique « Ignorée : le titre ne commence pas par la marque ».
+Choix de l'utilisateur : la marque est le titre « EN VÉRIFICATION » (utilisé par Claude dans Livre-de-recettes, PR #111/#112) ; l'étiquette GitHub n'est pas gérée.
+Testé : `tests/pr-mark.test.mjs`, `watch-status`, scénario D1 (mise en file, enregistrement, retrait). Non testé : sur les vraies PR de l'utilisateur.
