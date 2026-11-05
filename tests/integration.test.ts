@@ -480,4 +480,12 @@ describe('relais automatique entre IA : analyse réelle (base D1 de test) avec f
   expect(resumed.report.reviewers.every((x:any)=>x.review)).toBe(true);
   expect(resumed.row.resume_at).toBeNull();
  });
+ it('la page de santé publique expose l’état des migrations D1 sans aucune donnée sensible',async()=>{
+  const health=await json('/health','GET',undefined,'');
+  expect(health.status).toBe(200);
+  expect(health.body.schema.complete).toBe(true);
+  expect(health.body.schema.missing).toEqual([]);
+  expect(health.body.schema.applied).toContain('0013');
+  expect(JSON.stringify(health.body)).not.toMatch(/@|secret|token/i);
+ });
 });

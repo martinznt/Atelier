@@ -41,6 +41,34 @@ export function recommendedReviewTeam(connections,at=Date.now()){
   warning:'Vérifiez l’éligibilité et les limites gratuites de chaque clé chez son fournisseur avant de lancer une revue.'
  };
 }
+/** Ce qui n'a PAS été vérifié : calculé de façon déterministe, jamais par une IA. */
+export function notVerified(result){
+ const out=['Aucun test n’a été exécuté par Atelier : seuls les résultats GitHub existants sont lus.'];
+ const reviewers=result.reviewers||[];
+ const cov=reviewers.map(r=>r.coverage).find(Boolean);
+ if(cov&&cov.complete===false){
+  const missed=(cov.files||[]).filter(f=>f.state!=='full'&&!/sensible/.test(f.reason||'')).map(f=>f.name+(f.state==='truncated'?' (tronqué)':''));
+  out.push('Diff incomplet : '+(cov.percent??'?')+' % des caractères transmis'+(missed.length?' ; fichiers non lus ou tronqués : '+missed.slice(0,12).join(', ')+(missed.length>12?' et '+(missed.length-12)+' autre(s)':''):'')+'.');
+ }
+ if(result.files_partial)out.push('Liste des fichiers de la PR incomplète côté GitHub (plus de 60 fichiers).');
+ if(result.checks_unavailable)out.push('Tests GitHub non lus : '+result.checks_unavailable);
+ else if(result.checks_partial)out.push('Liste des tests GitHub incomplète.');
+ for(const r of reviewers.filter(x=>!x.review))out.push('Vérification « '+r.role+' » sans résultat'+(r.partial?' (réponse interrompue : texte partiel inexploitable comme résultat)':'')+'.');
+ out.push('Les anomalies listées sont des pistes à reproduire ; l’accord de plusieurs IA n’est pas une preuve.');
+ return out;
+}
+/** Désaccords : une anomalie P0/P1 signalée par une IA sur un fichier que l'autre a lu sans rien signaler. */
+export function disagreements(result){
+ const done=(result.reviewers||[]).filter(r=>r.review);
+ if(done.length<2)return [];
+ const out=[];
+ for(const r of done)for(const f of r.review.findings||[]){
+  if(!['P0','P1'].includes(f.severity))continue;
+  const others=done.filter(o=>o!==r&&!(o.review.findings||[]).some(x=>x.file===f.file));
+  if(others.length)out.push(f.file+' ('+f.severity+') signalé par '+(r.provider?r.provider+' · ':'')+(r.model||r.role)+', non signalé par '+others.map(o=>(o.provider?o.provider+' · ':'')+(o.model||o.role)).join(', ')+' — à départager par un test.');
+ }
+ return [...new Set(out)];
+}
 export function reviewHandoff(result){
  const checks=(result.checks||[]).filter(c=>c.conclusion==='failure'||c.conclusion==='timed_out'||c.conclusion==='cancelled');
  const reviewers=result.reviewers||[];
@@ -51,36 +79,39 @@ export function reviewHandoff(result){
    const key=String(finding.file||'')+'|'+String(finding.reason||'').toLowerCase().trim();
    const known=byKey.get(key);
    if(known){if(!known.sources.includes(who))known.sources.push(who);continue;}
-   byKey.set(key,{severity:finding.severity,file:finding.file,reason:finding.reason,reproduction:finding.reproduction,sources:[who]});
+   byKey.set(key,{...finding,sources:[who]});
   }
  }
  const findings=[...byKey.values()];
- const rank={P0:0,P1:1,P2:2};
- findings.sort((a,b)=>(rank[a.severity]??3)-(rank[b.severity]??3));
+ const rank={P0:0,P1:1,P2:2,P3:3,info:4};
+ findings.sort((a,b)=>(rank[a.severity]??5)-(rank[b.severity]??5));
  const repo=String(result.repo||''),number=String(result.pr_number||'');
  const link=repo&&number?'https://github.com/'+repo+'/pull/'+number:'';
  const done=reviewers.filter(r=>r.review),failed=reviewers.filter(r=>r.error);
  const testsLine=result.checks_unavailable?'Tests GitHub NON lus : '+result.checks_unavailable
   :checks.length?'Contrôles GitHub en échec : '+checks.map(c=>c.name+' ('+c.conclusion+')').join('; ')
-  :'Aucun contrôle GitHub en échec dans la liste consultée (ne prouve pas leur couverture complète).';
+  :(result.checks||[]).length?'Contrôles GitHub lus : '+(result.checks||[]).map(c=>c.name+' ('+(c.conclusion||c.status)+')').join('; ')+' (ne prouve pas leur couverture complète).'
+  :'Aucun contrôle GitHub dans la liste consultée.';
  const cov=reviewers.map(r=>r.coverage).find(Boolean);
  const lines=[
   'DOSSIER DE TRANSMISSION — REVUE DE PR : '+repo+' #'+number,
   link?'Lien : '+link:'',
-  'Commit : '+String(result.head_sha||'')+' ; risque : '+String(result.risk||'non classé'),
+  'Commit analysé : '+String(result.head_sha||'')+' ; risque : '+String(result.risk||'non classé'),
   'Attention : rapport automatisé. Aucun correctif exécuté, aucun test lancé par Atelier, aucune erreur prouvée par le seul avis IA. Une IA qui ne détecte rien ne prouve pas que le code est correct.',
   'IA ayant analysé : '+(done.length?done.map(r=>(r.provider?r.provider+' · ':'')+(r.model||r.role)+' ('+r.role+')').join(' ; '):'aucune')+(failed.length?' ; sans résultat : '+failed.map(r=>(r.provider||'IA')+' ('+r.role+')').join(', '):''),
   ...reviewers.filter(r=>(r.attempts||[]).some(t=>t.outcome==='refused')).map(r=>'Relais ('+r.role+') : '+r.attempts.filter(t=>t.outcome!=='skipped').map(t=>t.provider+' '+t.model+' → '+(t.outcome==='completed'?'a répondu':(t.kind_label||t.outcome))).join(' ; ')),
   ...reviewers.filter(r=>r.partial&&r.partial.complete===false).map(r=>'Analyse INCOMPLÈTE ('+r.role+') : réponse interrompue, texte partiel non exploitable comme résultat.'),
-  cov?'Couverture du diff : '+cov.included+' fichier(s) lu(s), '+cov.excluded+' exclu(s), '+cov.redacted+' ligne(s) masquée(s)'+(cov.complete?'.':' — diff incomplet.'):'',
-  result.files_partial||result.checks_partial?'Couverture GitHub partielle : vérifier le diff et les contrôles manquants.':'',
+  cov?'Couverture du diff : '+(cov.percent??'?')+' % des caractères'+(cov.code_percent!=null?' (dont '+cov.code_percent+' % du code source modifié, '+cov.code_files+' fichier(s))':'')+' ; '+cov.included+' fichier(s) lu(s), '+cov.excluded+' exclu(s), '+cov.redacted+' ligne(s) masquée(s)'+(cov.complete?'.':' — diff incomplet.'):'',
   testsLine,
   result.plan?String(result.plan.summary||'')+(result.plan.skipped||[]).map(x=>'\n   Non sollicité : '+x.reason).join(''):'',
-  findings.length?'Anomalies IA proposées à reproduire et corriger :':'Aucune anomalie IA étayée sur le diff transmis.',
-  ...findings.slice(0,20).map((f,i)=>(i+1)+'. ['+f.severity+'] '+f.file+' — '+f.reason+'\n   Reproduction : '+f.reproduction+' ; source : '+f.sources.join(', ')+(f.sources.length>1?' (concordance de plusieurs IA, non une preuve)':' (une seule IA)')),
-  failed.length?'Une ou plusieurs IA n’ont pas terminé leur analyse : ne pas conclure à partir des seules analyses disponibles.':'',
+  findings.length?'Anomalies proposées par les IA (pistes à reproduire, pas des faits établis) :':'Aucune anomalie étayée sur le diff transmis.',
+  ...findings.slice(0,20).map((f,i)=>(i+1)+'. ['+f.severity+'] '+f.file+(f.location?' — '+f.location:'')+' — '+f.reason
+   +(f.impact?'\n   Conséquence : '+f.impact:'')+'\n   Reproduction : '+(f.reproduction||'non précisée')+(f.fix?'\n   Correction suggérée : '+f.fix:'')
+   +'\n   Source : '+f.sources.join(', ')+(f.sources.length>1?' (concordance de plusieurs IA, non une preuve)':' (une seule IA)')),
+  ...(disagreements(result).length?['Désaccords entre les IA :',...disagreements(result).map(d=>'   - '+d)]:[]),
+  'Ce qui n’a PAS été vérifié :',...notVerified(result).map(x=>'   - '+x),
   'Questions pour l’assistant qui reprend : (1) lesquelles de ces anomalies sont réelles, avec quel test pour le prouver ? (2) y a-t-il des risques d’architecture, de sécurité ou d’ergonomie que les IA de revue n’ont pas vus ? (3) que faut-il vérifier avant de fusionner ?',
   'Consigne : confirmer les anomalies par un test, corriger seulement celles reproduites, relancer les tests ciblés puis la CI. Ne pas fusionner sur la seule base de ce rapport.'
  ];
- return lines.filter(Boolean).join('\n').slice(0,12000);
+ return lines.filter(Boolean).join('\n').slice(0,16000);
 }

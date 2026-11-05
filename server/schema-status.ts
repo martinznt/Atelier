@@ -1,0 +1,39 @@
+/* État public du schéma D1 : uniquement des numéros de migration présents ou manquants.
+   Aucune donnée, aucun nom de compte, aucun secret. Sert à vérifier un déploiement sans session. */
+export interface SchemaStatus{complete:boolean|null;applied:string[];missing:string[]}
+const checks:{id:string;table:string;columns:string[]}[]=[
+ {id:'0007',table:'users',columns:['email']},
+ {id:'0008',table:'review_runs',columns:['head_sha','report']},
+ {id:'0009',table:'review_configs',columns:['daily_limit']},
+ {id:'0010',table:'review_runs',columns:['stage','diagnostic']},
+ {id:'0011',table:'review_configs',columns:['post_comment']},
+ {id:'0012',table:'review_configs',columns:['review_mode']},
+ {id:'0013',table:'review_configs',columns:['relay','relay_max_attempts']},
+ {id:'0013',table:'review_runs',columns:['resume_at','resume_state']},
+ {id:'0013',table:'ai_usage',columns:['connection_id','outcome']}
+];
+let cache:{at:number;value:SchemaStatus}|null=null;
+/** Cache de 60 s par instance : la page de santé est publique, elle ne doit pas solliciter D1 à chaque appel. */
+export async function schemaStatus(db:D1Database,now=Date.now()):Promise<SchemaStatus>{
+ if(cache&&now-cache.at<60_000&&cache.value.complete!==null)return cache.value;
+ const value=await readSchema(db);
+ if(value.complete!==null)cache={at:now,value};
+ return value;
+}
+export function resetSchemaCache(){cache=null;}
+async function readSchema(db:D1Database):Promise<SchemaStatus>{
+ try{
+  const cache=new Map<string,Set<string>>();
+  const columnsOf=async(table:string)=>{
+   if(!cache.has(table)){const rows=await db.prepare('PRAGMA table_info('+table+')').all<{name:string}>();cache.set(table,new Set(rows.results.map(r=>r.name)));}
+   return cache.get(table)!;
+  };
+  const ok=new Map<string,boolean>();
+  for(const c of checks){
+   const cols=await columnsOf(c.table);
+   ok.set(c.id,(ok.get(c.id)??true)&&c.columns.every(x=>cols.has(x)));
+  }
+  const ids=[...ok.keys()];
+  return {complete:ids.every(i=>ok.get(i)),applied:ids.filter(i=>ok.get(i)),missing:ids.filter(i=>!ok.get(i))};
+ }catch{return {complete:null,applied:[],missing:[]};} // base illisible : état inconnu, jamais « complet » par défaut
+}
