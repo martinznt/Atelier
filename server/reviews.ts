@@ -8,6 +8,7 @@ import {recordConnectionQuota,rateLimitObservation} from './collaboration.ts';
 import {readableQuota,reviewHandoff} from './review-team.mjs';
 import {event,fail,jsonBody,many,now,one,owned,run,uid,userId} from './core.ts';
 import {reviewPrompt,parseReviewResult,reviewRisk,type ReviewFile,type ReviewCheck} from './review-core.ts';
+import {loadChecks} from './github-checks.ts';
 import {buildDiagnostic,type Stage} from './review-diagnostics.ts';
 import {postRoleComments,commentFailureMessage} from './review-comment.ts';
 import {isClaudeCodeWork} from './review-roles.ts';
@@ -202,10 +203,9 @@ export async function executeReview(env:Env,id:string){
   // Les tests GitHub sont utiles mais non indispensables : un refus (jeton sans droit Checks)
   // ne doit pas perdre toute l'analyse. L'absence est signalée au rapport, jamais déguisée en succès.
   await mark('github_checks');
-  let checkRes:{data:any;hasNext:boolean},checksDiagnostic:ReturnType<typeof buildDiagnostic>|null=null;
-  try{checkRes=await jsonRequest('github',token,base+'/commits/'+row.head_sha+'/check-runs?per_page=30');}
-  catch(error){checkRes={data:{check_runs:[]},hasNext:false};checksDiagnostic=buildDiagnostic({stage:'github_checks',lastOk:'github_files',error,provider:'github'});}
-  const files=fileRes.data as ReviewFile[],checks:ReviewCheck[]=(checkRes.data.check_runs||[]).map((x:any)=>({name:x.name,status:x.status,conclusion:x.conclusion}));
+  const loaded=await loadChecks(path=>jsonRequest('github',token,path),base,row.head_sha);
+  const checksDiagnostic=loaded.error?buildDiagnostic({stage:'github_checks',lastOk:'github_files',error:loaded.error,provider:'github'}):null;
+  const files=fileRes.data as ReviewFile[],checks:ReviewCheck[]=loaded.checks;
   await mark('ai_call');
   const risk=reviewRisk(files),reports:any[]=[];
   const mode=(REVIEW_MODES as string[]).includes(String(cfg.review_mode))?cfg.review_mode as ReviewMode:'equilibre';
@@ -294,7 +294,7 @@ export async function executeReview(env:Env,id:string){
     reports.push({...base,...(earliest?{waiting:{until:earliest.at,source:earliest.source}}:{}),...(needsUser?{needs_user:blockers.slice(0,4).map(b=>({connection:b.label,kind:b.kind,failure:failureLabel[b.kind as FailureKind],action:'Vérifiez ou remplacez l’accès « '+b.label+' » dans Réglages → Connexions, puis cliquez sur « Tester l’accès ».'}))}:{}),provider:last?.provider,model:last?.model,error:message,diagnostic:{stage:'ai_call',last_ok_stage:'github_checks',category:last?.kind&&/rate|quota/.test(last.kind)?'rate_limit':last?.kind==='auth'||last?.kind==='billing'?'auth':last?.kind==='permission'?'permission':'unknown',code:last?.kind||relay.status,provider:last?.provider||null,http_status:null,ai_started:false,ai_result:'none',retry_allowed:true,message,attempts}});
    }
   }
-  const result:{[key:string]:any}={repo:repo.full_name,pr_number:row.pr_number,head_sha:row.head_sha,risk,checks,checks_partial:checkRes.hasNext,files_partial:fileRes.hasNext,reviewers:reports,plan:{mode:plan.mode,summary:plan.summary,skipped:plan.skipped},relay:{enabled:relayOn,max_attempts_per_role:maxAttempts,calls:totalCalls},reviewed_at:now(),checks_unavailable:checksDiagnostic?checksDiagnostic.message:null,warning:'Revue IA seulement : les alertes exigent une reproduction ; aucun test n’a été exécuté par Atelier.'};
+  const result:{[key:string]:any}={repo:repo.full_name,pr_number:row.pr_number,head_sha:row.head_sha,risk,checks,checks_partial:loaded.partial,files_partial:fileRes.hasNext,reviewers:reports,plan:{mode:plan.mode,summary:plan.summary,skipped:plan.skipped},relay:{enabled:relayOn,max_attempts_per_role:maxAttempts,calls:totalCalls},reviewed_at:now(),checks_unavailable:checksDiagnostic?checksDiagnostic.message:null,warning:'Revue IA seulement : les alertes exigent une reproduction ; aucun test n’a été exécuté par Atelier.'};
   result.coverage=reports.map((r:any)=>r.coverage).find(Boolean)||null;
   result.not_verified=notVerified(result);result.disagreements=disagreements(result);
   if(resumes>0)result.resumed={count:resumes};

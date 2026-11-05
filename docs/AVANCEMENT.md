@@ -538,3 +538,10 @@ Les 14 branches d'Atelier sont toutes entièrement fusionnées (0 commit d'avanc
 Migration additive `0014_auto_scope.sql` (`review_configs.auto_scope` : `all` | `claude_code`). `server/review-roles.ts` (rôles, consignes, détection du travail de Claude Code),
 `postRoleComments` (deux commentaires), planificateur filtré par portée. Tests D1 : analyse automatique limitée aux PR de Claude Code, publication des deux commentaires avec les bons rôles.
 Limites : vérification toutes les 5 minutes (pas de webhook), détection par convention de nom, plafonds journaliers, aucun agent lancé par les commentaires, publication exigeant des droits d'écriture non testés avec le vrai GitHub.
+
+## Lecture des tests avec un jeton personnel (5 novembre 2026)
+
+Les « check-runs » GitHub exigent le droit Checks, absent des jetons à permissions fines personnels
+(docs.github.com/en/rest/checks/runs : jetons d'application seulement). Atelier lit désormais, en repli, les exécutions
+GitHub Actions du commit (droit « Actions : lecture »). Limite : les contrôles d'autres services ne sont pas vus par ce repli.
+Testé : `tests/github-checks.test.mjs` (3 cas) et les 42 tests d'intégration. Non testé : un vrai jeton sur Livre-de-recettes.
