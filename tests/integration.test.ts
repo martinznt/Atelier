@@ -269,6 +269,11 @@ describe('configuration IA : limite gratuite, connexion validée et isolation',(
    .bind(repoId,registration.body.user.id,ownProject.body.id,gh.body.id,'martinznt/Livre-de-recettes','main','a'.repeat(40),at).run();
   const input={repository_id:repoId,primary:{connection_id:ai.body.id,model:'ministral-test'},secondary:null,enabled:false,daily_limit:2,share_consent:true};
   expect((await json('/reviews/configs','POST',{...input,daily_limit:5},cookie)).status).toBe(400);
+  // Publication demandée sans accès « écriture » sur la connexion GitHub : refus précis, rien d'enregistré.
+  const noWrite=await json('/reviews/configs','POST',{...input,enabled:true,post_comment:true},cookie);
+  expect(noWrite.status).toBe(403);
+  expect(JSON.stringify(noWrite.body)).toContain('écriture');expect(JSON.stringify(noWrite.body)).toContain('Test GitHub');
+  expect((await json('/reviews/configs?project='+ownProject.body.id,'GET',undefined,cookie)).body.items).toHaveLength(0);
   expect((await json('/reviews/configs','POST',input,cookie)).status).toBe(200);
   const read=await json('/reviews/configs?project='+ownProject.body.id,'GET',undefined,cookie);
   expect(read.status).toBe(200);expect(read.body.items).toHaveLength(1);

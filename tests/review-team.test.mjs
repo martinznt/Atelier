@@ -78,3 +78,10 @@ test('le dossier indique couverture, ce qui n’a pas été vérifié et les dé
  assert.match(text,/Tests GitHub non lus/);assert.match(text,/réponse interrompue/);
  assert.equal(disagreements(result).length,1);assert.ok(notVerified(result).length>=5);
 });
+
+test('les modèles non textuels ne sont jamais proposés pour la revue',async()=>{
+ const {pickReviewModel}=await import('../server/review-team.mjs');
+ const assert=(await import('node:assert/strict')).default;
+ assert.equal(pickReviewModel({models:['gemini-2.5-computer-use-preview-10-2025','gemini-2.5-flash-image','gemini-live-2.5-flash','veo-3.0','gemini-2.5-flash']}),'gemini-2.5-flash');
+ assert.equal(pickReviewModel({models:['gemini-2.5-computer-use-preview-10-2025']}),undefined);
+});

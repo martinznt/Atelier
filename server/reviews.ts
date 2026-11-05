@@ -41,6 +41,10 @@ async function getRepo(env:Env,id:string,user:string){
  return owned<Repo>(env,'repositories',id,user);
 }
 async function checkChoice(env:Env,user:string,input:{connection_id:string;model:string}){
+ // Messages précis : l'ancien refus générique ne disait ni quelle connexion ni quel accès manquait.
+ const pre=await owned<{label:string;scopes:string}>(env,'connections',input.connection_id,user);
+ let scopes:string[]=[];try{scopes=JSON.parse(pre.scopes);}catch{/* accès illisibles : refus ci-dessous */}
+ if(!scopes.includes('chat'))fail(403,'La connexion « '+pre.label+' » n’a pas l’accès « discussion ». Activez-le dans Connexions, testez la connexion, puis enregistrez de nouveau. Rien n’a été enregistré.');
  const {conn}=await credentialsFor(env,input.connection_id,user,'chat');
  if(!['openai','anthropic','gemini','mistral','groq'].includes(conn.provider)||!conn.api_consent||conn.status!=='connected')
   fail(403,'Cette API n’est pas disponible ou autorisée dans Atelier.');
@@ -129,6 +133,9 @@ reviews.post('/configs',async c=>{
  const baseArgs=[uid(),user,repo.project_id,repo.id,input.primary.connection_id,input.primary.model,input.secondary?.connection_id||null,input.secondary?.model||null,Number(input.enabled),at,at,input.daily_limit];
  if(input.post_comment){
   // La publication de commentaires exige un accès GitHub explicitement autorisé en écriture dans Atelier.
+  const gh=await owned<{label:string;scopes:string}>(c.env,'connections',repo.connection_id,user);
+  let ghScopes:string[]=[];try{ghScopes=JSON.parse(gh.scopes);}catch{/* illisible : refus ci-dessous */}
+  if(!ghScopes.includes('write'))fail(403,'Publier les commentaires exige l’accès « écriture » sur la connexion GitHub « '+gh.label+' » (Connexions dans Atelier). Activez-le, ou décochez la publication. Rien n’a été enregistré, y compris l’analyse automatique.');
   await credentialsFor(c.env,repo.connection_id,user,'write');
  }
  // Variantes de l'enregistrement : chaque colonne optionnelle vient d'une migration additive récente.
