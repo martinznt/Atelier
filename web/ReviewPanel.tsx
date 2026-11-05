@@ -8,6 +8,8 @@ import {roleIntro} from '../server/review-roles';
 const claudeCodeIntro=roleIntro.claude_code,chatgptIntro=roleIntro.chatgpt;
 
 type Choice={connection_id:string;model:string};
+const stageLabels:Record<string,string>={config:'lecture des réglages',github_pr:'lecture de la PR sur GitHub',github_files:'lecture des fichiers modifiés',github_checks:'lecture des tests GitHub',ai_call:'analyse par les IA (peut durer une à deux minutes)',save:'enregistrement du rapport'};
+const elapsed=(iso?:string)=>{const t=Date.parse(iso||'');if(!Number.isFinite(t))return '';const s=Math.max(0,Math.round((Date.now()-t)/1000));return s<60?s+' s':Math.floor(s/60)+' min '+(s%60)+' s';};
 const statuses:Record<string,string>={queued:'En attente',running:'Analyse en cours',completed:'Analysée',partial:'Relecture partielle',interrupted:'Interrompue',stale:'Ancienne version'};
 export function ReviewPanel({project}:{project:string}){
  const [repos,setRepos]=useState<any[]>([]),[connections,setConnections]=useState<any[]>([]);
@@ -31,6 +33,8 @@ export function ReviewPanel({project}:{project:string}){
   void api('/reviews/usage?project='+encodeURIComponent(project)).then(setUsage).catch(()=>setUsage(null));
   setRepo(prev=>prev||r.items[0]?.id||'');
  };
+ const activeRuns=runs.filter(r=>r.status==='running'||(r.status==='queued'&&!r.report?.waiting));
+ useEffect(()=>{if(!activeRuns.length)return;const t=setInterval(()=>{if(!document.hidden&&navigator.onLine)void api('/reviews/runs?project='+encodeURIComponent(project)).then(r=>setRuns(r.items)).catch(()=>{});},4000);return()=>clearInterval(t);},[activeRuns.length,project]);
  useEffect(()=>{void load().catch(setError);const timer=setInterval(()=>{if(!document.hidden&&navigator.onLine)void api('/reviews/runs?project='+encodeURIComponent(project)).then(r=>setRuns(r.items)).catch(()=>{});},15000);return()=>clearInterval(timer);},[project]);
  // Notification du navigateur : seulement quand Atelier est ouvert (ce n'est pas une notification poussée sur téléphone).
  useEffect(()=>{
@@ -84,8 +88,9 @@ export function ReviewPanel({project}:{project:string}){
  }
  return <section className="panel">
   <div className="panel-heading"><div><h2>Chaîne de vérification des PR</h2><p>Atelier lit les changements et les tests GitHub, puis demande des analyses indépendantes aux API autorisées.</p></div><Button kind="secondary" onClick={()=>void load().catch(setError)}><RefreshCw size={16}/>Actualiser</Button></div>
-  <p className="notice">Lecture seule : aucun fichier, commentaire, PR ou déploiement n'est modifié. Les conclusions IA ne remplacent pas les tests.</p>
+  <p className="notice">Atelier ne modifie ni fichier, ni PR, ni déploiement. Il n'ajoute un commentaire sur une PR que si vous avez activé la publication. Les conclusions IA ne remplacent pas les tests.</p>
   <ErrorBox error={error}/>{notice&&<p role="status" className="notice">{notice}</p>}
+  {activeRuns.length>0&&<div className="notice" role="status" aria-live="polite"><strong>Analyse en cours</strong><ul className="stack">{activeRuns.map(r=><li key={r.id}>{r.full_name} · PR #{r.pr_number} · {r.status==='queued'?'en file d’attente, démarrage imminent':(stageLabels[r.stage]||'en cours')} · depuis {elapsed(r.created_at)}</li>)}</ul><p className="muted">Cet encadré se met à jour tout seul (toutes les 4 secondes). Atelier ne dit pas quelle IA répond pendant l’analyse : le détail apparaît dans le rapport.</p></div>}
   <div className="panel">
    <h3>Installation simplifiée</h3>
    <p>Atelier détecte les connexions déjà autorisées et prépare les IA automatiquement. Tu n'as pas à choisir les modèles un par un. Aucun appel IA n'est déclenché avant ton consentement.</p>
