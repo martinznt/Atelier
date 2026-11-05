@@ -545,3 +545,11 @@ Les « check-runs » GitHub exigent le droit Checks, absent des jetons à permis
 (docs.github.com/en/rest/checks/runs : jetons d'application seulement). Atelier lit désormais, en repli, les exécutions
 GitHub Actions du commit (droit « Actions : lecture »). Limite : les contrôles d'autres services ne sont pas vus par ce repli.
 Testé : `tests/github-checks.test.mjs` (3 cas) et les 42 tests d'intégration. Non testé : un vrai jeton sur Livre-de-recettes.
+
+## Sans plafond d'analyses et pause avec heure de reprise (5 novembre 2026)
+
+Migration additive `0015_no_daily_cap.sql` (`review_configs.no_daily_cap`), à appliquer par `npm run deploy:cloudflare` comme les précédentes ; `/api/health` signale `0015` tant qu'elle manque.
+Option « Sans plafond » dans les réglages : plus de plafond par dépôt ni de limite de 8 ; seules les limites réelles des IA arrêtent le travail. Un plafond de sécurité du compte (100 par jour) protège contre une boucle.
+Une demande manuelle n'est plus bornée par le plafond du dépôt (ni les 8 du compte : 100 de sécurité). Quand toutes les IA sont à leur limite : l'automatique n'ouvre rien et attend (état affiché dans « Surveillance automatique » avec l'heure de reprise connue), une demande manuelle est créée en pause (`resume_at`) et démarre à la première réinitialisation connue.
+Limite : si aucun fournisseur ne donne d'heure, Atelier affiche sa pause de prudence ; sans heure connue du tout, une demande manuelle n'est pas mise en pause.
+Testé : tests purs (`watch-status`, `schema-status`) et scénarios D1 (sans plafond, sécurité à 100, pause manuelle). Non testé : un vrai épuisement de quota chez un fournisseur.
