@@ -524,3 +524,9 @@ un seul échec mémorisé par modèle ; aucun test avec de vraies clés ; le rel
   Textes de transmission distincts pour Claude Code (reproduire, correction ciblée, tests, rien hors périmètre) et ChatGPT (avis indépendant, incertitudes).
 - **Interface** : plus de débordement horizontal à 360, 390, 820 et 1280 px (un bouton de la configuration dépassait de 10 px à 360 px).
 - **Non testé avec le vrai Worker et de vraies connexions** : GitHub OAuth/jeton, clés IA, analyse réelle (aucun accès au compte de l'utilisateur ; aucune clé en session).
+
+## Constat du propriétaire (5 novembre 2026, soir)
+Le propriétaire indique que ses clés IA fonctionnent et que l'analyse des PR fonctionne (non revérifié par l'agent : aucun accès à son compte).
+Conditions officielles lues le 5/11/2026 (Groq : en-têtes « requêtes » = quota par jour ; Gemini : limites par projet, offre gratuite = contenu utilisé pour améliorer les produits) :
+voir `docs/REVUE_IA.md` et `docs/LIMITES_GRATUITES.md`. Le relais traite maintenant les en-têtes Groq selon cette documentation.
+Les 14 branches d'Atelier sont toutes entièrement fusionnées (0 commit d'avance sur `main`) ; leur suppression est refusée par le proxy GitHub de l'agent : à supprimer depuis GitHub.

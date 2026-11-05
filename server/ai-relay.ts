@@ -97,7 +97,7 @@ export async function runWithRelay<T>(o:{
    const accepted=error instanceof AttemptError?error.accepted:true;
    const original=error instanceof AttemptError?error.original:error;
    const partial=error instanceof AttemptError?error.partial:'';
-   const cl=classifyFailure(original,{now:o.now(),accepted});
+   const cl=classifyFailure(original,{now:o.now(),accepted,provider:c.provider});
    if(o.onFailure){try{await o.onFailure(c,cl,accepted);}catch{/* l'échec d'écriture ne doit pas masquer le résultat */}}
    const ended=o.now();
    const stop=!cl.relay_ok;
