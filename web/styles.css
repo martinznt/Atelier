@@ -20,3 +20,15 @@
 
 /* Un bouton long dans une pile passe à la ligne au lieu de déborder (360 px, grand texte). */
 .stack>.button,.panel .stack .button{white-space:normal;text-align:center;max-width:100%}
+
+/* Historique des analyses : une ligne par PR (nom, numéro, heure), détail au dépliage. */
+.run-card{padding:0}
+.run-summary{display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer;min-height:44px;list-style:none}
+.run-summary::-webkit-details-marker{display:none}
+.run-summary::after{content:"▾";margin-left:auto;color:var(--muted,#6b6b6b);transition:transform .15s}
+.run-card[open]>.run-summary::after{transform:rotate(180deg)}
+.run-main{display:flex;flex-direction:column;gap:2px;min-width:0}
+.run-main strong{overflow-wrap:anywhere}
+.run-card>:not(summary){margin-left:14px;margin-right:14px}
+.run-card>:last-child{margin-bottom:14px}
+.run-icon{display:flex;flex:none}
