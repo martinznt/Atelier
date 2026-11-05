@@ -103,25 +103,87 @@ export function ReviewPanel({project}:{project:string}){
   <p className="notice">Atelier ne modifie ni fichier, ni PR, ni déploiement. Il n'ajoute un commentaire sur une PR que si vous avez activé la publication. Les conclusions IA ne remplacent pas les tests.</p>
   <ErrorBox error={error}/>{notice&&<p role="status" className="notice">{notice}</p>}
   {activeRuns.length>0&&<div className="notice" role="status" aria-live="polite"><strong>Analyse en cours</strong><ul className="stack">{activeRuns.map(r=><li key={r.id}>{r.full_name} · PR #{r.pr_number} · {r.status==='queued'?'en file d’attente, démarrage imminent':(stageLabels[r.stage]||'en cours')} · depuis {elapsed(r.created_at)}</li>)}</ul><p className="muted">Cet encadré se met à jour tout seul (toutes les 4 secondes). Atelier ne dit pas quelle IA répond pendant l’analyse : le détail apparaît dans le rapport.</p></div>}
-  <div className="panel">
-   <h3>Installation simplifiée</h3>
-   <p>Atelier détecte les connexions déjà autorisées et prépare les IA automatiquement. Tu n'as pas à choisir les modèles un par un. Aucun appel IA n'est déclenché avant ton consentement.</p>
-   <p><strong>1. GitHub :</strong> {repos.length?'Dépôt déjà associé.':githubConnections.length?'Connexion GitHub disponible.':'Connexion GitHub manquante dans Atelier.'}</p>
-   {!repos.length&&githubConnections.length>0&&<Button kind="secondary" disabled={busy} onClick={()=>void linkRecipeRepo()}>Relier mon Livre de recettes automatiquement</Button>}
-   {!repos.length&&!githubConnections.length&&<p className="muted">Une seule opération nécessaire : ajouter un jeton GitHub limité au dépôt dans Réglages → Connexions. L'accès GitHub de ChatGPT n'est pas transférable à Atelier.</p>}
-   <p><strong>2. IA :</strong> {connections.length?connections.length+' connexion(s) déjà autorisée(s).':'Aucune API IA disponible.'}</p>
-   {suggestion.primary&&<p className="muted">Sélection proposée : {connections.find(c=>c.id===suggestion.primary?.connection_id)?.label} · {suggestion.primary.model}{suggestion.secondary?' + '+connections.find(c=>c.id===suggestion.secondary?.connection_id)?.label+' · '+suggestion.secondary.model:''}. Cette suggestion n'est pas une garantie de gratuité.</p>}
-   {!connections.length&&<div className="stack">
-    <Field label="Clé Mistral Studio déjà autorisée"><input type="password" autoComplete="off" value={apiKey} onChange={e=>setApiKey(e.target.value)} placeholder="Coller la clé directement dans Atelier"/></Field>
-    <label className="check"><input type="checkbox" checked={apiAgree} onChange={e=>setApiAgree(e.target.checked)}/>J'ai vérifié mon éligibilité aux conditions d'accès et confirmé que cette clé est utilisable sans paiement.</label>
-    <Button kind="secondary" disabled={busy||!apiAgree||apiKey.trim().length<10} onClick={()=>void connectMistral()}>Enregistrer et tester cette connexion</Button>
-    <p className="muted">La clé sera stockée chiffrée par Atelier. Ne la partage jamais dans une conversation ni dans GitHub. Les autres fournisseurs peuvent être configurés dans Réglages → Connexions selon les conditions de ton compte.</p>
-   </div>}
-   <p><strong>3. Vérifications :</strong> {configs.length?'Une configuration de revue existe déjà.':'Choisis une fois tes plafonds, puis enregistre la chaîne.'}</p>
-  </div>
+  <details className="fold">
+   <summary className="fold-summary"><strong>Disponibilité de vos IA</strong><small className="muted">{connections.length?connections.filter(c=>availabilityOf(c,{model:c.models?.[0],now:new Date().toISOString()}).usable).length+' sur '+connections.length+' utilisable(s) maintenant':'aucune IA connectée'}</small></summary>
+   <div className="fold-body">
+  {!connections.length?<p className="muted">Aucune IA connectée.</p>:<div className="stack">{connections.map(c=>{
+   const nowIso=new Date().toISOString(),holds=Object.entries((()=>{try{const q=typeof c.quota==='string'?JSON.parse(c.quota):c.quota;return q?.holds||{};}catch{return {};}})()) as [string,any][];
+   const a=availabilityOf(c,{model:c.models?.[0],now:nowIso});
+   return <article className="panel" key={c.id}>
+    <strong>{c.label} · {c.provider}</strong>
+    <p>{a.usable?'Disponible':a.state==='blocked'?'Action requise de votre part':a.state==='held'?'Temporairement limitée':'Indisponible'} · {a.reason}</p>
+    {a.until&&<p className="muted">Nouvel essai possible après {date(a.until)} · {a.until_source==='provider'?'date indiquée par le fournisseur':'pause de prudence d’Atelier (aucune date fournie par le fournisseur)'}.</p>}
+    {holds.filter(([,h])=>h.hold_until&&Date.parse(h.hold_until)>Date.now()).map(([model,h])=><p className="muted" key={model}>Modèle {model} : {h.label}.</p>)}
+    <p className="muted">{a.quota_known?'Limites connues du fournisseur : '+(a.known.remaining_requests!==undefined?a.known.remaining_requests+' requête(s) restante(s) ':'')+(a.known.remaining_tokens!==undefined?a.known.remaining_tokens+' jeton(s) restant(s)':'')+(Object.keys(a.known).length?'':'aucun compteur renvoyé.'):'Quota restant : inconnu (aucune information fiable du fournisseur).'}</p>
+   </article>;})}</div>}
+   </div>
+  </details>
   {!repos.length?<Empty title="Aucun dépôt associé">La connexion GitHub pourra être reliée ci-dessus, ou via « Dépôts GitHub ».</Empty>:<>
    <div className="stack">
     <Field label="Dépôt à surveiller"><select value={repo} onChange={e=>{setRepo(e.target.value);setSelectedPR('');setConsent(false);}}>{repos.map(r=><option key={r.id} value={r.id}>{r.full_name}</option>)}</select></Field>
+   </div>
+  <div className="panel">
+   <h3>Lancer une analyse maintenant</h3>
+   <Field label="Pull request ouverte"><select value={selectedPR} onChange={e=>setSelectedPR(e.target.value)}><option value="">Choisir la PR</option>{pulls.map(p=>{const w=watch?.items?.find((x:any)=>x.number===p.number);const st=w?(w.state==='analysed'?' · déjà analysé':w.state==='pending'?' · en cours':' · à analyser'):'';return <option key={p.number} value={p.number}>#{p.number} · {p.title} · commit {String(p.sha).slice(0,7)}{p.claude_code?' · Claude Code':''}{st}</option>;})}</select></Field>
+   <Button kind="text" disabled={busy||!repo} onClick={()=>setTick(t=>t+1)}>Actualiser la liste des PR (relit GitHub : nouveaux commits, nouvelles PR)</Button>
+   {!pulls.length&&<p className="muted">Aucune PR ouverte provenant de ce dépôt.</p>}
+   <Button kind="secondary" disabled={busy||!selectedPR||!configs.some(c=>c.repository_id===repo)} onClick={()=>void(async()=>{setBusy(true);setError(null);setNotice('');try{const res=await post('/reviews/start',{repository_id:repo,pr_number:Number(selectedPR)});setNotice((res.title?'PR « '+res.title+' », commit '+String(res.sha).slice(0,7)+' : ':'')+(res.message||(res.queued?'Analyse demandée.':'Aucune analyse créée.'))+(res.until?' Reprise prévue vers '+date(res.until)+(res.until_source==='provider'?' (heure indiquée par le fournisseur).':' (pause de prudence d’Atelier).'):''));setTick(t=>t+1);await load();}catch(e){setError(e);}finally{setBusy(false);}})()}>Analyser cette PR</Button>
+  </div>
+  </>}
+  <div className="panel">
+  <h3>Rapports récents</h3>
+  {!runs.length?<p className="muted">Aucune analyse réalisée pour ce projet.</p>:<div className="stack">{runs.map(r=><details className="panel run-card" key={r.id}>
+   <summary className="run-summary"><span className="run-icon">{r.status==='completed'?<CheckCircle2 size={18}/>:<ShieldAlert size={18}/>}</span><span className="run-main"><strong>{r.full_name} · PR #{r.pr_number}</strong><small className="muted">{date(r.created_at)} · {r.status==='queued'&&r.report?.waiting?'En pause : reprise automatique prévue':(statuses[r.status]||r.status)}{r.report?.needs_user?.length?' · à faire de votre part':''}</small></span></summary>
+   <p className="muted">Commit {r.head_sha.slice(0,8)}</p>
+   {r.error&&<p className="muted">{r.error}</p>}
+   {r.diagnostic&&<details open><summary>Diagnostic de l’interruption</summary><ul>
+    <li>PR #{r.pr_number} · commit {r.head_sha}</li>
+    <li>Dernière étape réussie : {r.diagnostic.last_ok_stage||'aucune'} · Étape en échec : {r.diagnostic.stage}</li>
+    <li>Catégorie : {r.diagnostic.category} · code {r.diagnostic.code}{r.diagnostic.provider?' · '+r.diagnostic.provider:''}</li>
+    <li>Appel IA : {r.diagnostic.ai_result==='unknown'?'commencé, résultat inconnu':r.diagnostic.ai_started?'commencé, aucune génération reçue':'non effectué'}</li>
+    <li>Nouvelle tentative : {r.diagnostic.retry_allowed?'possible (manuelle)':'non autorisée sans intervention'}</li>
+   </ul></details>}
+   {r.status==='interrupted'&&<div className="stack">
+    {(!r.diagnostic||!r.diagnostic.retry_allowed)&&<p className="notice">{r.diagnostic?'La reprise n’est pas jugée sûre (résultat IA incertain ou accès à corriger). ':'Cette analyse est antérieure au diagnostic détaillé : un appel IA a pu avoir lieu. '}Relancer peut consommer du quota du fournisseur.</p>}
+    <Button kind="secondary" disabled={busy} onClick={()=>void act(()=>post('/reviews/runs/'+r.id+'/retry',{acknowledge_uncertain:!r.diagnostic||!r.diagnostic.retry_allowed}),'Reprise demandée. Actualisez dans quelques instants.')}>Relancer cette analyse{(!r.diagnostic||!r.diagnostic.retry_allowed)?' (je confirme)':''}</Button>
+   </div>}
+   {(r.status==='completed'||r.status==='partial')&&r.report?.handoff&&!r.report?.comment?.posted&&<Button kind="secondary" disabled={busy} onClick={()=>void act(async()=>{const res=await post('/reviews/runs/'+r.id+'/publish',{});if(!res.comment?.posted)throw new Error(res.comment?.message||'Publication impossible.');},'Dossier publié sur la PR : Claude Code et ChatGPT peuvent le lire.')}>Publier ce rapport sur la PR (Claude Code et ChatGPT)</Button>}
+   {r.report?.comment&&<p className="notice">{r.report.comment.posted?'Dossier publié sur la PR : ':'Commentaires non publiés. '}{r.report.comment.urls?.claude_code&&<><a href={r.report.comment.urls.claude_code} target="_blank" rel="noreferrer">pour Claude Code</a> </>}{r.report.comment.urls?.chatgpt&&<><a href={r.report.comment.urls.chatgpt} target="_blank" rel="noreferrer">pour ChatGPT</a> </>}{!r.report.comment.urls&&r.report.comment.url&&<a href={r.report.comment.url} target="_blank" rel="noreferrer">ouvrir sur GitHub</a>}{r.report.comment.message}</p>}
+   {r.report?.plan&&<details open><summary>Plan de vérification · {r.report.plan.summary}</summary>{(r.report.plan.skipped||[]).length>0&&<ul>{r.report.plan.skipped.map((x:any,i:number)=><li key={i}>Non sollicité : {x.reason}</li>)}</ul>}</details>}
+   {r.report?.waiting&&<p className="notice" role="status">Limite d'utilisation atteinte. Reprise automatique prévue vers {date(r.report.waiting.until)} ({r.report.waiting.source==='provider'?'date indiquée par le fournisseur':'pause de prudence d’Atelier : aucune date fournie par le fournisseur'}) · reprise {r.report.waiting.resumes}/{r.report.waiting.max_resumes}. Seules les vérifications non terminées seront refaites.</p>}
+   {r.report?.needs_user?.length>0&&<div className="notice" role="status"><strong>À faire de votre part (Atelier continue les autres travaux en attendant)</strong><ul>{r.report.needs_user.map((t:any,i:number)=><li key={i}>{t.what} — {t.action}</li>)}</ul>{r.status==='partial'&&<Button kind="secondary" disabled={busy} onClick={()=>void act(()=>post('/reviews/runs/'+r.id+'/resume',{}),'Reprise demandée : seules les vérifications non terminées seront refaites.')}>J'ai validé, reprendre</Button>}</div>}
+   {r.report?.checks_unavailable&&<p className="notice">Tests GitHub non lus : {r.report.checks_unavailable}</p>}
+   {r.report&&<div className="stack">
+    <p>Risque : <strong>{r.report.risk}</strong> · Tests GitHub consultés : {r.report.checks?.length||0} {r.report.checks_partial?'(liste incomplète)':''}</p>
+    {r.report.coverage&&<p>Couverture du diff : <strong>{r.report.coverage.percent} %</strong>{r.report.coverage.code_percent!=null&&<> (code source modifié : <strong>{r.report.coverage.code_percent} %</strong>)</>} · {r.report.coverage.included} fichier(s) lu(s), {r.report.coverage.excluded} non lu(s).{r.report.coverage.complete?'':' Diff incomplet : la conclusion ne couvre pas les fichiers non lus.'}</p>}
+    {r.report.coverage&&!r.report.coverage.complete&&<details><summary>Fichiers non lus ou tronqués</summary><ul>{(r.report.coverage.files||[]).filter((f:any)=>f.state!=='full'&&!/sensible/.test(f.reason||'')).map((f:any,i:number)=><li key={i}>{f.name} · {f.state==='truncated'?'tronqué':'non lu'}{f.reason?' ('+f.reason+')':''}</li>)}</ul></details>}
+    {(r.report.disagreements||[]).length>0&&<div className="notice"><strong>Désaccords entre les IA</strong><ul>{r.report.disagreements.map((d:string,i:number)=><li key={i}>{d}</li>)}</ul></div>}
+    {(r.report.not_verified||[]).length>0&&<details><summary>Ce qui n’a pas été vérifié</summary><ul>{r.report.not_verified.map((d:string,i:number)=><li key={i}>{d}</li>)}</ul></details>}
+    {r.report.handoff&&<div className="stack"><h4>Dossier de transmission (ChatGPT ou Claude Code)</h4><p className="muted">Synthèse générée à partir des tests et rapports des IA, sans appel IA supplémentaire. Chaque anomalie reste à reproduire.</p><pre className="prewrap" style={{maxHeight:280,overflow:'auto'}}>{r.report.handoff}</pre><Button kind="secondary" onClick={()=>void copyHandoff(chatgptIntro+r.report.handoff)}><Copy size={16}/>Copier pour ChatGPT</Button><Button kind="secondary" onClick={()=>void copyHandoff(claudeCodeIntro+r.report.handoff)}><Copy size={16}/>Copier pour Claude Code</Button></div>}
+    {(r.report.reviewers||[]).map((entry:any,i:number)=><section key={i}><h4>{entry.provider||'Vérificateur'} · {entry.model||entry.role}</h4>{entry.reason&&<p className="muted">Pourquoi : {entry.reason}</p>}{(entry.attempts||[]).length>0&&(entry.relayed||entry.attempts.length>1||entry.error)&&<details open={Boolean(entry.relayed)}><summary>{entry.relayed?'Changement de fournisseur pendant cette vérification':'Tentatives IA'}</summary><ul>{entry.attempts.map((t:any,k:number)=><li key={k}>{t.provider} · {t.model} → {t.outcome==='completed'?'a répondu':t.outcome==='skipped'?'non sollicitée':t.outcome==='interrupted'?'réponse interrompue':'refus'}{t.kind_label?' : '+t.kind_label:''}{t.until?' · nouvel essai possible après '+date(t.until)+(t.until_source==='provider'?' (date du fournisseur)':' (pause d’Atelier)'):''}{t.outcome==='skipped'||t.outcome==='refused'?' — '+t.reason:''}</li>)}</ul></details>}
+     {entry.partial&&<details><summary>Texte partiel conservé (incomplet, à ne pas lire comme un résultat)</summary><pre className="prewrap">{entry.partial.text}</pre></details>}{entry.reasoning&&<p className="muted">Réflexion : {entry.reasoning.effort?({low:'légère',medium:'moyenne',high:'élevée'} as any)[entry.reasoning.effort]:'par défaut du fournisseur'} · {entry.reasoning.reason}</p>}
+     {entry.error?<p>{entry.error}</p>:<><p>{entry.review?.summary}</p>{entry.review?.unstructured&&<details><summary>Réponse à relire</summary><pre className="prewrap">{entry.review.unstructured}</pre></details>}{entry.review?.findings?.length?entry.review.findings.map((f:any,k:number)=><div className="notice" key={k}><strong>{f.severity==='info'?'Information':f.severity} · {f.file}{f.location?' · '+f.location:''}</strong><p>{f.reason}</p>{f.impact&&<p>Conséquence : {f.impact}</p>}<p>À reproduire : {f.reproduction||'non précisé'}</p>{f.fix&&<p>Correction suggérée : {f.fix}</p>}<small className="muted">Piste à confirmer par un test : ce n'est pas un fait établi.</small></div>):<p className="muted">Aucune anomalie étayée dans l'extrait analysé. Ce n'est pas une certification.</p>}</>}
+    </section>)}
+    <small className="muted">{r.report.warning}</small>
+   </div>}
+  </details>)}</div>}
+  </div>
+  {repos.length>0&&<>
+  <details className="fold">
+   <summary className="fold-summary"><strong>Surveillance automatique</strong><small className="muted">{watch?(watch.enabled?'activée':'désactivée')+' · '+(watch.items?.length||0)+' PR ouverte(s)'+(watch.ai_pause?' · IA en pause':''):'état indisponible'}</small></summary>
+   <div className="fold-body">
+   {watch?<>
+    <p className="muted">{watch.enabled?'Activée':'Désactivée'} · portée : {watch.scope==='claude_code'?'Claude Code seulement':'toutes les PR'} · analyses aujourd’hui : {watch.today.repo}{watch.today.limit?'/'+watch.today.limit:' (sans plafond)'} sur ce dépôt ({watch.today.user} pour le compte)</p>
+    {watch.ai_pause&&<p className="notice" role="status"><strong>Toutes les IA sont en pause.</strong> {watch.ai_pause.until?'Reprise automatique prévue vers '+date(watch.ai_pause.until)+(watch.ai_pause.source==='provider'?' (heure indiquée par le fournisseur).':' (pause de prudence d’Atelier : le fournisseur n’a pas donné d’heure).'):'Aucune heure de reprise connue : vérifiez vos connexions IA dans Réglages.'}</p>}
+    {watch.items.length?<ul className="stack">{watch.items.map((p:any)=><li key={p.number}><strong>#{p.number}</strong> {p.title}{p.draft?' (brouillon)':''} · <span className="muted">{p.branch}</span><br/>{p.label}{p.state==='no_ai'&&p.until?' Reprise vers '+date(p.until)+'.':''}</li>)}</ul>:<p className="muted">Aucune PR ouverte venant de ce dépôt.</p>}
+    <p className="muted">{watch.note}</p>
+   </>:<p className="muted">État de la surveillance indisponible.</p>}
+   </div>
+  </details>
+  <details className="fold" open={!configs.length}>
+   <summary className="fold-summary"><strong>Réglages de la chaîne</strong><small className="muted">{(()=>{const sv=configs.find(c=>c.repository_id===repo);return sv?(sv.enabled?'analyse automatique activée':'analyse automatique désactivée')+' · enregistrés':'aucun réglage enregistré';})()}</small></summary>
+   <div className="fold-body">
+    <div className="stack">
     {(()=>{
      const saved=configs.find(c=>c.repository_id===repo);
      const name=(id:string|null|undefined)=>{const c=connections.find(x=>x.id===id);return c?c.label+' · '+c.provider:'connexion introuvable';};
@@ -175,74 +237,36 @@ export function ReviewPanel({project}:{project:string}){
     <label className="check"><input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)}/>J'autorise l'envoi des extraits de code sélectionnés aux API choisies et j'ai vérifié leurs conditions et leur absence de coût supplémentaire.</label>
     <p className="muted">Les secrets, fichiers sensibles et lignes suspectes sont écartés autant que possible, mais cette protection n'est pas infaillible : n'activez pas l'envoi de dépôts contenant des secrets. Atelier ne peut pas vérifier votre facturation fournisseur. Aucun essai payant n'est activé automatiquement.</p>
     <Button disabled={busy||!repo||!primary||!pModel||!consent||Boolean(secondary&&!sModel)} onClick={()=>void act(()=>post('/reviews/configs',{repository_id:repo,primary:{connection_id:primary,model:pModel},secondary:secondary?{connection_id:secondary,model:sModel}:null,enabled,post_comment:postComment,mode,relay,relay_max_attempts:relayMax,auto_scope:autoScope,daily_limit:dailyLimit,no_daily_cap:noCap,auto_mark:enabled&&autoMarkOn&&autoMark.trim()?autoMark.trim():null,share_consent:true}),'Configuration enregistrée.')}>Enregistrer la chaîne</Button>
+    </div>
    </div>
-   <hr/>
-   <h3>Surveillance automatique</h3>
-   {watch?<>
-    <p className="muted">{watch.enabled?'Activée':'Désactivée'} · portée : {watch.scope==='claude_code'?'Claude Code seulement':'toutes les PR'} · analyses aujourd’hui : {watch.today.repo}{watch.today.limit?'/'+watch.today.limit:' (sans plafond)'} sur ce dépôt ({watch.today.user} pour le compte)</p>
-    {watch.ai_pause&&<p className="notice" role="status"><strong>Toutes les IA sont en pause.</strong> {watch.ai_pause.until?'Reprise automatique prévue vers '+date(watch.ai_pause.until)+(watch.ai_pause.source==='provider'?' (heure indiquée par le fournisseur).':' (pause de prudence d’Atelier : le fournisseur n’a pas donné d’heure).'):'Aucune heure de reprise connue : vérifiez vos connexions IA dans Réglages.'}</p>}
-    {watch.items.length?<ul className="stack">{watch.items.map((p:any)=><li key={p.number}><strong>#{p.number}</strong> {p.title}{p.draft?' (brouillon)':''} · <span className="muted">{p.branch}</span><br/>{p.label}{p.state==='no_ai'&&p.until?' Reprise vers '+date(p.until)+'.':''}</li>)}</ul>:<p className="muted">Aucune PR ouverte venant de ce dépôt.</p>}
-    <p className="muted">{watch.note}</p>
-   </>:<p className="muted">État de la surveillance indisponible.</p>}
-   <hr/>
-   <h3>Lancer une analyse maintenant</h3>
-   <Field label="Pull request ouverte"><select value={selectedPR} onChange={e=>setSelectedPR(e.target.value)}><option value="">Choisir la PR</option>{pulls.map(p=>{const w=watch?.items?.find((x:any)=>x.number===p.number);const st=w?(w.state==='analysed'?' · déjà analysé':w.state==='pending'?' · en cours':' · à analyser'):'';return <option key={p.number} value={p.number}>#{p.number} · {p.title} · commit {String(p.sha).slice(0,7)}{p.claude_code?' · Claude Code':''}{st}</option>;})}</select></Field>
-   <Button kind="text" disabled={busy||!repo} onClick={()=>setTick(t=>t+1)}>Actualiser la liste des PR (relit GitHub : nouveaux commits, nouvelles PR)</Button>
-   {!pulls.length&&<p className="muted">Aucune PR ouverte provenant de ce dépôt.</p>}
-   <Button kind="secondary" disabled={busy||!selectedPR||!configs.some(c=>c.repository_id===repo)} onClick={()=>void(async()=>{setBusy(true);setError(null);setNotice('');try{const res=await post('/reviews/start',{repository_id:repo,pr_number:Number(selectedPR)});setNotice((res.title?'PR « '+res.title+' », commit '+String(res.sha).slice(0,7)+' : ':'')+(res.message||(res.queued?'Analyse demandée.':'Aucune analyse créée.'))+(res.until?' Reprise prévue vers '+date(res.until)+(res.until_source==='provider'?' (heure indiquée par le fournisseur).':' (pause de prudence d’Atelier).'):''));setTick(t=>t+1);await load();}catch(e){setError(e);}finally{setBusy(false);}})()}>Analyser cette PR</Button>
+  </details>
   </>}
-  <hr/>
-  <h3>Disponibilité de vos IA</h3>
-  {!connections.length?<p className="muted">Aucune IA connectée.</p>:<div className="stack">{connections.map(c=>{
-   const nowIso=new Date().toISOString(),holds=Object.entries((()=>{try{const q=typeof c.quota==='string'?JSON.parse(c.quota):c.quota;return q?.holds||{};}catch{return {};}})()) as [string,any][];
-   const a=availabilityOf(c,{model:c.models?.[0],now:nowIso});
-   return <article className="panel" key={c.id}>
-    <strong>{c.label} · {c.provider}</strong>
-    <p>{a.usable?'Disponible':a.state==='blocked'?'Action requise de votre part':a.state==='held'?'Temporairement limitée':'Indisponible'} · {a.reason}</p>
-    {a.until&&<p className="muted">Nouvel essai possible après {date(a.until)} · {a.until_source==='provider'?'date indiquée par le fournisseur':'pause de prudence d’Atelier (aucune date fournie par le fournisseur)'}.</p>}
-    {holds.filter(([,h])=>h.hold_until&&Date.parse(h.hold_until)>Date.now()).map(([model,h])=><p className="muted" key={model}>Modèle {model} : {h.label}.</p>)}
-    <p className="muted">{a.quota_known?'Limites connues du fournisseur : '+(a.known.remaining_requests!==undefined?a.known.remaining_requests+' requête(s) restante(s) ':'')+(a.known.remaining_tokens!==undefined?a.known.remaining_tokens+' jeton(s) restant(s)':'')+(Object.keys(a.known).length?'':'aucun compteur renvoyé.'):'Quota restant : inconnu (aucune information fiable du fournisseur).'}</p>
-   </article>;})}</div>}
+  <details className="fold" open={!repos.length||!connections.length||!configs.length}>
+   <summary className="fold-summary"><strong>Installation simplifiée</strong><small className="muted">{repos.length?'dépôt associé':'dépôt à relier'} · {connections.length} IA autorisée(s) · {configs.length?'chaîne configurée':'chaîne à configurer'}</small></summary>
+   <div className="fold-body">
+   <p>Atelier détecte les connexions déjà autorisées et prépare les IA automatiquement. Tu n'as pas à choisir les modèles un par un. Aucun appel IA n'est déclenché avant ton consentement.</p>
+   <p><strong>1. GitHub :</strong> {repos.length?'Dépôt déjà associé.':githubConnections.length?'Connexion GitHub disponible.':'Connexion GitHub manquante dans Atelier.'}</p>
+   {!repos.length&&githubConnections.length>0&&<Button kind="secondary" disabled={busy} onClick={()=>void linkRecipeRepo()}>Relier mon Livre de recettes automatiquement</Button>}
+   {!repos.length&&!githubConnections.length&&<p className="muted">Une seule opération nécessaire : ajouter un jeton GitHub limité au dépôt dans Réglages → Connexions. L'accès GitHub de ChatGPT n'est pas transférable à Atelier.</p>}
+   <p><strong>2. IA :</strong> {connections.length?connections.length+' connexion(s) déjà autorisée(s).':'Aucune API IA disponible.'}</p>
+   {suggestion.primary&&<p className="muted">Sélection proposée : {connections.find(c=>c.id===suggestion.primary?.connection_id)?.label} · {suggestion.primary.model}{suggestion.secondary?' + '+connections.find(c=>c.id===suggestion.secondary?.connection_id)?.label+' · '+suggestion.secondary.model:''}. Cette suggestion n'est pas une garantie de gratuité.</p>}
+   {!connections.length&&<div className="stack">
+    <Field label="Clé Mistral Studio déjà autorisée"><input type="password" autoComplete="off" value={apiKey} onChange={e=>setApiKey(e.target.value)} placeholder="Coller la clé directement dans Atelier"/></Field>
+    <label className="check"><input type="checkbox" checked={apiAgree} onChange={e=>setApiAgree(e.target.checked)}/>J'ai vérifié mon éligibilité aux conditions d'accès et confirmé que cette clé est utilisable sans paiement.</label>
+    <Button kind="secondary" disabled={busy||!apiAgree||apiKey.trim().length<10} onClick={()=>void connectMistral()}>Enregistrer et tester cette connexion</Button>
+    <p className="muted">La clé sera stockée chiffrée par Atelier. Ne la partage jamais dans une conversation ni dans GitHub. Les autres fournisseurs peuvent être configurés dans Réglages → Connexions selon les conditions de ton compte.</p>
+   </div>}
+   <p><strong>3. Vérifications :</strong> {configs.length?'Une configuration de revue existe déjà.':'Choisis une fois tes plafonds, puis enregistre la chaîne.'}</p>
+   </div>
+  </details>
+  <details className="fold">
+   <summary className="fold-summary"><strong>Consommation et notifications</strong><small className="muted">{usage?.items?.length?usage.items.length+' ligne(s) sur 30 jours':'aucun appel IA enregistré'}</small></summary>
+   <div className="fold-body">
   {usage&&<><h3>Consommation observée par Atelier (30 jours)</h3><p className="muted">{usage.note}</p>
    {!usage.items.length?<p className="muted">Aucun appel IA enregistré.</p>:<div className="stack">{usage.items.map((u:any,i:number)=><p key={i}>{u.provider} · {u.model} · {u.task_kind==='review'?'revue':u.task_kind} : {u.calls} appel(s), {u.completed||0} terminé(s), {u.refused||0} refusé(s), {u.interrupted||0} interrompu(s) · jetons : {u.input_tokens===null?'inconnus':(u.input_tokens||0)+' entrée / '+(u.output_tokens||0)+' sortie'}{u.unknown_token_calls?' (+ '+u.unknown_token_calls+' appel(s) sans compteur)':''}</p>)}</div>}</>}
   {notifyState==='default'&&<Button kind="secondary" onClick={()=>void Notification.requestPermission().then(p=>setNotifyState(p))}>Activer les notifications du navigateur</Button>}
   {notifyState==='granted'&&<p className="muted">Notifications du navigateur actives tant qu'Atelier est ouvert. Elles ne remplacent pas une notification poussée sur téléphone, non disponible pour l'instant ; l'écran Activité conserve toutes les alertes.</p>}
-  <hr/>
-  <h3>Rapports récents</h3>
-  {!runs.length?<p className="muted">Aucune analyse réalisée pour ce projet.</p>:<div className="stack">{runs.map(r=><details className="panel run-card" key={r.id}>
-   <summary className="run-summary"><span className="run-icon">{r.status==='completed'?<CheckCircle2 size={18}/>:<ShieldAlert size={18}/>}</span><span className="run-main"><strong>{r.full_name} · PR #{r.pr_number}</strong><small className="muted">{date(r.created_at)} · {r.status==='queued'&&r.report?.waiting?'En pause : reprise automatique prévue':(statuses[r.status]||r.status)}{r.report?.needs_user?.length?' · à faire de votre part':''}</small></span></summary>
-   <p className="muted">Commit {r.head_sha.slice(0,8)}</p>
-   {r.error&&<p className="muted">{r.error}</p>}
-   {r.diagnostic&&<details open><summary>Diagnostic de l’interruption</summary><ul>
-    <li>PR #{r.pr_number} · commit {r.head_sha}</li>
-    <li>Dernière étape réussie : {r.diagnostic.last_ok_stage||'aucune'} · Étape en échec : {r.diagnostic.stage}</li>
-    <li>Catégorie : {r.diagnostic.category} · code {r.diagnostic.code}{r.diagnostic.provider?' · '+r.diagnostic.provider:''}</li>
-    <li>Appel IA : {r.diagnostic.ai_result==='unknown'?'commencé, résultat inconnu':r.diagnostic.ai_started?'commencé, aucune génération reçue':'non effectué'}</li>
-    <li>Nouvelle tentative : {r.diagnostic.retry_allowed?'possible (manuelle)':'non autorisée sans intervention'}</li>
-   </ul></details>}
-   {r.status==='interrupted'&&<div className="stack">
-    {(!r.diagnostic||!r.diagnostic.retry_allowed)&&<p className="notice">{r.diagnostic?'La reprise n’est pas jugée sûre (résultat IA incertain ou accès à corriger). ':'Cette analyse est antérieure au diagnostic détaillé : un appel IA a pu avoir lieu. '}Relancer peut consommer du quota du fournisseur.</p>}
-    <Button kind="secondary" disabled={busy} onClick={()=>void act(()=>post('/reviews/runs/'+r.id+'/retry',{acknowledge_uncertain:!r.diagnostic||!r.diagnostic.retry_allowed}),'Reprise demandée. Actualisez dans quelques instants.')}>Relancer cette analyse{(!r.diagnostic||!r.diagnostic.retry_allowed)?' (je confirme)':''}</Button>
-   </div>}
-   {(r.status==='completed'||r.status==='partial')&&r.report?.handoff&&!r.report?.comment?.posted&&<Button kind="secondary" disabled={busy} onClick={()=>void act(async()=>{const res=await post('/reviews/runs/'+r.id+'/publish',{});if(!res.comment?.posted)throw new Error(res.comment?.message||'Publication impossible.');},'Dossier publié sur la PR : Claude Code et ChatGPT peuvent le lire.')}>Publier ce rapport sur la PR (Claude Code et ChatGPT)</Button>}
-   {r.report?.comment&&<p className="notice">{r.report.comment.posted?'Dossier publié sur la PR : ':'Commentaires non publiés. '}{r.report.comment.urls?.claude_code&&<><a href={r.report.comment.urls.claude_code} target="_blank" rel="noreferrer">pour Claude Code</a> </>}{r.report.comment.urls?.chatgpt&&<><a href={r.report.comment.urls.chatgpt} target="_blank" rel="noreferrer">pour ChatGPT</a> </>}{!r.report.comment.urls&&r.report.comment.url&&<a href={r.report.comment.url} target="_blank" rel="noreferrer">ouvrir sur GitHub</a>}{r.report.comment.message}</p>}
-   {r.report?.plan&&<details open><summary>Plan de vérification · {r.report.plan.summary}</summary>{(r.report.plan.skipped||[]).length>0&&<ul>{r.report.plan.skipped.map((x:any,i:number)=><li key={i}>Non sollicité : {x.reason}</li>)}</ul>}</details>}
-   {r.report?.waiting&&<p className="notice" role="status">Limite d'utilisation atteinte. Reprise automatique prévue vers {date(r.report.waiting.until)} ({r.report.waiting.source==='provider'?'date indiquée par le fournisseur':'pause de prudence d’Atelier : aucune date fournie par le fournisseur'}) · reprise {r.report.waiting.resumes}/{r.report.waiting.max_resumes}. Seules les vérifications non terminées seront refaites.</p>}
-   {r.report?.needs_user?.length>0&&<div className="notice" role="status"><strong>À faire de votre part (Atelier continue les autres travaux en attendant)</strong><ul>{r.report.needs_user.map((t:any,i:number)=><li key={i}>{t.what} — {t.action}</li>)}</ul>{r.status==='partial'&&<Button kind="secondary" disabled={busy} onClick={()=>void act(()=>post('/reviews/runs/'+r.id+'/resume',{}),'Reprise demandée : seules les vérifications non terminées seront refaites.')}>J'ai validé, reprendre</Button>}</div>}
-   {r.report?.checks_unavailable&&<p className="notice">Tests GitHub non lus : {r.report.checks_unavailable}</p>}
-   {r.report&&<div className="stack">
-    <p>Risque : <strong>{r.report.risk}</strong> · Tests GitHub consultés : {r.report.checks?.length||0} {r.report.checks_partial?'(liste incomplète)':''}</p>
-    {r.report.coverage&&<p>Couverture du diff : <strong>{r.report.coverage.percent} %</strong>{r.report.coverage.code_percent!=null&&<> (code source modifié : <strong>{r.report.coverage.code_percent} %</strong>)</>} · {r.report.coverage.included} fichier(s) lu(s), {r.report.coverage.excluded} non lu(s).{r.report.coverage.complete?'':' Diff incomplet : la conclusion ne couvre pas les fichiers non lus.'}</p>}
-    {r.report.coverage&&!r.report.coverage.complete&&<details><summary>Fichiers non lus ou tronqués</summary><ul>{(r.report.coverage.files||[]).filter((f:any)=>f.state!=='full'&&!/sensible/.test(f.reason||'')).map((f:any,i:number)=><li key={i}>{f.name} · {f.state==='truncated'?'tronqué':'non lu'}{f.reason?' ('+f.reason+')':''}</li>)}</ul></details>}
-    {(r.report.disagreements||[]).length>0&&<div className="notice"><strong>Désaccords entre les IA</strong><ul>{r.report.disagreements.map((d:string,i:number)=><li key={i}>{d}</li>)}</ul></div>}
-    {(r.report.not_verified||[]).length>0&&<details><summary>Ce qui n’a pas été vérifié</summary><ul>{r.report.not_verified.map((d:string,i:number)=><li key={i}>{d}</li>)}</ul></details>}
-    {r.report.handoff&&<div className="stack"><h4>Dossier de transmission (ChatGPT ou Claude Code)</h4><p className="muted">Synthèse générée à partir des tests et rapports des IA, sans appel IA supplémentaire. Chaque anomalie reste à reproduire.</p><pre className="prewrap" style={{maxHeight:280,overflow:'auto'}}>{r.report.handoff}</pre><Button kind="secondary" onClick={()=>void copyHandoff(chatgptIntro+r.report.handoff)}><Copy size={16}/>Copier pour ChatGPT</Button><Button kind="secondary" onClick={()=>void copyHandoff(claudeCodeIntro+r.report.handoff)}><Copy size={16}/>Copier pour Claude Code</Button></div>}
-    {(r.report.reviewers||[]).map((entry:any,i:number)=><section key={i}><h4>{entry.provider||'Vérificateur'} · {entry.model||entry.role}</h4>{entry.reason&&<p className="muted">Pourquoi : {entry.reason}</p>}{(entry.attempts||[]).length>0&&(entry.relayed||entry.attempts.length>1||entry.error)&&<details open={Boolean(entry.relayed)}><summary>{entry.relayed?'Changement de fournisseur pendant cette vérification':'Tentatives IA'}</summary><ul>{entry.attempts.map((t:any,k:number)=><li key={k}>{t.provider} · {t.model} → {t.outcome==='completed'?'a répondu':t.outcome==='skipped'?'non sollicitée':t.outcome==='interrupted'?'réponse interrompue':'refus'}{t.kind_label?' : '+t.kind_label:''}{t.until?' · nouvel essai possible après '+date(t.until)+(t.until_source==='provider'?' (date du fournisseur)':' (pause d’Atelier)'):''}{t.outcome==='skipped'||t.outcome==='refused'?' — '+t.reason:''}</li>)}</ul></details>}
-     {entry.partial&&<details><summary>Texte partiel conservé (incomplet, à ne pas lire comme un résultat)</summary><pre className="prewrap">{entry.partial.text}</pre></details>}{entry.reasoning&&<p className="muted">Réflexion : {entry.reasoning.effort?({low:'légère',medium:'moyenne',high:'élevée'} as any)[entry.reasoning.effort]:'par défaut du fournisseur'} · {entry.reasoning.reason}</p>}
-     {entry.error?<p>{entry.error}</p>:<><p>{entry.review?.summary}</p>{entry.review?.unstructured&&<details><summary>Réponse à relire</summary><pre className="prewrap">{entry.review.unstructured}</pre></details>}{entry.review?.findings?.length?entry.review.findings.map((f:any,k:number)=><div className="notice" key={k}><strong>{f.severity==='info'?'Information':f.severity} · {f.file}{f.location?' · '+f.location:''}</strong><p>{f.reason}</p>{f.impact&&<p>Conséquence : {f.impact}</p>}<p>À reproduire : {f.reproduction||'non précisé'}</p>{f.fix&&<p>Correction suggérée : {f.fix}</p>}<small className="muted">Piste à confirmer par un test : ce n'est pas un fait établi.</small></div>):<p className="muted">Aucune anomalie étayée dans l'extrait analysé. Ce n'est pas une certification.</p>}</>}
-    </section>)}
-    <small className="muted">{r.report.warning}</small>
-   </div>}
-  </details>)}</div>}
+   </div>
+  </details>
  </section>;
 }
