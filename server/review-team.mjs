@@ -71,6 +71,7 @@ export function reviewHandoff(result){
   cov?'Couverture du diff : '+cov.included+' fichier(s) lu(s), '+cov.excluded+' exclu(s), '+cov.redacted+' ligne(s) masquée(s)'+(cov.complete?'.':' — diff incomplet.'):'',
   result.files_partial||result.checks_partial?'Couverture GitHub partielle : vérifier le diff et les contrôles manquants.':'',
   testsLine,
+  result.plan?String(result.plan.summary||'')+(result.plan.skipped||[]).map(x=>'\n   Non sollicité : '+x.reason).join(''):'',
   findings.length?'Anomalies IA proposées à reproduire et corriger :':'Aucune anomalie IA étayée sur le diff transmis.',
   ...findings.slice(0,20).map((f,i)=>(i+1)+'. ['+f.severity+'] '+f.file+' — '+f.reason+'\n   Reproduction : '+f.reproduction+' ; source : '+f.sources.join(', ')+(f.sources.length>1?' (concordance de plusieurs IA, non une preuve)':' (une seule IA)')),
   failed.length?'Une ou plusieurs IA n’ont pas terminé leur analyse : ne pas conclure à partir des seules analyses disponibles.':'',

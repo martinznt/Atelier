@@ -12,7 +12,7 @@ export function ReviewPanel({project}:{project:string}){
  const [configs,setConfigs]=useState<any[]>([]),[runs,setRuns]=useState<any[]>([]);
  const [repo,setRepo]=useState(''),[primary,setPrimary]=useState(''),[pModel,setPModel]=useState('');
  const [secondary,setSecondary]=useState(''),[sModel,setSModel]=useState('');
- const [postComment,setPostComment]=useState(false),[enabled,setEnabled]=useState(false),[consent,setConsent]=useState(false),[dailyLimit,setDailyLimit]=useState(2);
+ const [mode,setMode]=useState('equilibre'),[postComment,setPostComment]=useState(false),[enabled,setEnabled]=useState(false),[consent,setConsent]=useState(false),[dailyLimit,setDailyLimit]=useState(2);
  const [pulls,setPulls]=useState<any[]>([]),[selectedPR,setSelectedPR]=useState('');
  const [busy,setBusy]=useState(false),[error,setError]=useState<unknown>(null),[notice,setNotice]=useState('');
  const load=async()=>{
@@ -28,7 +28,7 @@ export function ReviewPanel({project}:{project:string}){
   setRepo(prev=>prev||r.items[0]?.id||'');
  };
  useEffect(()=>{void load().catch(setError);const timer=setInterval(()=>{if(!document.hidden&&navigator.onLine)void api('/reviews/runs?project='+encodeURIComponent(project)).then(r=>setRuns(r.items)).catch(()=>{});},15000);return()=>clearInterval(timer);},[project]);
- useEffect(()=>{if(!repo){setPulls([]);return;}void api('/reviews/pulls?repository_id='+encodeURIComponent(repo)).then(r=>{setPulls(r.items);setSelectedPR(p=>p||String(r.items[0]?.number||''));}).catch(setError);const cfg=configs.find(c=>c.repository_id===repo);if(cfg){setPrimary(cfg.primary_connection_id);setPModel(cfg.primary_model);setSecondary(cfg.secondary_connection_id||'');setSModel(cfg.secondary_model||'');setEnabled(Boolean(cfg.enabled));setPostComment(Boolean(cfg.post_comment));setConsent(Boolean(cfg.consent));setDailyLimit(cfg.daily_limit||2);}},[repo,configs]);
+ useEffect(()=>{if(!repo){setPulls([]);return;}void api('/reviews/pulls?repository_id='+encodeURIComponent(repo)).then(r=>{setPulls(r.items);setSelectedPR(p=>p||String(r.items[0]?.number||''));}).catch(setError);const cfg=configs.find(c=>c.repository_id===repo);if(cfg){setPrimary(cfg.primary_connection_id);setPModel(cfg.primary_model);setSecondary(cfg.secondary_connection_id||'');setSModel(cfg.secondary_model||'');setEnabled(Boolean(cfg.enabled));setPostComment(Boolean(cfg.post_comment));setMode(cfg.review_mode||'equilibre');setConsent(Boolean(cfg.consent));setDailyLimit(cfg.daily_limit||2);}},[repo,configs]);
  useEffect(()=>{
   if(!connections.length||configs.some(c=>c.repository_id===repo))return;
   const suggestions=recommendedReviewTeam(connections);
@@ -100,12 +100,20 @@ export function ReviewPanel({project}:{project:string}){
      <select value={secondary} onChange={e=>choose(setSecondary,setSModel,e.target.value)}><option value="">Aucune, économiser le quota</option>{connections.filter(c=>c.id!==primary).map(c=><option key={c.id} value={c.id}>{c.label} · {c.provider}</option>)}</select>
     </Field>
     {sConn&&<Field label="Modèle de relecture"><select value={sModel} onChange={e=>setSModel(e.target.value)}>{sConn.models.map((m:string)=><option key={m} value={m}>{m}</option>)}</select></Field>}
+    <Field label="Mode de revue">
+     <select value={mode} onChange={e=>setMode(e.target.value)}>
+      <option value="economique">Économique · aucune IA si le changement est simple et les tests GitHub ont réussi, sinon une seule IA</option>
+      <option value="equilibre">Équilibré · une IA, plus une relecture indépendante si le changement est fonctionnel ou sensible</option>
+      <option value="approfondi">Approfondi · vérifications spécialisées (logique, sécurité, tests) seulement quand elles ajoutent une couverture</option>
+     </select>
+    </Field>
+    <p className="muted">Atelier n'utilise que les IA que vous avez choisies et ne bascule jamais vers une autre IA ou une offre payante sans votre accord. Les raisons de chaque choix sont affichées dans le rapport.</p>
     <Field label="Maximum d'analyses par jour pour ce dépôt"><select value={dailyLimit} onChange={e=>setDailyLimit(Number(e.target.value))}><option value={1}>1 par jour · économie maximale</option><option value={2}>2 par jour · recommandé</option><option value={4}>4 par jour · vérifications fréquentes</option></select></Field>
     <label className="check"><input type="checkbox" checked={enabled} onChange={e=>setEnabled(e.target.checked)}/>Analyser automatiquement les nouveaux commits des PR, dans le plafond journalier (8 maximum par compte).</label>
     <label className="check"><input type="checkbox" checked={postComment} onChange={e=>setPostComment(e.target.checked)}/>Publier le dossier de revue en commentaire de la PR. Nécessite un accès GitHub autorisé en « écriture » dans Atelier, limité aux commentaires côté GitHub. Le commentaire est visible par toutes les personnes ayant accès au dépôt. Aucun agent (Claude Code, ChatGPT) n'est lancé automatiquement.</label>
     <label className="check"><input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)}/>J'autorise l'envoi des extraits de code sélectionnés aux API choisies et j'ai vérifié leurs conditions et leur absence de coût supplémentaire.</label>
     <p className="muted">Les secrets, fichiers sensibles et lignes suspectes sont écartés autant que possible, mais cette protection n'est pas infaillible : n'activez pas l'envoi de dépôts contenant des secrets. Atelier ne peut pas vérifier votre facturation fournisseur. Aucun essai payant n'est activé automatiquement.</p>
-    <Button disabled={busy||!repo||!primary||!pModel||!consent||Boolean(secondary&&!sModel)} onClick={()=>void act(()=>post('/reviews/configs',{repository_id:repo,primary:{connection_id:primary,model:pModel},secondary:secondary?{connection_id:secondary,model:sModel}:null,enabled,post_comment:postComment,daily_limit:dailyLimit,share_consent:true}),'Configuration enregistrée.')}>Enregistrer la chaîne</Button>
+    <Button disabled={busy||!repo||!primary||!pModel||!consent||Boolean(secondary&&!sModel)} onClick={()=>void act(()=>post('/reviews/configs',{repository_id:repo,primary:{connection_id:primary,model:pModel},secondary:secondary?{connection_id:secondary,model:sModel}:null,enabled,post_comment:postComment,mode,daily_limit:dailyLimit,share_consent:true}),'Configuration enregistrée.')}>Enregistrer la chaîne</Button>
    </div>
    <hr/>
    <h3>Lancer une analyse maintenant</h3>
@@ -130,11 +138,12 @@ export function ReviewPanel({project}:{project:string}){
     <Button kind="secondary" disabled={busy} onClick={()=>void act(()=>post('/reviews/runs/'+r.id+'/retry',{acknowledge_uncertain:!r.diagnostic||!r.diagnostic.retry_allowed}),'Reprise demandée. Actualisez dans quelques instants.')}>Relancer cette analyse{(!r.diagnostic||!r.diagnostic.retry_allowed)?' (je confirme)':''}</Button>
    </div>}
    {r.report?.comment&&(r.report.comment.posted?<p className="notice">Dossier publié en commentaire de la PR{r.report.comment.url?<> : <a href={r.report.comment.url} target="_blank" rel="noreferrer">ouvrir sur GitHub</a></>:null}.</p>:<p className="notice">{r.report.comment.message}</p>)}
+   {r.report?.plan&&<details open><summary>Plan de vérification · {r.report.plan.summary}</summary>{(r.report.plan.skipped||[]).length>0&&<ul>{r.report.plan.skipped.map((x:any,i:number)=><li key={i}>Non sollicité : {x.reason}</li>)}</ul>}</details>}
    {r.report?.checks_unavailable&&<p className="notice">Tests GitHub non lus : {r.report.checks_unavailable}</p>}
    {r.report&&<div className="stack">
     <p>Risque : <strong>{r.report.risk}</strong> · Tests GitHub consultés : {r.report.checks?.length||0} {r.report.checks_partial?'(liste incomplète)':''}</p>
     {r.report.handoff&&<div className="stack"><h4>Dossier de transmission (ChatGPT ou Claude Code)</h4><p className="muted">Synthèse générée à partir des tests et rapports des IA, sans appel IA supplémentaire. Chaque anomalie reste à reproduire.</p><pre className="prewrap" style={{maxHeight:280,overflow:'auto'}}>{r.report.handoff}</pre><Button kind="secondary" onClick={()=>void copyHandoff('Je te transmets un dossier de revue de PR généré par Atelier. Tu n’as pas accès à mon dépôt : donne un avis indépendant sur l’architecture, l’ergonomie et les risques, et réponds aux questions finales. Ne suppose pas que les anomalies sont prouvées.\n\n'+r.report.handoff)}><Copy size={16}/>Copier pour ChatGPT</Button><Button kind="secondary" onClick={()=>void copyHandoff('Reprends ce dossier de revue de PR généré par Atelier. Reproduis chaque anomalie par un test avant de corriger, puis lance les tests ciblés et la CI.\n\n'+r.report.handoff)}><Copy size={16}/>Copier pour Claude Code</Button></div>}
-    {(r.report.reviewers||[]).map((entry:any,i:number)=><section key={i}><h4>{entry.provider||'Vérificateur'} · {entry.model||entry.role}</h4>
+    {(r.report.reviewers||[]).map((entry:any,i:number)=><section key={i}><h4>{entry.provider||'Vérificateur'} · {entry.model||entry.role}</h4>{entry.reason&&<p className="muted">Pourquoi : {entry.reason}</p>}{entry.reasoning&&<p className="muted">Réflexion : {entry.reasoning.effort?({low:'légère',medium:'moyenne',high:'élevée'} as any)[entry.reasoning.effort]:'par défaut du fournisseur'} · {entry.reasoning.reason}</p>}
      {entry.error?<p>{entry.error}</p>:<><p>{entry.review?.summary}</p>{entry.review?.unstructured&&<details><summary>Réponse à relire</summary><pre className="prewrap">{entry.review.unstructured}</pre></details>}{entry.review?.findings?.length?entry.review.findings.map((f:any,k:number)=><div className="notice" key={k}><strong>{f.severity} · {f.file}</strong><p>{f.reason}</p><p>À reproduire : {f.reproduction}</p></div>):<p className="muted">Aucune anomalie étayée dans l'extrait analysé. Ce n'est pas une certification.</p>}</>}
     </section>)}
     <small className="muted">{r.report.warning}</small>

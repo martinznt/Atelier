@@ -17,12 +17,12 @@ async function* sse(response:Response):AsyncGenerator<any> {
  if(buffer.length>2000000)throw new ProviderError(413,'stream_too_large');if(done)break;}}
  finally{await reader.cancel().catch(()=>{});}
 }
-export async function* generate(provider:string,secret:string,model:string,messages:AIMessage[],maxTokens:number,signal:AbortSignal):AsyncGenerator<Delta>{
+export async function* generate(provider:string,secret:string,model:string,messages:AIMessage[],maxTokens:number,signal:AbortSignal,options:{reasoningEffort?:'low'|'medium'|'high'}={}):AsyncGenerator<Delta>{
  let path:string,body:any;
  if(provider==='openai'){path='/v1/responses';body={model,input:messages,max_output_tokens:maxTokens,stream:true,store:false};}
  else if(provider==='anthropic'){path='/v1/messages';body={model,messages,max_tokens:maxTokens,stream:true};}
  else if(provider==='mistral'){path='/v1/chat/completions';body={model,messages,max_tokens:maxTokens,stream:true};}
- else if(provider==='groq'){path='/openai/v1/chat/completions';body={model,messages,max_completion_tokens:maxTokens,stream:true,stream_options:{include_usage:true}};}
+ else if(provider==='groq'){path='/openai/v1/chat/completions';body={model,messages,max_completion_tokens:maxTokens,stream:true,stream_options:{include_usage:true}};if(options.reasoningEffort)body.reasoning_effort=options.reasoningEffort;}
  else if(provider==='gemini'){path=`/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`;body={contents:messages.map(m=>({role:m.role==='assistant'?'model':'user',parts:[{text:m.content}]})),generationConfig:{maxOutputTokens:maxTokens}};}
  else throw new ProviderError(400,'unsupported');
  const response=await request(provider,secret,path,{method:'POST',body:JSON.stringify(body),signal});yield {quota:quotaHeaders(response.headers)};

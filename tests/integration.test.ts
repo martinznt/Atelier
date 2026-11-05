@@ -273,6 +273,17 @@ describe('configuration IA : limite gratuite, connexion validée et isolation',(
   expect(read.status).toBe(200);expect(read.body.items).toHaveLength(1);
   expect(read.body.items[0].daily_limit).toBe(2);
   expect(read.body.items[0].enabled).toBe(0);
+  // Mode de revue : 'equilibre' par défaut (comportement antérieur), modes valides persistés, valeur inconnue refusée.
+  expect(read.body.items[0].review_mode).toBe('equilibre');expect(read.body.items[0].post_comment).toBe(0);
+  expect((await json('/reviews/configs','POST',{...input,mode:'turbo'},cookie)).status).toBe(400);
+  for(const mode of ['approfondi','economique']){
+   expect((await json('/reviews/configs','POST',{...input,mode},cookie)).status).toBe(200);
+   expect((await json('/reviews/configs?project='+ownProject.body.id,'GET',undefined,cookie)).body.items[0].review_mode).toBe(mode);
+  }
+  expect((await json('/reviews/configs','POST',input,cookie)).status).toBe(200);
+  // Commentaire de PR : refusé tant que la connexion GitHub n'a pas l'accès « write » dans Atelier.
+  expect((await json('/reviews/configs','POST',{...input,post_comment:true},cookie)).status).toBe(403);
+  expect((await json('/reviews/configs?project='+ownProject.body.id,'GET',undefined,cookie)).body.items[0].post_comment).toBe(0);
   expect((await call('/reviews/configs?project='+ownProject.body.id,'GET',undefined,b)).status).toBe(404);
   const config=read.body.items[0];
   const minimalRepo={id:repoId,user_id:registration.body.user.id,project_id:ownProject.body.id,connection_id:gh.body.id,full_name:'martinznt/Livre-de-recettes'};

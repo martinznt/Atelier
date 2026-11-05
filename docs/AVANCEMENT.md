@@ -484,3 +484,15 @@ Ne pas y brancher de ressources de production ; option : désactiver les builds 
 (conditions officielles non lues : domaines bloqués dans l'environnement de développement) ; activation automatique des revues (à faire par le propriétaire après validation).
 **À ne pas faire** : remplacer MASTER_KEY, recréer D1, copier une clé d'un autre projet, présenter une estimation comme un quota officiel.
 Tests : `tsc --noEmit`, `npx vitest run` (32), `npm run test:regressions`, `node --experimental-strip-types tests/<fichier>.test.mjs`.
+
+## Modes de revue et réflexion automatique (5 novembre 2026)
+- Migration additive `0012_review_mode.sql` : `review_configs.review_mode` (`economique` | `equilibre` | `approfondi`, défaut `equilibre` = comportement antérieur).
+  Enregistrement tolérant si 0011/0012 manquent ; une option qui exige la colonne absente renvoie un 409 explicite.
+- `server/review-plan.ts` (pur, testé) : économique = aucune IA si changement simple et tests GitHub tous verts, sinon une seule IA ;
+  équilibré = IA 1 + relecture indépendante si non simple ; approfondi = logique + sécurité + tests, uniquement si le diff le justifie.
+  Une IA qui a signalé une limite n'est pas appelée et rien n'est substitué automatiquement. Chaque choix a une raison affichée dans le rapport.
+- `server/review-effort.ts` (pur, testé) : niveau de réflexion automatique (risque × mode × rôle). `reasoning_effort` n'est envoyé que pour
+  Groq `openai/gpt-oss-20b|120b` (source : console.groq.com/docs/reasoning, lue le 5/11/2026 : low|medium|high). Autres modèles : défaut du fournisseur.
+  Le budget de sortie grandit avec le niveau (les jetons de réflexion font partie des jetons de sortie d'après la même page).
+- Non fait : sélection automatique du modèle selon les quotas réels ; niveaux de réflexion pour Gemini/OpenAI/Anthropic/Mistral (paramètres non vérifiés) ;
+  niveaux automatiques pour les discussions hors revue.

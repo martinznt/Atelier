@@ -10,18 +10,20 @@ import {fail,jsonBody,many,now,one,owned,run,uid,userId} from './core.ts';
 import {reviewPrompt,parseReviewResult,reviewRisk,type ReviewFile,type ReviewCheck} from './review-core.ts';
 import {buildDiagnostic,type Stage} from './review-diagnostics.ts';
 import {postReviewComment,commentFailureMessage} from './review-comment.ts';
+import {planReview,REVIEW_MODES,type ReviewMode} from './review-plan.ts';
+import {reviewEffort} from './review-effort.ts';
 import type {AppEnv,Env} from './types.ts';
 
 /* Seules les connexions autorisées et testées par l’utilisateur sont acceptées. */
 const aiChoice=z.object({connection_id:z.string().uuid(),model:z.string().min(1).max(160)});
 const configuration=z.object({
  repository_id:z.string().uuid(),primary:aiChoice,secondary:aiChoice.nullable().default(null),
- enabled:z.boolean().default(false),post_comment:z.boolean().default(false),daily_limit:z.number().int().min(1).max(4).default(2),share_consent:z.literal(true)
+ enabled:z.boolean().default(false),post_comment:z.boolean().default(false),mode:z.enum(['economique','equilibre','approfondi']).default('equilibre'),daily_limit:z.number().int().min(1).max(4).default(2),share_consent:z.literal(true)
 });
 const prInput=z.object({repository_id:z.string().uuid(),pr_number:z.number().int().positive().max(10000000)});
 export const reviews=new Hono<AppEnv>();
 
-type Conf={id:string;user_id:string;project_id:string;repository_id:string;primary_connection_id:string;primary_model:string;secondary_connection_id:string|null;secondary_model:string|null;enabled:number;consent:number;daily_limit:number;post_comment?:number};
+type Conf={id:string;user_id:string;project_id:string;repository_id:string;primary_connection_id:string;primary_model:string;secondary_connection_id:string|null;secondary_model:string|null;enabled:number;consent:number;daily_limit:number;post_comment?:number;review_mode?:string};
 type Repo={id:string;user_id:string;project_id:string;connection_id:string;full_name:string};
 type ReviewRun={id:string;user_id:string;project_id:string;repository_id:string;pr_number:number;head_sha:string;status:string;diagnostic?:string|null};
 async function getRepo(env:Env,id:string,user:string){
@@ -81,16 +83,23 @@ reviews.post('/configs',async c=>{
  await checkChoice(c.env,user,input.primary);
  if(input.secondary){if(input.secondary.connection_id===input.primary.connection_id)fail(400,'Choisissez deux connexions indépendantes.');await checkChoice(c.env,user,input.secondary);}
  const at=now();
- const baseArgs=[uid(),user,repo.project_id,repo.id,input.primary.connection_id,input.primary.model,input.secondary?.connection_id||null,input.secondary?.model||null,Number(input.enabled),at,at,input.daily_limit] as const;
+ const baseArgs=[uid(),user,repo.project_id,repo.id,input.primary.connection_id,input.primary.model,input.secondary?.connection_id||null,input.secondary?.model||null,Number(input.enabled),at,at,input.daily_limit];
  if(input.post_comment){
   // La publication de commentaires exige un accès GitHub explicitement autorisé en écriture dans Atelier.
   await credentialsFor(c.env,repo.connection_id,user,'write');
  }
- try{await run(c.env,"INSERT INTO review_configs(id,user_id,project_id,repository_id,primary_connection_id,primary_model,secondary_connection_id,secondary_model,enabled,consent,created_at,updated_at,daily_limit,post_comment) VALUES(?,?,?,?,?,?,?,?,?,1,?,?,?,?) ON CONFLICT(user_id,repository_id) DO UPDATE SET primary_connection_id=excluded.primary_connection_id,primary_model=excluded.primary_model,secondary_connection_id=excluded.secondary_connection_id,secondary_model=excluded.secondary_model,enabled=excluded.enabled,consent=1,updated_at=excluded.updated_at,daily_limit=excluded.daily_limit,post_comment=excluded.post_comment",...baseArgs,Number(input.post_comment));}
- catch(error){
-  if(input.post_comment)fail(409,'La migration 0011_review_comment.sql manque : elle est additive, à appliquer avant d’activer les commentaires.');
-  await run(c.env,"INSERT INTO review_configs(id,user_id,project_id,repository_id,primary_connection_id,primary_model,secondary_connection_id,secondary_model,enabled,consent,created_at,updated_at,daily_limit) VALUES(?,?,?,?,?,?,?,?,?,1,?,?,?) ON CONFLICT(user_id,repository_id) DO UPDATE SET primary_connection_id=excluded.primary_connection_id,primary_model=excluded.primary_model,secondary_connection_id=excluded.secondary_connection_id,secondary_model=excluded.secondary_model,enabled=excluded.enabled,consent=1,updated_at=excluded.updated_at,daily_limit=excluded.daily_limit",...baseArgs);
+ // Variantes de l'enregistrement : chaque colonne optionnelle vient d'une migration additive récente.
+ const optional=[{col:'post_comment',value:Number(input.post_comment),needed:input.post_comment},{col:'review_mode',value:input.mode,needed:input.mode!=='equilibre'}];
+ const variants=[optional,optional.filter(o=>o.col==='post_comment'),[]].filter(v=>optional.every(o=>!o.needed||v.some(x=>x.col===o.col)));
+ let saved=false;
+ for(const variant of variants){
+  const cols=variant.map(o=>','+o.col).join(''),marks=variant.map(()=>',?').join(''),updates=variant.map(o=>','+o.col+'=excluded.'+o.col).join('');
+  try{
+   await run(c.env,"INSERT INTO review_configs(id,user_id,project_id,repository_id,primary_connection_id,primary_model,secondary_connection_id,secondary_model,enabled,consent,created_at,updated_at,daily_limit"+cols+") VALUES(?,?,?,?,?,?,?,?,?,1,?,?,?"+marks+") ON CONFLICT(user_id,repository_id) DO UPDATE SET primary_connection_id=excluded.primary_connection_id,primary_model=excluded.primary_model,secondary_connection_id=excluded.secondary_connection_id,secondary_model=excluded.secondary_model,enabled=excluded.enabled,consent=1,updated_at=excluded.updated_at,daily_limit=excluded.daily_limit"+updates,...baseArgs,...variant.map(o=>o.value));
+   saved=true;break;
+  }catch{/* colonne absente : variante suivante */}
  }
+ if(!saved)fail(409,'Une migration récente manque (0011 pour les commentaires, 0012 pour les modes) : elle est additive, à appliquer avant d’activer cette option.');
  return c.json({ok:true,message:input.enabled?'Relecture périodique activée pour les nouvelles versions de PR.':'Configuration enregistrée ; aucun lancement automatique.'});
 });
 reviews.post('/start',async c=>{
@@ -150,10 +159,13 @@ export async function executeReview(env:Env,id:string){
   const files=fileRes.data as ReviewFile[],checks:ReviewCheck[]=(checkRes.data.check_runs||[]).map((x:any)=>({name:x.name,status:x.status,conclusion:x.conclusion}));
   await mark('ai_call');
   const risk=reviewRisk(files),reports:any[]=[];
-  const assigned=[
-   {id:cfg.primary_connection_id,model:cfg.primary_model,role:'correctness' as const},
-   ...(cfg.secondary_connection_id&&cfg.secondary_model&&risk!=='simple'?[{id:cfg.secondary_connection_id,model:cfg.secondary_model,role:'security' as const}]:[])
-  ];
+  const mode=(REVIEW_MODES as string[]).includes(String(cfg.review_mode))?cfg.review_mode as ReviewMode:'equilibre';
+  const limited=async(id:string|null)=>{if(!id)return false;const q=await one(env,'SELECT quota FROM connections WHERE id=? AND user_id=?',id,row.user_id);return readableQuota(q?.quota).status==='rate_limited';};
+  const hasSecondary=Boolean(cfg.secondary_connection_id&&cfg.secondary_model);
+  const plan=planReview({mode,risk,files,checks,checksKnown:!checksDiagnostic,hasSecondary,primaryLimited:await limited(cfg.primary_connection_id),secondaryLimited:hasSecondary?await limited(cfg.secondary_connection_id):false});
+  const assigned=plan.assigned.map(a=>a.use==='secondary'
+   ?{id:cfg.secondary_connection_id as string,model:cfg.secondary_model as string,role:a.role,reason:a.reason}
+   :{id:cfg.primary_connection_id,model:cfg.primary_model,role:a.role,reason:a.reason});
   for(const reviewer of assigned){
    let activeSecretSnapshot:string|null=null,aiStarted=false,providerName:string|null=null;
    try{
@@ -161,25 +173,26 @@ export async function executeReview(env:Env,id:string){
     if(!conn.api_consent||conn.status!=='connected'||!JSON.parse(conn.models).includes(reviewer.model)||readableQuota(conn.quota).status==='rate_limited')throw Error('Connexion indisponible ou limite fournisseur atteinte.');
     activeSecretSnapshot=conn.secret;providerName=conn.provider;
     const prompt=reviewPrompt({repo:repo.full_name,pr:row.pr_number,sha:row.head_sha,title:String(p.title||'').slice(0,200),files,checks,role:reviewer.role});
-    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),45000);
+    const think=reviewEffort({mode,role:reviewer.role,risk,provider:conn.provider,model:reviewer.model});
+    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),think.effort==='high'?70000:45000);
     let output='',model=reviewer.model,tokens=0;
     try{
      aiStarted=true;
-     for await(const delta of generate(conn.provider,secret,reviewer.model,[{role:'user',content:prompt.system+'\n\n'+prompt.user}],2800,controller.signal)){
+     for await(const delta of generate(conn.provider,secret,reviewer.model,[{role:'user',content:prompt.system+'\n\n'+prompt.user}],think.maxTokens,controller.signal,think.effort?{reasoningEffort:think.effort}:{})){
       output+=delta.text||'';if(delta.model)model=delta.model;tokens=delta.input||tokens;
       if(output.length>14000){controller.abort();throw Error('Réponse trop volumineuse.');}
      }
     }finally{clearTimeout(timer);}
-    reports.push({provider:conn.provider,model,role:reviewer.role,coverage:prompt.coverage,review:parseReviewResult(output),input_tokens:tokens});
+    reports.push({provider:conn.provider,model,role:reviewer.role,reason:reviewer.reason,reasoning:{effort:think.effort,reason:think.reason},coverage:prompt.coverage,review:parseReviewResult(output),input_tokens:tokens});
    }catch(error){
     if(error instanceof ProviderError&&error.status===429&&activeSecretSnapshot){
      try{await recordConnectionQuota(env.DB,reviewer.id,row.user_id,activeSecretSnapshot,rateLimitObservation(error.retryAfter,now()));}catch{/* conserver le rapport partiel */}
     }
     const d=buildDiagnostic({stage:'ai_call',lastOk:'github_checks',error,provider:providerName,aiStarted,attempts});
-    reports.push({role:reviewer.role,provider:providerName||undefined,model:reviewer.model,error:d.message,diagnostic:d});
+    reports.push({role:reviewer.role,reason:reviewer.reason,provider:providerName||undefined,model:reviewer.model,error:d.message,diagnostic:d});
    }
   }
-  const result:{[key:string]:any}={repo:repo.full_name,pr_number:row.pr_number,head_sha:row.head_sha,risk,checks,checks_partial:checkRes.hasNext,files_partial:fileRes.hasNext,reviewers:reports,reviewed_at:now(),checks_unavailable:checksDiagnostic?checksDiagnostic.message:null,warning:'Revue IA seulement : les alertes exigent une reproduction ; aucun test n’a été exécuté par Atelier.'};
+  const result:{[key:string]:any}={repo:repo.full_name,pr_number:row.pr_number,head_sha:row.head_sha,risk,checks,checks_partial:checkRes.hasNext,files_partial:fileRes.hasNext,reviewers:reports,plan:{mode:plan.mode,summary:plan.summary,skipped:plan.skipped},reviewed_at:now(),checks_unavailable:checksDiagnostic?checksDiagnostic.message:null,warning:'Revue IA seulement : les alertes exigent une reproduction ; aucun test n’a été exécuté par Atelier.'};
   result.handoff=reviewHandoff(result);
   await mark('save');
   const success=reports.every(r=>r.review),state=success?'completed':'partial';

@@ -15,10 +15,12 @@ export function safeReviewFiles(files:ReviewFile[],maxChars=16000){
  }
  return {text:included.join('\n'),included:included.length,excluded:excluded+Math.max(0,files.length-60),redacted,truncated:files.length>60||excluded>0};
 }
-export function reviewPrompt(input:{repo:string;pr:number;sha:string;title:string;files:ReviewFile[];checks:ReviewCheck[];role:'correctness'|'security'}){
+export function reviewPrompt(input:{repo:string;pr:number;sha:string;title:string;files:ReviewFile[];checks:ReviewCheck[];role:'correctness'|'security'|'tests'}){
  const diff=safeReviewFiles(input.files);const issues=input.checks.map(c=>c.name+' : '+c.status+'/'+(c.conclusion||'non terminé')).join('\n').slice(0,2800);
  const role=input.role==='security'
  ? 'Concentre-toi sur les permissions, les secrets, les pertes de données, les migrations, le hors ligne et les régressions de sécurité.'
+ : input.role==='tests'
+ ? 'Concentre-toi sur la qualité des tests : cas limites non couverts, tests fragiles ou trop permissifs, régressions que les tests existants ne détecteraient pas. Propose le test à écrire.'
  : 'Concentre-toi sur les bugs de logique, les tests manquants, les cas limites et les erreurs utilisateur reproductibles.';
  const system=[
   'Tu effectues une REVUE EN LECTURE SEULE d’une pull request. Tu n’exécutes aucun test, tu ne modifies aucun dépôt.',
