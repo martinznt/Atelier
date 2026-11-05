@@ -135,7 +135,7 @@ reviews.post('/configs',async c=>{
   // La publication de commentaires exige un accès GitHub explicitement autorisé en écriture dans Atelier.
   const gh=await owned<{label:string;scopes:string}>(c.env,'connections',repo.connection_id,user);
   let ghScopes:string[]=[];try{ghScopes=JSON.parse(gh.scopes);}catch{/* illisible : refus ci-dessous */}
-  if(!ghScopes.includes('write'))fail(403,'Publier les commentaires exige l’accès « écriture » sur la connexion GitHub « '+gh.label+' » (Connexions dans Atelier). Activez-le, ou décochez la publication. Rien n’a été enregistré, y compris l’analyse automatique.');
+  if(!ghScopes.includes('write'))fail(403,'Publier les commentaires exige l’accès « Sauvegarder sur GitHub » sur la connexion GitHub « '+gh.label+' ». Cochez-le dans Réglages → Connexions (carte de cette connexion), ou décochez la publication. Rien n’a été enregistré, y compris l’analyse automatique.');
   await credentialsFor(c.env,repo.connection_id,user,'write');
  }
  // Variantes de l'enregistrement : chaque colonne optionnelle vient d'une migration additive récente.
@@ -195,7 +195,7 @@ export async function publishReport(env:Env,user:string,id:string){
  const repo=await getRepo(env,row.repository_id,user);
  const gh=await owned<{label:string;scopes:string}>(env,'connections',repo.connection_id,user);
  let ghScopes:string[]=[];try{ghScopes=JSON.parse(gh.scopes);}catch{/* illisible : refus ci-dessous */}
- if(!ghScopes.includes('write'))fail(403,'Publier exige l’accès « écriture » sur la connexion GitHub « '+gh.label+' » (Connexions dans Atelier).');
+ if(!ghScopes.includes('write'))fail(403,'Publier exige l’accès « Sauvegarder sur GitHub » sur la connexion GitHub « '+gh.label+' » : cochez-le dans Réglages → Connexions.');
  const writer=await credentialsFor(env,repo.connection_id,user,'write');
  const posted=await postRoleComments(writer.secret,repo.full_name,row.pr_number,{sha:row.head_sha,handoff:result.handoff});
  const urls:{[k:string]:string|null}={},errors:string[]=[];

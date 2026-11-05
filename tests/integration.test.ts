@@ -272,8 +272,20 @@ describe('configuration IA : limite gratuite, connexion validée et isolation',(
   // Publication demandée sans accès « écriture » sur la connexion GitHub : refus précis, rien d'enregistré.
   const noWrite=await json('/reviews/configs','POST',{...input,enabled:true,post_comment:true},cookie);
   expect(noWrite.status).toBe(403);
-  expect(JSON.stringify(noWrite.body)).toContain('écriture');expect(JSON.stringify(noWrite.body)).toContain('Test GitHub');
+  expect(JSON.stringify(noWrite.body)).toContain('Sauvegarder sur GitHub');expect(JSON.stringify(noWrite.body)).toContain('Test GitHub');
   expect((await json('/reviews/configs?project='+ownProject.body.id,'GET',undefined,cookie)).body.items).toHaveLength(0);
+  // Le propriétaire peut accorder l'accès d'écriture à sa connexion GitHub sans la recréer ; « lire » reste accordé.
+  const grant=await json('/connections/'+gh.body.id,'PATCH',{scopes:['write']},cookie);
+  expect(grant.status).toBe(200);
+  const listed=await json('/connections','GET',undefined,cookie);
+  expect(listed.body.items.find((x:any)=>x.id===gh.body.id).scopes).toEqual(['read','write']);
+  expect((await json('/connections/'+ai.body.id,'PATCH',{scopes:['read']},cookie)).status).toBe(400);
+  expect((await json('/connections/'+gh.body.id,'PATCH',{scopes:['deploy']},cookie)).status).toBe(400);
+  const withPost=await json('/reviews/configs','POST',{...input,enabled:true,post_comment:true},cookie);
+  expect(withPost.status).toBe(200);
+  // Retrait possible : l'accès redevient « lire » seulement.
+  expect((await json('/connections/'+gh.body.id,'PATCH',{scopes:['read']},cookie)).status).toBe(200);
+  expect((await json('/connections','GET',undefined,cookie)).body.items.find((x:any)=>x.id===gh.body.id).scopes).toEqual(['read']);
   expect((await json('/reviews/configs','POST',input,cookie)).status).toBe(200);
   const read=await json('/reviews/configs?project='+ownProject.body.id,'GET',undefined,cookie);
   expect(read.status).toBe(200);expect(read.body.items).toHaveLength(1);
@@ -561,7 +573,7 @@ describe('relais automatique entre IA : analyse réelle (base D1 de test) avec f
   const done=await runReview(ctx,320,{mistral:'ok',gemini:'ok',groq:'ok'});
   expect(done.row.status).toBe('completed');expect(done.report.handoff).toBeTruthy();expect(done.report.comment).toBeUndefined();
   const refused=await json('/reviews/runs/'+done.id+'/publish','POST',{},ctx.cookie);
-  expect(refused.status).toBe(403);expect(JSON.stringify(refused.body)).toContain('écriture');
+  expect(refused.status).toBe(403);expect(JSON.stringify(refused.body)).toContain('Sauvegarder sur GitHub');
   await ctx.db.prepare("UPDATE connections SET scopes='[\"read\",\"write\"]' WHERE id=?").bind(ctx.ids.gh).run();
   const posted:string[]=[],original=globalThis.fetch;
   globalThis.fetch=(async(input:any,init?:any)=>{
