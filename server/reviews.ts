@@ -9,7 +9,8 @@ import {readableQuota,reviewHandoff} from './review-team.mjs';
 import {event,fail,jsonBody,many,now,one,owned,run,uid,userId} from './core.ts';
 import {reviewPrompt,parseReviewResult,reviewRisk,type ReviewFile,type ReviewCheck} from './review-core.ts';
 import {buildDiagnostic,type Stage} from './review-diagnostics.ts';
-import {postReviewComment,commentFailureMessage} from './review-comment.ts';
+import {postRoleComments,commentFailureMessage} from './review-comment.ts';
+import {isClaudeCodeWork} from './review-roles.ts';
 import {planReview,REVIEW_MODES,type ReviewMode} from './review-plan.ts';
 import {reviewEffort} from './review-effort.ts';
 import {notVerified,disagreements} from './review-team.mjs';
@@ -22,7 +23,7 @@ import type {AppEnv,Env} from './types.ts';
 const aiChoice=z.object({connection_id:z.string().uuid(),model:z.string().min(1).max(160)});
 const configuration=z.object({
  repository_id:z.string().uuid(),primary:aiChoice,secondary:aiChoice.nullable().default(null),
- enabled:z.boolean().default(false),post_comment:z.boolean().default(false),mode:z.enum(['economique','equilibre','approfondi']).default('equilibre'),relay:z.boolean().default(true),relay_max_attempts:z.number().int().min(1).max(5).default(3),daily_limit:z.number().int().min(1).max(4).default(2),share_consent:z.literal(true)
+ enabled:z.boolean().default(false),post_comment:z.boolean().default(false),mode:z.enum(['economique','equilibre','approfondi']).default('equilibre'),relay:z.boolean().default(true),relay_max_attempts:z.number().int().min(1).max(5).default(3),auto_scope:z.enum(['all','claude_code']).default('all'),daily_limit:z.number().int().min(1).max(4).default(2),share_consent:z.literal(true)
 });
 const prInput=z.object({repository_id:z.string().uuid(),pr_number:z.number().int().positive().max(10000000)});
 export const reviews=new Hono<AppEnv>();
@@ -31,7 +32,7 @@ const MAX_RESUMES=6,MAX_RESUME_AGE_MS=24*3600*1000;
 /* Budget de lecture du diff par mode : plus de contexte seulement quand le mode le justifie (jetons = quota). */
 const READ_BUDGET:Record<string,number>={economique:12000,equilibre:16000,approfondi:28000};
 
-type Conf={id:string;user_id:string;project_id:string;repository_id:string;primary_connection_id:string;primary_model:string;secondary_connection_id:string|null;secondary_model:string|null;enabled:number;consent:number;daily_limit:number;post_comment?:number;review_mode?:string;relay?:number;relay_max_attempts?:number};
+type Conf={id:string;user_id:string;project_id:string;repository_id:string;primary_connection_id:string;primary_model:string;secondary_connection_id:string|null;secondary_model:string|null;enabled:number;consent:number;daily_limit:number;post_comment?:number;review_mode?:string;relay?:number;relay_max_attempts?:number;auto_scope?:string};
 type Repo={id:string;user_id:string;project_id:string;connection_id:string;full_name:string};
 type ReviewRun={id:string;user_id:string;project_id:string;repository_id:string;pr_number:number;head_sha:string;status:string;diagnostic?:string|null;resume_state?:string|null;created_at?:string};
 async function getRepo(env:Env,id:string,user:string){
@@ -97,7 +98,7 @@ reviews.get('/pulls',async c=>{
  const id=z.string().uuid().parse(c.req.query('repository_id'));
  const repo=await getRepo(c.env,id,userId(c)),token=await githubToken(c.env,repo);
  const result=await jsonRequest('github',token,'/repos/'+repo.full_name+'/pulls?state=open&per_page=30');
- return c.json({items:result.data.filter((p:any)=>p.head?.repo?.full_name===repo.full_name).map((p:any)=>({number:p.number,title:p.title,sha:p.head.sha,draft:p.draft,updated_at:p.updated_at}))});
+ return c.json({items:result.data.filter((p:any)=>p.head?.repo?.full_name===repo.full_name).map((p:any)=>({number:p.number,title:p.title,sha:p.head.sha,draft:p.draft,updated_at:p.updated_at,claude_code:isClaudeCodeWork(p)}))});
 });
 reviews.post('/configs',async c=>{
  const input=configuration.parse(await jsonBody(c));
@@ -111,9 +112,15 @@ reviews.post('/configs',async c=>{
   await credentialsFor(c.env,repo.connection_id,user,'write');
  }
  // Variantes de l'enregistrement : chaque colonne optionnelle vient d'une migration additive récente.
- const optional=[{col:'post_comment',value:Number(input.post_comment),needed:input.post_comment},{col:'review_mode',value:input.mode,needed:input.mode!=='equilibre'},{col:'relay',value:Number(input.relay),needed:!input.relay},{col:'relay_max_attempts',value:input.relay_max_attempts,needed:input.relay_max_attempts!==3}];
- // Plus récentes d'abord : on retire les colonnes absentes une par une, sans jamais perdre un réglage non défaut.
- const variants=[optional,optional.filter(o=>o.col!=='relay'&&o.col!=='relay_max_attempts'),optional.filter(o=>o.col==='post_comment'),[]].filter(v=>optional.every(o=>!o.needed||v.some(x=>x.col===o.col)));
+ const optional=[
+  {col:'post_comment',value:Number(input.post_comment),needed:input.post_comment},
+  {col:'review_mode',value:input.mode,needed:input.mode!=='equilibre'},
+  {col:'relay',value:Number(input.relay),needed:!input.relay},
+  {col:'relay_max_attempts',value:input.relay_max_attempts,needed:input.relay_max_attempts!==3},
+  {col:'auto_scope',value:input.auto_scope,needed:input.auto_scope!=='all'}
+ ];
+ // Colonnes de la plus ancienne à la plus récente migration : on retire les plus récentes d'abord si elles manquent, sans jamais perdre un réglage non défaut.
+ const variants=[0,1,2,3,4,5].map(drop=>optional.slice(0,optional.length-drop)).filter(v=>optional.every(o=>!o.needed||v.some(x=>x.col===o.col)));
  let saved=false;
  for(const variant of variants){
   const cols=variant.map(o=>','+o.col).join(''),marks=variant.map(()=>',?').join(''),updates=variant.map(o=>','+o.col+'=excluded.'+o.col).join('');
@@ -122,7 +129,7 @@ reviews.post('/configs',async c=>{
    saved=true;break;
   }catch{/* colonne absente : variante suivante */}
  }
- if(!saved)fail(409,'Une migration récente manque (0011 commentaires, 0012 modes, 0013 relais) : elle est additive, à appliquer avant d’activer cette option.');
+ if(!saved)fail(409,'Une migration récente manque (0011 commentaires, 0012 modes, 0013 relais, 0014 portée automatique) : elle est additive, à appliquer avant d’activer cette option.');
  return c.json({ok:true,message:input.enabled?'Relecture périodique activée pour les nouvelles versions de PR.':'Configuration enregistrée ; aucun lancement automatique.'});
 });
 reviews.post('/start',async c=>{
@@ -325,8 +332,10 @@ export async function executeReview(env:Env,id:string){
    // Le rapport est déjà enregistré : un échec de publication ne peut ni l'effacer ni interrompre la revue.
    try{
     const writer=await credentialsFor(env,repo.connection_id,row.user_id,'write'); // droit d'écriture revérifié au moment de publier
-    const posted=await postReviewComment(writer.secret,repo.full_name,row.pr_number,{sha:row.head_sha,handoff:result.handoff});
-    result.comment={posted:true,url:posted.url};
+    const posted=await postRoleComments(writer.secret,repo.full_name,row.pr_number,{sha:row.head_sha,handoff:result.handoff});
+    const urls:{[k:string]:string|null}={},errors:string[]=[];
+    for(const role of ['claude_code','chatgpt'] as const){const r:any=posted[role];if(r.error)errors.push((role==='claude_code'?'Claude Code : ':'ChatGPT : ')+r.error);else urls[role]=r.url;}
+    result.comment={posted:Object.keys(urls).length>0,urls,url:urls.claude_code||urls.chatgpt||null,...(errors.length?{message:errors.join(' ')}:{})};
    }catch(error){result.comment={posted:false,message:commentFailureMessage(error)};}
    try{await run(env,'UPDATE review_runs SET report=?,updated_at=? WHERE id=?',JSON.stringify(result),now(),id);}catch{/* conserver le rapport déjà enregistré */}
   }
@@ -356,10 +365,13 @@ export async function maintenanceReviews(env:Env){
  for(const cfg of configs){
   try{
    const repo=await getRepo(env,cfg.repository_id,cfg.user_id),token=await githubToken(env,repo);
-   const prs=(await jsonRequest('github',token,'/repos/'+repo.full_name+'/pulls?state=open&sort=updated&per_page=5')).data;
+   // Portée « Claude Code » : on regarde plus de PR récentes pour y trouver celles qui viennent de son travail.
+   const onlyClaude=cfg.auto_scope==='claude_code';
+   const prs=(await jsonRequest('github',token,'/repos/'+repo.full_name+'/pulls?state=open&sort=updated&per_page='+(onlyClaude?20:5))).data;
    for(const p of prs){
     if(scheduled>=2)break;
     if(p.head?.repo?.full_name!==repo.full_name)continue;
+    if(onlyClaude&&!isClaudeCodeWork(p))continue;
     if(await queueReview(env,cfg,repo,p.number,p.head.sha))scheduled++;
    }
   }catch{/* Une connexion expirée ne doit pas bloquer les autres tâches Atelier. */}

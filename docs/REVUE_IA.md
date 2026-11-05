@@ -11,6 +11,14 @@ Claude n'est pas une clé API.
 3. Projets → Vérifications IA : choisir le mode, la PR, lancer. Rapport enregistré dans D1, retrouvable après fermeture.
 4. Copier le dossier pour Claude Code ou ChatGPT (aucun envoi automatique ; le commentaire de PR est facultatif et désactivé par défaut).
 
+## Publication sur GitHub et analyses automatiques (par dépôt)
+- **Publication** (case à cocher, désactivée par défaut, exige l'accès « écriture » sur la connexion GitHub + le droit d'écrire des commentaires sur le jeton) : à la fin de chaque analyse,
+  Atelier publie **deux commentaires** sur la PR — « Pour Claude Code » (reproduire, correction ciblée, tests, rien hors périmètre) et « Pour ChatGPT » (avis indépendant, incertitudes,
+  tests de vérification). Aucune mention `@` active, aucun agent lancé : chaque outil lit son commentaire quand on l'ouvre. Un échec de publication n'efface pas le rapport.
+- **Analyse automatique** (case « Analyser automatiquement » + portée) : toutes les PR du dépôt, ou **seulement le travail de Claude Code** (branche `claude/…` ou description contenant
+  « Generated with Claude Code » / `claude.ai/code` ; autre convention de nom = non reconnue). Vérification toutes les 5 minutes (pas instantanée), un nouveau commit = une nouvelle analyse,
+  dans le plafond journalier du dépôt (1, 2 ou 4) et le plafond de 8 par compte.
+
 ## Modes (par dépôt)
 - **Économique** : aucune IA si le changement est simple et tous les tests GitHub ont réussi ; sinon une seule IA. Lecture du diff : 12 000 caractères.
 - **Équilibré** (défaut) : une IA, plus une relecture indépendante si le changement est fonctionnel ou sensible. 16 000 caractères.

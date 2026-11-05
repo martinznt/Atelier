@@ -1,6 +1,6 @@
 import {beforeAll,afterAll,describe,it,expect} from 'vitest';import {Miniflare,createFetchMock} from 'miniflare';import {build} from 'esbuild';import {readFile,readdir,mkdir} from 'node:fs/promises';import {unzipSync,strFromU8} from 'fflate';import {hashPassword,verifyPassword} from '../server/password';
 import {normalizeMigrationForD1} from './migration-sql.mjs';
-import {queueReview,executeReview} from '../server/reviews';
+import {queueReview,executeReview,maintenanceReviews} from '../server/reviews';
 import {executeTask} from '../server/worker';
 let mf:Miniflare;const mockNetwork=createFetchMock();mockNetwork.disableNetConnect();let a:string,b:string;const origin='http://localhost:8787';let project:string,conversation:string,file:string;
 let ownerA:string,ownerB:string,spaceA:string,spaceB:string,importedConversation:string;
@@ -389,12 +389,14 @@ describe('relais automatique entre IA : analyse réelle (base D1 de test) avec f
   const sha=SHA(pr%9+1),id=opts.existingId||crypto.randomUUID(),at=new Date().toISOString();
   if(!opts.existingId)await ctx.db.prepare("INSERT INTO review_runs(id,user_id,project_id,repository_id,pr_number,head_sha,status,created_at,updated_at) VALUES(?,?,?,?,?,?,'queued',?,?)").bind(id,ctx.user,ctx.project,ctx.repoId,pr,sha,at,at).run();
   const hits:Hit={github:0,mistral:0,gemini:0,groq:0};
+  const posted:string[]=[];
   const original=globalThis.fetch;
   const sse=(text:string)=>new Response('data: '+JSON.stringify({choices:[{delta:{content:text}}],model:'m'})+'\n\n'+'data: '+JSON.stringify({choices:[{delta:{},finish_reason:'stop'}],usage:{prompt_tokens:90,completion_tokens:10}})+'\n\ndata: [DONE]\n\n',{status:200});
-  globalThis.fetch=(async(input:any)=>{
+  globalThis.fetch=(async(input:any,init?:any)=>{
    const url=String(typeof input==='string'?input:input.url);
    if(url.startsWith('https://api.github.com/')){
     hits.github++;
+    if(init?.method==='POST'&&url.includes('/issues/')){posted.push(JSON.parse(init.body).body);return Response.json({html_url:'https://github.com/martinznt/Livre-de-recettes/pull/'+pr+'#issuecomment-'+posted.length},{status:201});}
     if(url.endsWith('/pulls/'+pr))return Response.json({state:'open',number:pr,title:'PR',head:{sha,repo:{full_name:'martinznt/Livre-de-recettes'}}});
     if(url.includes('/files'))return Response.json([{filename:'src/a.ts',status:'modified',patch:'+const a=1;'}]);
     return Response.json({check_runs:[{name:'CI',status:'completed',conclusion:'success'}]});
@@ -409,7 +411,7 @@ describe('relais automatique entre IA : analyse réelle (base D1 de test) avec f
   }) as any;
   try{await executeReview({DB:ctx.db,MASTER_KEY:Buffer.alloc(32,7).toString('base64'),TASKS:{send:async()=>{}}} as any,id);}finally{globalThis.fetch=original;}
   const row=await ctx.db.prepare('SELECT status,report,error,resume_at,resume_state FROM review_runs WHERE id=?').bind(id).first<any>();
-  return {row,report:row.report?JSON.parse(row.report):null,hits,id};
+  return {row,report:row.report?JSON.parse(row.report):null,hits,id,posted};
  }
  it('Mistral limité : Groq prend le relais, Gemini n’est pas sollicité, la pause de Mistral est mémorisée et respectée par la tâche suivante',async()=>{
   const ctx=await setup();
@@ -533,5 +535,50 @@ describe('relais automatique entre IA : analyse réelle (base D1 de test) avec f
   expect((await db.prepare('SELECT COUNT(*) AS n FROM ai_usage WHERE user_id=?').bind(u).first<any>()).n).toBe(1);
   await db.prepare('DELETE FROM users WHERE id=?').bind(u).run();
   expect((await db.prepare('SELECT COUNT(*) AS n FROM ai_usage WHERE user_id=?').bind(u).first<any>()).n).toBe(0);
+ });
+ it('publication automatique : deux commentaires (Claude Code, ChatGPT) quand l’option est activée avec l’accès en écriture ; aucun sinon',async()=>{
+  const ctx=await setup();
+  const none=await runReview(ctx,310,{mistral:'ok',gemini:'ok',groq:'ok'});
+  expect(none.posted).toHaveLength(0);expect(none.report.comment).toBeUndefined();
+  await ctx.db.prepare("UPDATE connections SET scopes='[\"read\",\"write\"]' WHERE id=?").bind(ctx.ids.gh).run();
+  await ctx.db.prepare('UPDATE review_configs SET post_comment=1 WHERE repository_id=?').bind(ctx.repoId).run();
+  const r=await runReview(ctx,311,{mistral:'ok',gemini:'ok',groq:'ok'});
+  expect(r.row.status).toBe('completed');
+  expect(r.posted).toHaveLength(2);
+  expect(r.posted[0]).toMatch(/Pour Claude Code/);expect(r.posted[0]).toMatch(/reproduis d’abord/);
+  expect(r.posted[1]).toMatch(/Pour ChatGPT/);expect(r.posted[1]).toMatch(/avis indépendant/);
+  expect(r.posted.join('')).not.toMatch(/@claude/);
+  expect(r.report.comment.posted).toBe(true);
+  expect(r.report.comment.urls.claude_code).toMatch(/^https:\/\/github\.com\//);expect(r.report.comment.urls.chatgpt).toMatch(/issuecomment-2$/);
+ });
+ it('analyse automatique « travail de Claude Code » : seules les PR de Claude Code sont mises en file ; réglage conservé',async()=>{
+  const ctx=await setup();
+  expect((await json('/reviews/configs','POST',{repository_id:ctx.repoId,primary:{connection_id:ctx.ids.m,model:'ministral-test'},secondary:null,enabled:true,auto_scope:'turbo',daily_limit:4,share_consent:true},ctx.cookie)).status).toBe(400);
+  const saved=await json('/reviews/configs','POST',{repository_id:ctx.repoId,primary:{connection_id:ctx.ids.m,model:'ministral-test'},secondary:null,enabled:true,auto_scope:'claude_code',daily_limit:4,share_consent:true},ctx.cookie);
+  expect(saved.status).toBe(200);
+  const cfg=(await json('/reviews/configs?project='+ctx.project,'GET',undefined,ctx.cookie)).body.items[0];
+  expect(cfg.auto_scope).toBe('claude_code');expect(cfg.enabled).toBe(1);
+  const repoName='martinznt/Livre-de-recettes',mk=(n:number,ref:string,body:string|null)=>({number:n,title:'PR '+n,body,state:'open',head:{ref,sha:String(n%9+1).repeat(40),repo:{full_name:repoName}}});
+  const original=globalThis.fetch;
+  globalThis.fetch=(async(input:any)=>{
+   const url=String(typeof input==='string'?input:input.url);
+   if(url.includes('/pulls?state=open'))return Response.json([mk(301,'claude/atelier-x',null),mk(302,'codex/f1',null),mk(303,'feat/z','Résumé\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)')]);
+   throw new Error('Appel inattendu : '+url);
+  }) as any;
+  const sent:string[]=[];
+  try{await maintenanceReviews({DB:ctx.db,MASTER_KEY:Buffer.alloc(32,7).toString('base64'),TASKS:{send:async(m:any)=>{sent.push(m.id);}}} as any);}finally{globalThis.fetch=original;}
+  const runs=(await ctx.db.prepare('SELECT pr_number,status FROM review_runs WHERE repository_id=? ORDER BY pr_number').bind(ctx.repoId).all<any>()).results;
+  expect(runs.map((x:any)=>x.pr_number)).toEqual([301,303]);
+  expect(runs.every((x:any)=>x.status==='queued')).toBe(true);
+  // Portée « toutes les PR » : la PR ordinaire est aussi mise en file.
+  await ctx.db.prepare("UPDATE review_configs SET auto_scope='all' WHERE repository_id=?").bind(ctx.repoId).run();
+  await ctx.db.prepare('DELETE FROM review_runs WHERE repository_id=?').bind(ctx.repoId).run();
+  globalThis.fetch=(async(input:any)=>{
+   const url=String(typeof input==='string'?input:input.url);
+   if(url.includes('/pulls?state=open'))return Response.json([mk(301,'claude/atelier-x',null),mk(302,'codex/f1',null)]);
+   throw new Error('Appel inattendu : '+url);
+  }) as any;
+  try{await maintenanceReviews({DB:ctx.db,MASTER_KEY:Buffer.alloc(32,7).toString('base64'),TASKS:{send:async()=>{}}} as any);}finally{globalThis.fetch=original;}
+  expect((await ctx.db.prepare('SELECT pr_number FROM review_runs WHERE repository_id=? ORDER BY pr_number').bind(ctx.repoId).all<any>()).results.map((x:any)=>x.pr_number)).toEqual([301,302]);
  });
 });
