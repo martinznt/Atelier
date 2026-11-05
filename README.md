@@ -1,7 +1,7 @@
 > Lot du 24 octobre : email obligatoire et mot de passe de 8 caractères minimum
 > implémentés sur `feat/email-password-eight`, avec transition des anciens comptes.
 > 173 tests locaux réussis ; compilation, HTTP et navigateur restent à exécuter.
-> Pour reprendre dans une autre conversation, lire [REPRISE_CODEX.md](docs/REPRISE_CODEX.md).
+> Pour reprendre : lire d'abord la section « Mise en service » de [AVANCEMENT.md](docs/AVANCEMENT.md) (état actuel), puis [REVUE_IA.md](docs/REVUE_IA.md). [REPRISE_CODEX.md](docs/REPRISE_CODEX.md) est historique.
 > Les anciennes mentions « sans email » ci-dessous sont remplacées par cette demande.
 
 ---

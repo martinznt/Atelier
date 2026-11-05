@@ -70,3 +70,6 @@ Branche feat/email-password-eight. Tests natifs passent ; typage/build/HTTP/brow
 restent bloqués par les dépendances absentes. Le workspace local est un snapshot
 SHA-vérifié de main 31c8172, l’historique Git distant doit rester parent des commits
 publiés. Ne pas pousser le root-commit local en remplaçant l’historique du dépôt.
+
+Reprise du 5 novembre 2026 : l'état actuel est la section « Mise en service » de docs/AVANCEMENT.md et docs/REVUE_IA.md (relais, modes, reprise, rapport, `/api/health`
+avec migrations). Les constats plus anciens de ces fichiers sont historiques. Ne jamais déclarer testé ce qui ne l'a pas été avec de vraies connexions.
