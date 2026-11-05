@@ -496,3 +496,19 @@ Tests : `tsc --noEmit`, `npx vitest run` (32), `npm run test:regressions`, `node
   Le budget de sortie grandit avec le niveau (les jetons de réflexion font partie des jetons de sortie d'après la même page).
 - Non fait : sélection automatique du modèle selon les quotas réels ; niveaux de réflexion pour Gemini/OpenAI/Anthropic/Mistral (paramètres non vérifiés) ;
   niveaux automatiques pour les discussions hors revue.
+
+## Relais automatique entre IA, quotas et reprise (novembre 2026)
+**Fichiers** : `server/ai-availability.ts` (classification des échecs, état par connexion et par modèle, jamais de date inventée), `server/ai-relay.ts`
+(sélection des candidats parmi toutes les connexions autorisées + orchestrateur), `server/ai-persist.ts` (D1 : observations avec contrôle optimiste, historique),
+intégration dans `server/reviews.ts`. Migration additive `0013_ai_relay.sql` (`ai_usage`, `review_configs.relay|relay_max_attempts`, `review_runs.resume_at|resume_state`).
+**Règles** : seules les connexions testées + `api_consent` + accès « chat » + non expirées sont candidates ; ordre = préférences de la configuration, puis autres connexions
+(Mistral, Gemini, Groq, OpenAI, Anthropic, départagées par appels récents) ; une limite se mémorise par connexion ET par modèle ; pause = date fournisseur (`Retry-After`,
+en-têtes de réinitialisation) sinon pause de prudence interne étiquetée comme telle ; auth/permission/facturation = action utilisateur requise, jamais re-sondées automatiquement ;
+relais seulement avant tout flux (refus HTTP explicite ou erreur réseau avant réponse) ; jamais après timeout ni après le début d'un flux (texte partiel conservé, non présenté
+comme complet) ; plafond d'appels par vérification (réglable 1–5) et par analyse (6) ; relais désactivable par dépôt.
+**Reprise** : une analyse dont toutes les IA sont limitées passe en attente avec `resume_at` (date fournisseur ou pause interne) ; reprise automatique par la file (délai) et le
+planificateur, uniquement des vérifications non terminées ; 6 reprises / 24 h maximum. « À faire de votre part » (accès refusé) : l'analyse reste partielle, les autres continuent,
+bouton « J'ai validé, reprendre ». Alertes persistantes dans Activité (`review_waiting`, `needs_user`) + notification du navigateur si Atelier est ouvert.
+**Limites réelles** : revues uniquement (les tâches de discussion `worker.ts` ne relaient pas et finissent toujours au statut `quota`) ; pas de notification poussée sur téléphone
+(Web Push exige des clés VAPID et un abonnement, non fait) ; les classes de limite sont déduites des messages/en-têtes renvoyés (peuvent être inexactes selon les fournisseurs) ;
+un seul échec mémorisé par modèle ; aucun test avec de vraies clés ; le relais envoie le code à d'autres fournisseurs autorisés (case décochable par dépôt).

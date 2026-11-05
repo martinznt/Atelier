@@ -55,13 +55,19 @@ export function rateLimitObservation(retryAfter:string|null,observedAt:string) {
   kind:'unavailable',scope:'API, pas abonnement grand public',values:{},status:'rate_limited',observed_at:observedAt,updated_at:observedAt,
   message:'Le fournisseur a refusé une requête avec HTTP 429. Le quota restant et sa réinitialisation ne sont pas fournis par cette observation.',
  };
- if(!retryAfter||retryAfter.length>128)return observation;
+ const parsed=parseRetryAfter(retryAfter,observedAt);
+ if(parsed){observation.retry_after=parsed.retry_after;observation.retry_at=parsed.retry_at;}
+ return observation;
+}
+/** Date de nouvel essai fournie par le fournisseur (Retry-After en secondes ou en date HTTP) ; null si absente ou illisible. */
+export function parseRetryAfter(retryAfter:string|null|undefined,observedAt:string):{retry_after:string;retry_at:string}|null {
+ if(!retryAfter||retryAfter.length>128)return null;
  const value=retryAfter.trim(),start=Date.parse(observedAt);
  let retryAt=NaN;
  if(/^\d+$/.test(value)&&Number.isSafeInteger(Number(value)))retryAt=start+Number(value)*1000;
  else if(/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun), \d{2} [A-Z][a-z]{2} \d{4} \d{2}:\d{2}:\d{2} GMT$/.test(value))retryAt=Date.parse(value);
- if(Number.isFinite(retryAt)&&Math.abs(retryAt)<=8640000000000000){observation.retry_after=value;observation.retry_at=new Date(retryAt).toISOString();}
- return observation;
+ if(Number.isFinite(retryAt)&&Math.abs(retryAt)<=8640000000000000)return {retry_after:value,retry_at:new Date(retryAt).toISOString()};
+ return null;
 }
 
 /** Keep observations attached to the credential that actually made the request. */

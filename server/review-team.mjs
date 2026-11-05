@@ -4,6 +4,12 @@
  */
 const unavailableModels=/(embedding|(^|[-_])embed|realtime|transcri|whisper|speech|tts|audio|dall-e|imagen|vision-only|moderation)/i;
 const economicalHint=/(mini|small|flash|lite|light|haiku|ministral|codestral|devstral)/i;
+/** Modèle économique et adapté au texte d'une connexion : celui que le fournisseur liste, sans classement inventé. */
+export function pickReviewModel(connection){
+ const models=(Array.isArray(connection.models)?connection.models:[]).filter(m=>!unavailableModels.test(m));
+ models.sort((a,b)=>Number(economicalHint.test(b))-Number(economicalHint.test(a))||a.localeCompare(b));
+ return models[0];
+}
 export function readableQuota(input){
  if(input && typeof input==='object' && !Array.isArray(input))return input;
  try{const value=typeof input==='string' ? JSON.parse(input) : {};return value&&typeof value==='object'&&!Array.isArray(value)?value:{};}catch{return {};}
@@ -25,11 +31,7 @@ export function recommendedReviewTeam(connections,at=Date.now()){
   const score=x=>x.provider==='mistral'?0:x.provider==='gemini'?1:x.provider==='groq'?2:x.provider==='openai'?3:4;
   return score(a)-score(b)||String(a.label).localeCompare(String(b.label));
  });
- const pick=c=>{
-  const models=(c.models||[]).filter(m=>!unavailableModels.test(m));
-  models.sort((a,b)=>Number(economicalHint.test(b))-Number(economicalHint.test(a))||a.localeCompare(b));
-  return {connection_id:c.id,model:models[0]};
- };
+ const pick=c=>({connection_id:c.id,model:pickReviewModel(c)});
  const primary=sorted.length?pick(sorted[0]):null;
  const secondary=sorted.find(c=>c.provider!==sorted[0]?.provider);
  return {
@@ -68,6 +70,8 @@ export function reviewHandoff(result){
   'Commit : '+String(result.head_sha||'')+' ; risque : '+String(result.risk||'non classé'),
   'Attention : rapport automatisé. Aucun correctif exécuté, aucun test lancé par Atelier, aucune erreur prouvée par le seul avis IA. Une IA qui ne détecte rien ne prouve pas que le code est correct.',
   'IA ayant analysé : '+(done.length?done.map(r=>(r.provider?r.provider+' · ':'')+(r.model||r.role)+' ('+r.role+')').join(' ; '):'aucune')+(failed.length?' ; sans résultat : '+failed.map(r=>(r.provider||'IA')+' ('+r.role+')').join(', '):''),
+  ...reviewers.filter(r=>(r.attempts||[]).some(t=>t.outcome==='refused')).map(r=>'Relais ('+r.role+') : '+r.attempts.filter(t=>t.outcome!=='skipped').map(t=>t.provider+' '+t.model+' → '+(t.outcome==='completed'?'a répondu':(t.kind_label||t.outcome))).join(' ; ')),
+  ...reviewers.filter(r=>r.partial&&r.partial.complete===false).map(r=>'Analyse INCOMPLÈTE ('+r.role+') : réponse interrompue, texte partiel non exploitable comme résultat.'),
   cov?'Couverture du diff : '+cov.included+' fichier(s) lu(s), '+cov.excluded+' exclu(s), '+cov.redacted+' ligne(s) masquée(s)'+(cov.complete?'.':' — diff incomplet.'):'',
   result.files_partial||result.checks_partial?'Couverture GitHub partielle : vérifier le diff et les contrôles manquants.':'',
   testsLine,
