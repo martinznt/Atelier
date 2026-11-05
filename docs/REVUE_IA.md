@@ -1,118 +1,59 @@
-# Configuration simplifiée de la chaîne IA — 26 octobre 2026
+# Chaîne de revue IA — Atelier (état du 5 novembre 2026)
 
-**État : code en PR brouillon, non déployé.** L'assistant dans « Projets → Vérifications IA »
-détecte les connexions déjà testées, propose une équipe selon les modèles réellement
-accessibles, permet de lier automatiquement Livre-de-recettes lorsqu'il est présent
-dans la liste GitHub autorisée, et accepte une clé Mistral autorisée depuis la même
-page. Les secrets ne sont jamais récupérés automatiquement depuis un autre site,
-une autre application ou ChatGPT : ils doivent être saisis dans Atelier une fois.
-Un compte gratuit ChatGPT n'est pas une connexion API gratuite.
+**État : déployé** (version `5a54bf3` et suivantes, migrations 0007 à 0013 présentes selon `/api/health`).
+**Constaté par le propriétaire** : les clés IA configurées fonctionnent et l'analyse d'une PR fonctionne. Cette information n'a pas été revérifiée par l'agent
+(aucun accès à son compte). Les secrets ne sont jamais récupérés depuis un autre service : ils sont saisis une fois dans Atelier. Un abonnement ChatGPT ou
+Claude n'est pas une clé API.
 
-Le moteur exécute un raisonnement en **trois étapes**, pour éviter les appels inutiles :
-1. Résultats GitHub Actions, identification du risque, récupération contrôlée du diff.
-2. Analyse IA « justesse/tests », puis, si le changement est significatif et qu'une
-   **autre API autorisée** est configurée, contre-analyse « sécurité/données ».
-3. Déduplication et tri des constats, production sans IA supplémentaire d'un
-   **rapport pour Codex** avec erreurs GitHub, chemins, gravité et reproduction.
-   La synthèse ne valide pas les erreurs : Codex doit les reproduire.
+## Parcours
+1. GitHub (droit lecture, + **Checks** en lecture pour lire les tests) → dépôt associé à un projet.
+2. Connexions IA testées et autorisées (Mistral, Gemini, Groq, OpenAI, Anthropic).
+3. Projets → Vérifications IA : choisir le mode, la PR, lancer. Rapport enregistré dans D1, retrouvable après fermeture.
+4. Copier le dossier pour Claude Code ou ChatGPT (aucun envoi automatique ; le commentaire de PR est facultatif et désactivé par défaut).
 
-**Coûts et quotas :** toute génération IA est bloquée sans le consentement
-explicite et les connexions préalablement testées. Automatisation désactivée par
-défaut. Plafond par dépôt configurable de 1, 2 (défaut) ou 4 analyses par jour
-UTC ; plafond absolu de 8 par compte. Les requêtes HTTP 429 marquent la connexion
-comme limitée et la sélection automatique l'exclut jusqu'à une vérification
-explicite. Cela borne le nombre d'appels, **pas leur coût** : aucune API payante
-n'est autorisée à l'insu de l'utilisateur et le compte fournisseur doit imposer
-ses propres plafonds de facturation à 0 €.
+## Modes (par dépôt)
+- **Économique** : aucune IA si le changement est simple et tous les tests GitHub ont réussi ; sinon une seule IA. Lecture du diff : 12 000 caractères.
+- **Équilibré** (défaut) : une IA, plus une relecture indépendante si le changement est fonctionnel ou sensible. 16 000 caractères.
+- **Approfondi** : logique, sécurité, qualité des tests, seulement quand le diff le justifie. 28 000 caractères.
+Le niveau de réflexion est automatique (risque × mode × rôle) et n'est envoyé que pour les modèles où il est documenté (Groq GPT-OSS).
 
-La sélection automatique est indicative : les identifiants de modèle contenant
-« mini », « flash », etc. sont *présumés* plus économes, sans benchmark de qualité
-ni preuve de gratuité. Une seconde IA ne partage pas la réponse de la première.
-Les API sont utilisées selon leurs conditions d'âge et d'utilisation : aucun
-contournement d'inscription, de vérification d'âge ou de quota.
+## Lecture du diff
+Priorité code > tests > configuration > documents et fichiers générés ; un diff trop long est tronqué avec une mention explicite ; fichiers sensibles et lignes
+manifestement sensibles écartés (**filtrage non garanti**). Le rapport indique la couverture réelle (pourcentage, part du code source, fichiers non lus).
+Constat sur la vraie PR #105 de Livre de recettes (19 fichiers, 75 254 caractères) : code source lu 66 % / 89 % / 100 % selon le mode.
 
-Ce parcours réduit les interventions manuelles, mais **ne fusionne jamais de PR,
-n'écrit pas de correctifs et ne déploie pas automatiquement**. Les tests de
-l'interface et de Cloudflare doivent réussir avant publication.
+## Relais et limites
+- Candidats : connexions testées, `api_consent`, accès « chat », non expirées. Ordre : préférences de la configuration, puis autres connexions.
+- Une limite est mémorisée **par connexion et par modèle** (`connections.quota`). Classes : requêtes/minute, jetons/minute, quota journalier, mensuel/crédit,
+  facturation, authentification, permission, modèle indisponible, erreur temporaire, interrompu. Classées d'après statut HTTP, en-têtes et extrait du message : peut être inexact.
+- Date de reprise : uniquement celle du fournisseur (`Retry-After`, en-têtes de réinitialisation) ; sinon pause de prudence **interne**, étiquetée comme telle.
+  Quota inconnu = affiché « inconnu ». Authentification/permission/facturation : action de l'utilisateur, jamais re-sondées automatiquement.
+- Relais uniquement avant tout flux ; jamais après un timeout ni après le début d'un flux (texte partiel conservé, non présenté comme complet).
+- Plafond d'appels : 1 à 5 par vérification (réglable), 6 par analyse. Toutes les IA limitées : analyse mise en attente, reprise automatique des seules
+  vérifications non terminées (6 reprises / 24 h au plus). Historique des appels : table `ai_usage` (jetons seulement s'ils sont renvoyés).
+- Le relais envoie le code à d'autres fournisseurs que vous avez autorisés (option décochable par dépôt).
 
----
+## Rapport
+Gravités P0–P3 et information ; emplacement, conséquence, reproduction, correction suggérée ; désaccords entre IA ; « ce qui n'a pas été vérifié » (déterministe) ;
+IA et modèles utilisés, relais, IA sans résultat. Une anomalie est une **piste à reproduire** ; l'accord de plusieurs IA n'est pas une preuve.
 
-# Chaîne de revue IA — Atelier
+## Limites
+- Aucun test n'est exécuté par Atelier ; l'absence d'anomalie ne prouve pas l'absence de bug.
+- Relais et reprise testés avec des fournisseurs simulés (vraie base D1 de test), pas en épuisant de vrais quotas. Revues seulement : les discussions ne relaient pas.
+- Pas de notification poussée sur téléphone (écran Activité + notification du navigateur si Atelier est ouvert).
+- Claude Code et Codex ne sont pas lancés par Atelier.
+- Atelier ne peut pas connaître la facturation réelle : voir `LIMITES_GRATUITES.md` et régler les plafonds chez chaque fournisseur.
 
-## Statut
-Livrée **sur une branche**, pas activée automatiquement en production.
-Un branchement et une compilation réussie ne remplacent ni un test HTTP/D1 réel
-ni une analyse d'une vraie PR avec clé autorisée.
+## Validation avant fusion
+`npm run check`, `npx vitest run`, `npm run test:regressions`, tests purs (`node --experimental-strip-types tests/<fichier>.test.mjs`),
+`npm run build` (avec `ulimit -n 128`), puis contrôle de `/api/health` après déploiement (`release_sha`, `schema`).
+Le contrôle Cloudflare des branches de PR échoue à `wrangler preview` (pas de bloc `previews`) : sans effet sur la production.
 
-## But
-Lire les PR GitHub, récupérer leurs tests et soumettre un extrait filtré du diff
-à une ou deux connexions API autorisées par l'utilisateur. Les constats sont
-enregistrés dans D1 et affichés dans Projets > Vérifications IA. Aucune écriture
-sur le dépôt inspecté ; aucun commentaire PR, fusion ou déploiement automatique.
-
-## Démarrage
-1. Appliquer les migrations, dont 0008_pr_reviews.sql, dans le processus
-   habituel de publication d'Atelier, après sauvegarde de D1.
-2. Configurer et tester GitHub (droit read), associer un dépôt à un projet.
-3. Configurer au moins une connexion IA autorisée pour ce compte dans Réglages.
-   Mistral Studio dispose d'un mode gratuit limité, mais la gratuité ne doit
-   jamais être supposée pour une clé ou un modèle non vérifié dans Studio.
-4. Dans le projet, ouvrir « Vérifications IA », choisir un dépôt, le modèle
-   principal et, facultativement, une connexion indépendante.
-5. Lire l'avertissement de partage de code et cocher le consentement.
-6. Laisser « Automatique » désactivé pour un premier essai ; enregistrer,
-   choisir une PR ouverte et lancer une revue manuelle.
-7. Examiner les tests et les rapports. Vérifier les constats en reproduisant
-   les problèmes avant de les transmettre à Codex.
-8. Activer l'automatisation seulement si les limites API ont été vérifiées
-   et qu'aucun paiement n'est possible ou autorisé.
-
-## Fonctionnement
-- L'API /api/reviews est accessible uniquement après authentification.
-- GET /configs?project=, /runs?project=, /pulls?repository_id=.
-- POST /configs : modèle(s), consentement et activation.
-- POST /start : PR existante ; déduplication par dépôt, PR et SHA Git.
-- Une seule tâche est créée par commit d'une PR. Les queues ne contiennent
-  qu'un identifiant ; le détail reste en D1.
-- Le cron (toutes les 5 minutes) surveille au plus deux configurations et
-  déclenche au plus deux nouvelles analyses par passage.
-- Une PR issue d'un fork externe est exclue.
-- Les tâches incomplètes ne sont jamais relancées automatiquement après un appel
-  IA incertain. Les résultats partiels restent disponibles.
-- Les deux IA reçoivent le même diff séparément, sans la réponse de l'autre.
-  La seconde est économisée sur les changements classés simples.
-- Le diff est plafonné ; les fichiers sensibles et lignes manifestement
-  sensibles sont écartés. **Ce filtrage n'est pas une garantie de confidentialité**.
-- Les contrôles GitHub sont affichés séparément des interprétations IA.
-- Aucun système de signature de webhook n'est nécessaire : polling borné et
-  authentifié via la connexion GitHub existante.
-
-## Limites documentées
-- Aucune clé fournie par le Livre de recettes n'est copiée depuis son Worker.
-  Les connexions d'Atelier sont séparées.
-- Le plan gratuit de Mistral a des limites RPS, TPM et mensuelles.
-  HTTP 429 interrompt l'appel ; aucune promesse de renouvellement de quota.
-- Les abonnements ChatGPT gratuits/Plus ne sont pas des clés API OpenAI gratuites.
-- Claude Code et Codex ne sont pas lancés par cette fonctionnalité.
-- La relecture automatique n'écrit pas encore de tests ou de correctifs sur
-  GitHub : elle donne les éléments probants nécessaires à Codex.
-- Les PR volumineuses ou les diffs sans patch sont signalés comme partiels.
-- La conclusion d'une IA n'est pas une preuve. Les tests GitHub n'enregistrent
-  qu'un sous-ensemble de l'état d'une application.
-- Aucun test de fournisseur réel, de stockage distant D1, de Cloudflare ou
-  sur le téléphone physique n'est attesté par ce document.
-
-## Validation attendue avant fusion
-- npm install --no-audit --no-fund
-- node --test tests/review-core.test.mjs
-- npm run check && npm test && npm run build
-- npm run test:e2e (avec migrations D1)
-- Tests de permissions A contre B, idempotence, stale SHA, quota/429,
-  réponse tronquée, erreur API, secrets masqués et rechargement des rapports.
-- Essai à blanc sur PR non sensible ; revue des captures et de la console.
-
-## Sources
+## Sources (consultées le 5 novembre 2026)
+- https://console.groq.com/docs/rate-limits (en-têtes : requêtes = quota par jour, jetons = par minute ; `retry-after` seulement sur 429)
+- https://console.groq.com/docs/reasoning (`reasoning_effort` : GPT-OSS 20B/120B)
+- https://ai.google.dev/gemini-api/docs/rate-limits (limites par projet, RPD réinitialisé à minuit heure du Pacifique)
+- https://ai.google.dev/gemini-api/docs/pricing (offre gratuite : contenu utilisé pour améliorer les produits ; offre payante : non)
+- https://ai.google.dev/gemini-api/docs/available-regions
 - https://docs.mistral.ai/fr/api
-- https://help.mistral.ai/fr/articles/698531-pourquoi-est-ce-que-j-atteins-mes-limites-d-usage-api-et-comment-les-augmenter
-- https://developers.cloudflare.com/queues/platform/pricing/
 - https://docs.github.com/en/rest/pulls/pulls

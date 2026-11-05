@@ -46,7 +46,7 @@ export interface Classification{
  relay_ok:boolean;
  basis:'status'|'message'|'headers'|'none';detail:string;
 }
-export interface ClassifyContext{now:string;/** une réponse HTTP 200 (flux) a été reçue */accepted:boolean}
+export interface ClassifyContext{now:string;/** une réponse HTTP 200 (flux) a été reçue */accepted:boolean;/** fournisseur de la connexion : certains en-têtes n'ont pas le même sens partout */provider?:string}
 
 const rx={
  tokens:/(tokens?[^a-z0-9]{0,3}per[^a-z0-9]{0,3}min|\bTPM\b|TokensPerModelPerMinute)/i,
@@ -117,6 +117,8 @@ export function classifyFailure(error:unknown,ctx:ClassifyContext):Classificatio
   if(rx.tokens.test(text))return refused('rate_limit_tokens','message',provided||parseResetHeader(headerOf(headers,RESET_TOK),ctx.now));
   if(rx.requests.test(text))return refused('rate_limit_requests','message',provided||parseResetHeader(headerOf(headers,RESET_REQ),ctx.now));
   if(rx.credit.test(text))return refused('billing','message',provided);
+  // Groq (documentation officielle consultée le 5/11/2026) : les en-têtes « requêtes » se rapportent au quota PAR JOUR, ceux des jetons à la minute.
+  if(ctx.provider==='groq'&&headerOf(headers,REMAINING_REQ)==='0')return refused('quota_daily','headers',provided||parseResetHeader(headerOf(headers,RESET_REQ),ctx.now));
   if(headerOf(headers,REMAINING_REQ)==='0')return refused('rate_limit_requests','headers',provided||parseResetHeader(headerOf(headers,RESET_REQ),ctx.now));
   if(headerOf(headers,REMAINING_TOK)==='0')return refused('rate_limit_tokens','headers',provided||parseResetHeader(headerOf(headers,RESET_TOK),ctx.now));
   return refused('rate_limit_unknown','status',provided);
@@ -227,10 +229,16 @@ export function availabilityOf(conn:ConnectionLike,opts:{model?:string;now:strin
   if(until!==null&&until>now)return out('held','rate_limit_unknown',failureLabel.rate_limit_unknown,{until:new Date(until).toISOString(),until_source:provided!==null?'provider':'internal'});
   probe=true;
  }
- // Compteurs renvoyés par le fournisseur lui-même, seulement s'ils sont frais.
  const updated=Date.parse(q.updated_at||'');
+ // Groq : « requêtes restantes » = quota journalier ; la réinitialisation vient de l'en-tête du fournisseur, donc elle ne dépend pas de la fraîcheur.
+ if(conn.provider==='groq'&&q.kind==='official'&&known.remaining_requests===0&&Number.isFinite(updated)){
+  const reset=parseResetHeader(headerOf(values,RESET_REQ),q.updated_at);
+  const until=reset?Date.parse(reset):updated+INTERNAL_HOLD_MS.quota_daily!;
+  if(until>now)return out('held','quota_daily',failureLabel.quota_daily+' (0 requête restante selon Groq).',{until:new Date(until).toISOString(),until_source:reset?'provider':'internal'});
+ }
+ // Compteurs renvoyés par le fournisseur lui-même, seulement s'ils sont frais.
  if(q.kind==='official'&&Number.isFinite(updated)&&now-updated<=FRESH_MS){
-  if(known.remaining_requests===0)return out('held','rate_limit_requests','Le fournisseur indique 0 requête restante dans sa dernière réponse.',{until:new Date(updated+FRESH_MS).toISOString(),until_source:'internal'});
+  if(known.remaining_requests===0&&conn.provider!=='groq')return out('held','rate_limit_requests','Le fournisseur indique 0 requête restante dans sa dernière réponse.',{until:new Date(updated+FRESH_MS).toISOString(),until_source:'internal'});
   if(opts.estimateTokens!==undefined&&known.remaining_tokens!==undefined&&known.remaining_tokens<opts.estimateTokens)
    return out('held','rate_limit_tokens','Jetons restants indiqués par le fournisseur insuffisants pour cette demande.',{until:new Date(updated+FRESH_MS).toISOString(),until_source:'internal'});
  }

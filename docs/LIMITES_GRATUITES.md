@@ -36,3 +36,15 @@ L’accès documentaire n’est pas un test du plan ou des droits réels du prop
 Aucune nouvelle dépense n’est autorisée par cette mission. Les API IA restent
 séparément facturables : le consentement explicite existant est conservé. Les
 comptes et le cycle complet du Worker Free restent à valider réellement.
+
+## API IA — vérification documentaire du 5 novembre 2026
+| Fournisseur | Constat officiel | Réserve Atelier |
+| --- | --- | --- |
+| Groq | Limites par organisation (RPM, RPD, TPM, TPD) ; en-têtes `x-ratelimit-*` : « requêtes » = par jour, « jetons » = par minute ; `retry-after` (secondes) seulement sur un 429 | Atelier lit ces en-têtes tels quels ; la liste des modèles et des limites de VOTRE compte n'est connue que dans votre console |
+| Gemini | Limites par **projet** (pas par clé) : RPM, TPM (entrée), RPD (réinitialisé à minuit heure du Pacifique) ; offre gratuite : **contenu utilisé pour améliorer les produits de Google** ; offre payante : non ; certains modèles ne sont pas disponibles en gratuit ; la France figure dans la liste des régions disponibles | Deux clés d'un même projet partagent le quota ; ne pas envoyer de code privé sur l'offre gratuite si ce partage est inacceptable ; conditions d'âge non vérifiées ici |
+| OpenRouter | Non intégré dans Atelier. Un solde négatif peut produire des erreurs (402) même sur les modèles gratuits | Pas de connecteur tant qu'une valeur ajoutée n'est pas démontrée |
+| Mistral, OpenAI, Anthropic | Voir leurs consoles ; non revérifié ici | Atelier lit les en-têtes renvoyés, jamais un quota inventé |
+
+Aucun de ces constats ne prouve la gratuité ou les droits réels de votre compte : réglez les plafonds de facturation chez chaque fournisseur.
+Sources : https://console.groq.com/docs/rate-limits , https://ai.google.dev/gemini-api/docs/rate-limits , https://ai.google.dev/gemini-api/docs/pricing ,
+https://ai.google.dev/gemini-api/docs/available-regions , https://openrouter.ai/docs/api-reference/limits .

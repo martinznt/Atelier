@@ -178,3 +178,20 @@ test('sécurité : un secret présent dans un message d’erreur du fournisseur 
  assert.doesNotMatch(stored,new RegExp(key));assert.doesNotMatch(stored,/secret-fixture/);
  assert.equal(caught.headers['x-ratelimit-remaining-requests'],'0');
 });
+test('Groq : « requêtes restantes » = quota journalier, réinitialisation fournie par Groq (documentation officielle)',()=>{
+ const updated=NOW;
+ const quota={kind:'official',updated_at:updated,values:{'x-ratelimit-remaining-requests':'0','x-ratelimit-reset-requests':'2m30s','x-ratelimit-remaining-tokens':'5000'}};
+ const during=availabilityOf({...groq,quota},{model:'openai/gpt-oss-120b',now:new Date(Date.parse(NOW)+60000).toISOString()});
+ assert.equal(during.state,'held');assert.equal(during.kind,'quota_daily');assert.equal(during.until_source,'provider');
+ assert.equal(during.until,new Date(Date.parse(NOW)+150000).toISOString());
+ // Même au-delà de 60 s (fraîcheur) la pause fournie par Groq reste respectée ; elle prend fin à la date indiquée.
+ assert.equal(availabilityOf({...groq,quota},{model:'openai/gpt-oss-120b',now:new Date(Date.parse(NOW)+160000).toISOString()}).usable,true);
+ // Pour un autre fournisseur, le même compteur n'est pas interprété comme journalier.
+ const other=availabilityOf({...mistral,quota},{model:'ministral-small',now:new Date(Date.parse(NOW)+10000).toISOString()});
+ assert.equal(other.kind,'rate_limit_requests');assert.equal(other.until_source,'internal');
+});
+test('Groq : un 429 avec 0 requête restante est classé quota journalier avec la date de Groq',()=>{
+ const cl=classifyFailure(new ProviderError(429,'http',null,{detail:'',headers:{'x-ratelimit-remaining-requests':'0','x-ratelimit-reset-requests':'7m12s'}}),{now:NOW,accepted:false,provider:'groq'});
+ assert.equal(cl.kind,'quota_daily');assert.equal(cl.retry_at,new Date(Date.parse(NOW)+432000).toISOString());assert.equal(cl.retry_source,'provider');
+ assert.equal(classifyFailure(new ProviderError(429,'http',null,{detail:'',headers:{'x-ratelimit-remaining-requests':'0'}}),{now:NOW,accepted:false,provider:'mistral'}).kind,'rate_limit_requests');
+});
