@@ -105,6 +105,27 @@ export function ReviewPanel({project}:{project:string}){
   {!repos.length?<Empty title="Aucun dépôt associé">La connexion GitHub pourra être reliée ci-dessus, ou via « Dépôts GitHub ».</Empty>:<>
    <div className="stack">
     <Field label="Dépôt à surveiller"><select value={repo} onChange={e=>{setRepo(e.target.value);setSelectedPR('');setConsent(false);}}>{repos.map(r=><option key={r.id} value={r.id}>{r.full_name}</option>)}</select></Field>
+    {(()=>{
+     const saved=configs.find(c=>c.repository_id===repo);
+     const name=(id:string|null|undefined)=>{const c=connections.find(x=>x.id===id);return c?c.label+' · '+c.provider:'connexion introuvable';};
+     const modes:Record<string,string>={economique:'Économique',equilibre:'Équilibré',approfondi:'Approfondi'};
+     if(!saved)return <div className="notice"><strong>Réglages enregistrés : aucun pour ce dépôt.</strong> Les valeurs du formulaire ci-dessous sont des propositions : rien n'est actif tant que vous n'avez pas enregistré.</div>;
+     const unsaved=saved.primary_connection_id!==primary||saved.primary_model!==pModel||(saved.secondary_connection_id||'')!==secondary||(saved.secondary_model||'')!==sModel||Boolean(saved.enabled)!==enabled||Boolean(saved.post_comment)!==postComment||(saved.review_mode||'equilibre')!==mode||(saved.relay!==0)!==relay||(saved.auto_scope||'all')!==autoScope||(saved.relay_max_attempts||3)!==relayMax||Boolean(saved.consent)!==consent||(saved.daily_limit||2)!==dailyLimit;
+     return <div className="notice">
+      <strong>Réglages enregistrés et actifs pour {saved.full_name||'ce dépôt'}</strong>
+      <ul className="stack">
+       <li>Première IA : {name(saved.primary_connection_id)} · {saved.primary_model}</li>
+       <li>Relecture : {saved.secondary_connection_id?name(saved.secondary_connection_id)+' · '+saved.secondary_model:'aucune'}</li>
+       <li>Mode : {modes[saved.review_mode||'equilibre']||saved.review_mode}</li>
+       <li>Relais automatique : {saved.relay!==0?'oui, '+(saved.relay_max_attempts||3)+' appel(s) IA au plus par vérification':'non'}</li>
+       <li>Analyses par jour pour ce dépôt : {saved.daily_limit||2} (8 au maximum pour le compte)</li>
+       <li>Analyse automatique : {saved.enabled?'activée, portée '+(saved.auto_scope==='claude_code'?'Claude Code seulement':'toutes les PR'):'désactivée'}</li>
+       <li>Publication des commentaires sur la PR : {saved.post_comment?'oui':'non'}</li>
+       <li>Consentement : {saved.consent?'donné':'non donné'}</li>
+      </ul>
+      {unsaved&&<p><strong>Vous avez modifié le formulaire sans enregistrer.</strong> Appuyez sur « Enregistrer la chaîne » en bas pour appliquer.</p>}
+     </div>;
+    })()}
     <Button kind="text" disabled={busy||!suggestion.primary} onClick={()=>{
      if(suggestion.primary){setPrimary(suggestion.primary?.connection_id);setPModel(suggestion.primary.model);setSecondary(suggestion.secondary?.connection_id||'');setSModel(suggestion.secondary?.model||'');}
     }}>Proposer automatiquement les IA et modèles disponibles</Button>
