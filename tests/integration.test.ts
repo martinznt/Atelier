@@ -607,7 +607,29 @@ describe('relais automatique entre IA : analyse réelle (base D1 de test) avec f
   expect((await queueReviewDetailed(env,cfg,repo,111,'pas-un-sha')).reason).toBe('bad_sha');
   const today=new Date().toISOString();
   for(let i=0;i<6;i++)await ctx.db.prepare("INSERT INTO review_runs(id,user_id,project_id,repository_id,pr_number,head_sha,status,created_at,updated_at) VALUES(?,?,?,?,?,?,'completed',?,?)").bind(crypto.randomUUID(),ctx.user,ctx.project,ctx.repoId,200+i,'e'.repeat(40),today,today).run();
-  expect((await queueReviewDetailed(env,cfg,repo,111,v3,{manual:true})).reason).toBe('cap_user');
+  // 8 sans l'option : l'automatique est bloqué par le plafond du compte, pas la demande manuelle ni le réglage « sans plafond ».
+  expect((await queueReviewDetailed(env,{...cfg,daily_limit:4},repo,112,v3)).reason).toBe('cap_user');
+  expect((await queueReviewDetailed(env,{...cfg,no_daily_cap:1,daily_limit:1},repo,113,v3)).queued).toBe(true);
+  expect((await queueReviewDetailed(env,cfg,repo,114,v3,{manual:true})).queued).toBe(true);
+  // plafond de sécurité du compte : atteint à 100 pour une demande sans plafond
+  for(let i=0;i<100;i++)await ctx.db.prepare("INSERT INTO review_runs(id,user_id,project_id,repository_id,pr_number,head_sha,status,created_at,updated_at) VALUES(?,?,?,?,?,?,'completed',?,?)").bind(crypto.randomUUID(),ctx.user,ctx.project,ctx.repoId,300+i,'f'.repeat(40),today,today).run();
+  expect((await queueReviewDetailed(env,cfg,repo,115,v3,{manual:true})).reason).toBe('cap_user');
+ });
+ it('toutes les IA à leur limite : l’automatique attend sans rien créer ; une demande manuelle est mise en pause avec l’heure de reprise',async()=>{
+  const ctx=await setup();
+  const env={DB:ctx.db,MASTER_KEY:Buffer.alloc(32,7).toString('base64'),TASKS:{send:async()=>{throw new Error('aucun envoi pour une analyse en pause');}}} as any;
+  const cfg:any=await ctx.db.prepare('SELECT * FROM review_configs WHERE repository_id=?').bind(ctx.repoId).first();
+  const repo={id:ctx.repoId,user_id:ctx.user,project_id:ctx.project,connection_id:ctx.ids.gh,full_name:'martinznt/Livre-de-recettes'};
+  const until=new Date(Date.now()+3600e3).toISOString();
+  for(const id of [ctx.ids.m,ctx.ids.g,ctx.ids.q])await ctx.db.prepare('UPDATE connections SET quota=? WHERE id=?').bind(JSON.stringify({status:'rate_limited',retry_at:until}),id).run();
+  const sha='9'.repeat(40);
+  const auto=await queueReviewDetailed(env,cfg,repo,121,sha);
+  expect(auto.queued).toBe(false);expect(auto.reason).toBe('no_ai');expect(auto.until).toBe(until);
+  expect(await ctx.db.prepare('SELECT COUNT(*) AS n FROM review_runs WHERE repository_id=? AND pr_number=121').bind(ctx.repoId).first<any>().then((r:any)=>r.n)).toBe(0);
+  const manual=await queueReviewDetailed(env,cfg,repo,121,sha,{manual:true});
+  expect(manual.queued).toBe(true);expect(manual.reason).toBe('paused');expect(manual.until).toBe(until);
+  const row:any=await ctx.db.prepare('SELECT status,resume_at,report FROM review_runs WHERE repository_id=? AND pr_number=121').bind(ctx.repoId).first();
+  expect(row.status).toBe('queued');expect(row.resume_at).toBe(until);expect(JSON.parse(row.report).waiting.until).toBe(until);
  });
  it('analyse automatique « travail de Claude Code » : seules les PR de Claude Code sont mises en file ; réglage conservé',async()=>{
   const ctx=await setup();

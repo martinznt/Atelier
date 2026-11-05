@@ -8,7 +8,7 @@ import {recordConnectionQuota,rateLimitObservation} from './collaboration.ts';
 import {readableQuota,reviewHandoff} from './review-team.mjs';
 import {event,fail,jsonBody,many,now,one,owned,run,uid,userId} from './core.ts';
 import {reviewPrompt,parseReviewResult,reviewRisk,type ReviewFile,type ReviewCheck} from './review-core.ts';
-import {watchVerdict} from './watch-status.ts';
+import {watchVerdict,SAFETY_CEILING} from './watch-status.ts';
 import {loadChecks} from './github-checks.ts';
 import {buildDiagnostic,type Stage} from './review-diagnostics.ts';
 import {postRoleComments,commentFailureMessage} from './review-comment.ts';
@@ -25,7 +25,7 @@ import type {AppEnv,Env} from './types.ts';
 const aiChoice=z.object({connection_id:z.string().uuid(),model:z.string().min(1).max(160)});
 const configuration=z.object({
  repository_id:z.string().uuid(),primary:aiChoice,secondary:aiChoice.nullable().default(null),
- enabled:z.boolean().default(false),post_comment:z.boolean().default(false),mode:z.enum(['economique','equilibre','approfondi']).default('equilibre'),relay:z.boolean().default(true),relay_max_attempts:z.number().int().min(1).max(5).default(3),auto_scope:z.enum(['all','claude_code']).default('all'),daily_limit:z.number().int().min(1).max(4).default(2),share_consent:z.literal(true)
+ enabled:z.boolean().default(false),post_comment:z.boolean().default(false),mode:z.enum(['economique','equilibre','approfondi']).default('equilibre'),relay:z.boolean().default(true),relay_max_attempts:z.number().int().min(1).max(5).default(3),auto_scope:z.enum(['all','claude_code']).default('all'),daily_limit:z.number().int().min(1).max(4).default(2),no_daily_cap:z.boolean().default(false),share_consent:z.literal(true)
 });
 const prInput=z.object({repository_id:z.string().uuid(),pr_number:z.number().int().positive().max(10000000)});
 export const reviews=new Hono<AppEnv>();
@@ -34,7 +34,7 @@ const MAX_RESUMES=6,MAX_RESUME_AGE_MS=24*3600*1000;
 /* Budget de lecture du diff par mode : plus de contexte seulement quand le mode le justifie (jetons = quota). */
 const READ_BUDGET:Record<string,number>={economique:12000,equilibre:16000,approfondi:28000};
 
-type Conf={id:string;user_id:string;project_id:string;repository_id:string;primary_connection_id:string;primary_model:string;secondary_connection_id:string|null;secondary_model:string|null;enabled:number;consent:number;daily_limit:number;post_comment?:number;review_mode?:string;relay?:number;relay_max_attempts?:number;auto_scope?:string};
+type Conf={id:string;user_id:string;project_id:string;repository_id:string;primary_connection_id:string;primary_model:string;secondary_connection_id:string|null;secondary_model:string|null;enabled:number;consent:number;daily_limit:number;post_comment?:number;review_mode?:string;relay?:number;relay_max_attempts?:number;auto_scope?:string;no_daily_cap?:number};
 type Repo={id:string;user_id:string;project_id:string;connection_id:string;full_name:string};
 type ReviewRun={id:string;user_id:string;project_id:string;repository_id:string;pr_number:number;head_sha:string;status:string;diagnostic?:string|null;resume_state?:string|null;created_at?:string};
 async function getRepo(env:Env,id:string,user:string){
@@ -55,17 +55,24 @@ async function githubToken(env:Env,repo:Repo){
  if(conn.provider!=='github')fail(403,'Connexion GitHub requise.');
  return secret;
 }
-export type QueueReason='queued'|'bad_sha'|'no_ai'|'exists'|'cap_repo'|'cap_user';
+export type QueueReason='queued'|'paused'|'bad_sha'|'no_ai'|'exists'|'cap_repo'|'cap_user';
 /** Mise en file avec la raison d'un refus. `manual` : demande explicite de l'utilisateur, non bornée par le plafond du dépôt (celui du compte, 8 par jour, reste appliqué). */
-export async function queueReviewDetailed(env:Env,config:Conf,repo:Repo,number:number,sha:string,opts:{manual?:boolean}={}):Promise<{queued:boolean;reason:QueueReason;status?:string}>{
+export async function queueReviewDetailed(env:Env,config:Conf,repo:Repo,number:number,sha:string,opts:{manual?:boolean}={}):Promise<{queued:boolean;reason:QueueReason;status?:string;until?:string|null;until_source?:string|null}>{
  if(!/^[0-9a-f]{40}$/i.test(sha))return {queued:false,reason:'bad_sha'};
  const nowIso=now();
  const existing=await one<{status:string}>(env,'SELECT status FROM review_runs WHERE user_id=? AND repository_id=? AND pr_number=? AND head_sha=?',repo.user_id,repo.id,number,sha);
  if(existing)return {queued:false,reason:'exists',status:existing.status};
+ let paused:{until:string;source:string|null}|null=null;
  if(config.relay!==0){
-  // Relais actif : une analyse n'est créée que si au moins une IA autorisée est utilisable maintenant (aucun appel ni plafond gaspillé sinon).
+  // Relais actif : une analyse automatique n'est créée que si au moins une IA autorisée est utilisable maintenant (aucun appel ni plafond gaspillé sinon).
+  // Demande manuelle sans IA utilisable : l'analyse est créée en pause et démarre à la première réinitialisation connue.
   const connections=await loadAiConnections(env.DB,repo.user_id);
-  if(!connections.some(c=>availabilityOf(c,{now:nowIso}).usable))return {queued:false,reason:'no_ai'};
+  const states=connections.map(c=>availabilityOf(c,{now:nowIso}));
+  if(!states.some(a=>a.usable)){
+   const dated=states.filter(a=>a.until).sort((a,b)=>String(a.until).localeCompare(String(b.until)))[0];
+   if(!opts.manual||!dated?.until)return {queued:false,reason:'no_ai',until:dated?.until??null,until_source:dated?.until_source??null};
+   paused={until:dated.until,source:dated.until_source??null};
+  }
  }else{
   const status=await one(env,'SELECT quota,status FROM connections WHERE id=? AND user_id=?',config.primary_connection_id,repo.user_id);
   if(!status||status.status!=='connected'||readableQuota(status.quota).status==='rate_limited')return {queued:false,reason:'no_ai'};
@@ -73,12 +80,15 @@ export async function queueReviewDetailed(env:Env,config:Conf,repo:Repo,number:n
  const id=uid(),at=now(),today=at.slice(0,10)+'T00:00:00.000Z';
  // Atomic D1 quota check; duplicate and concurrent events cannot overrun the
  // per-repository daily allowance (automatique) nor the hard ceiling of eight per user.
- const repoCap=opts.manual?1000000:(config.daily_limit||2);
- const result=await run(env,"INSERT OR IGNORE INTO review_runs(id,user_id,project_id,repository_id,pr_number,head_sha,status,created_at,updated_at) SELECT ?,?,?,?,?,?,'queued',?,? WHERE (SELECT COUNT(*) FROM review_runs WHERE user_id=? AND repository_id=? AND created_at>=?)<? AND (SELECT COUNT(*) FROM review_runs WHERE user_id=? AND created_at>=?)<8",id,repo.user_id,repo.project_id,repo.id,number,sha,at,at,repo.user_id,repo.id,today,repoCap,repo.user_id,today);
+ // Sans plafond (réglage ou demande manuelle) : seules les limites réelles des IA arrêtent le travail ; un plafond de sécurité du compte évite une boucle.
+ const unlimited=Boolean(opts.manual)||config.no_daily_cap===1;
+ const repoCap=unlimited?1000000:(config.daily_limit||2),userCap=unlimited?SAFETY_CEILING:8;
+ const result=await run(env,"INSERT OR IGNORE INTO review_runs(id,user_id,project_id,repository_id,pr_number,head_sha,status,created_at,updated_at"+(paused?",resume_at,report":"")+") SELECT ?,?,?,?,?,?,'queued',?,?"+(paused?",?,?":"")+" WHERE (SELECT COUNT(*) FROM review_runs WHERE user_id=? AND repository_id=? AND created_at>=?)<? AND (SELECT COUNT(*) FROM review_runs WHERE user_id=? AND created_at>=?)<?",id,repo.user_id,repo.project_id,repo.id,number,sha,at,at,...(paused?[paused.until,JSON.stringify({waiting:{until:paused.until,source:paused.source,resumes:0,max_resumes:6}})]:[]),repo.user_id,repo.id,today,repoCap,repo.user_id,today,userCap);
  if(!result.meta.changes){
   const userToday=(await one<{n:number}>(env,'SELECT COUNT(*) AS n FROM review_runs WHERE user_id=? AND created_at>=?',repo.user_id,today))?.n||0;
-  return {queued:false,reason:userToday>=8?'cap_user':'cap_repo'};
+  return {queued:false,reason:userToday>=userCap?'cap_user':'cap_repo'};
  }
+ if(paused)return {queued:true,reason:'paused',until:paused.until,until_source:paused.source};
  try{await env.TASKS.send({id,kind:'review'});}catch{/* Reprise par le cron ; aucun appel fournisseur n’a été fait. */}
  return {queued:true,reason:'queued'};
 }
@@ -88,10 +98,11 @@ export async function queueReview(env:Env,config:Conf,repo:Repo,number:number,sh
 const queueMessages:Record<QueueReason,string>={
  queued:'Analyse de la version actuelle de la PR mise en file.',
  bad_sha:'Version de la PR illisible : actualisez la liste puis réessayez.',
+ paused:'Toutes les IA ont atteint leur limite : l’analyse est en pause et démarrera toute seule à la réinitialisation.',
  no_ai:'Aucune IA autorisée n’est utilisable maintenant (limite atteinte ou accès à corriger) : rien n’a été lancé.',
  exists:'Cette version exacte de la PR (même commit) est déjà analysée : consultez son rapport. Une nouvelle analyse n’est possible qu’après un nouveau commit.',
  cap_repo:'Plafond d’analyses du jour atteint pour ce dépôt.',
- cap_user:'Plafond de 8 analyses par jour pour le compte atteint : reprise demain.'
+ cap_user:'Plafond du jour atteint pour le compte (8 sans option « sans plafond », 100 de sécurité avec) : reprise demain.'
 };
 async function queueFromGithub(env:Env,config:Conf,repo:Repo,pr:number){
  const token=await githubToken(env,repo);
@@ -99,7 +110,7 @@ async function queueFromGithub(env:Env,config:Conf,repo:Repo,pr:number){
  const data=result.data;
  if(data.state!=='open'||data.head?.repo?.full_name!==repo.full_name)fail(400,'Cette PR est fermée ou provient d’un dépôt externe.');
  const r=await queueReviewDetailed(env,config,repo,data.number,data.head.sha,{manual:true});
- return {queued:r.queued,reason:r.reason,sha:data.head.sha,title:data.title,message:queueMessages[r.reason]};
+ return {queued:r.queued,reason:r.reason,sha:data.head.sha,title:data.title,until:r.until??null,until_source:r.until_source??null,message:queueMessages[r.reason]};
 }
 reviews.get('/configs',async c=>{
  const project=z.string().uuid().parse(c.req.query('project'));
@@ -136,12 +147,20 @@ reviews.get('/watch',async c=>{
  const runs=await many<{pr_number:number;head_sha:string;status:string}>(c.env,'SELECT pr_number,head_sha,status FROM review_runs WHERE user_id=? AND repository_id=? ORDER BY created_at DESC LIMIT 200',user,repo.id);
  const todayRepo=(await one<{n:number}>(c.env,'SELECT COUNT(*) AS n FROM review_runs WHERE user_id=? AND repository_id=? AND created_at>=?',user,repo.id,today))?.n||0;
  const todayUser=(await one<{n:number}>(c.env,'SELECT COUNT(*) AS n FROM review_runs WHERE user_id=? AND created_at>=?',user,today))?.n||0;
- const aiUsable=config?.relay!==0?(await loadAiConnections(c.env.DB,user)).some(x=>availabilityOf(x,{now:now()}).usable):true;
+ const aiConnections=config?.relay!==0?await loadAiConnections(c.env.DB,user):[];
+ const aiStates=aiConnections.map(x=>availabilityOf(x,{now:now()}));
+ const aiUsable=config?.relay!==0?aiStates.some(a=>a.usable):true;
+ // Aucune IA utilisable : première reprise connue (heure du fournisseur ou pause de prudence d'Atelier).
+ let aiPause:{until:string|null;source:string|null}|null=null;
+ if(!aiUsable){
+  const dated=aiStates.filter(a=>a.until).sort((a,b)=>String(a.until).localeCompare(String(b.until)))[0];
+  aiPause={until:dated?.until??null,source:dated?.until_source??null};
+ }
  const items=result.data.filter((p:any)=>p.head?.repo?.full_name===repo.full_name).map((p:any)=>{
   const pr={number:p.number,sha:p.head.sha,claude_code:isClaudeCodeWork(p)};
-  return {number:p.number,title:p.title,branch:p.head.ref,sha:p.head.sha,draft:Boolean(p.draft),claude_code:pr.claude_code,...watchVerdict({config,pr,runs,todayRepo,todayUser,aiUsable})};
+  return {number:p.number,title:p.title,branch:p.head.ref,sha:p.head.sha,draft:Boolean(p.draft),claude_code:pr.claude_code,...watchVerdict({config,pr,runs,todayRepo,todayUser,aiUsable,aiPause})};
  });
- return c.json({configured:Boolean(config),enabled:Boolean(config?.enabled),scope:config?.auto_scope||'all',today:{repo:todayRepo,user:todayUser,limit:config?.daily_limit||2},items,
+ return c.json({configured:Boolean(config),enabled:Boolean(config?.enabled),scope:config?.auto_scope||'all',today:{repo:todayRepo,user:todayUser,limit:config?.no_daily_cap===1?null:(config?.daily_limit||2),safety_ceiling:SAFETY_CEILING},ai_pause:aiPause,items,
   note:'Atelier ne surveille que les PR ouvertes : une branche sans PR n’est pas analysée. Passage automatique toutes les 5 minutes environ.'});
 });
 reviews.post('/configs',async c=>{
@@ -164,10 +183,11 @@ reviews.post('/configs',async c=>{
   {col:'review_mode',value:input.mode,needed:input.mode!=='equilibre'},
   {col:'relay',value:Number(input.relay),needed:!input.relay},
   {col:'relay_max_attempts',value:input.relay_max_attempts,needed:input.relay_max_attempts!==3},
-  {col:'auto_scope',value:input.auto_scope,needed:input.auto_scope!=='all'}
+  {col:'auto_scope',value:input.auto_scope,needed:input.auto_scope!=='all'},
+  {col:'no_daily_cap',value:Number(input.no_daily_cap),needed:input.no_daily_cap}
  ];
  // Colonnes de la plus ancienne à la plus récente migration : on retire les plus récentes d'abord si elles manquent, sans jamais perdre un réglage non défaut.
- const variants=[0,1,2,3,4,5].map(drop=>optional.slice(0,optional.length-drop)).filter(v=>optional.every(o=>!o.needed||v.some(x=>x.col===o.col)));
+ const variants=[0,1,2,3,4,5,6].map(drop=>optional.slice(0,optional.length-drop)).filter(v=>optional.every(o=>!o.needed||v.some(x=>x.col===o.col)));
  let saved=false;
  for(const variant of variants){
   const cols=variant.map(o=>','+o.col).join(''),marks=variant.map(()=>',?').join(''),updates=variant.map(o=>','+o.col+'=excluded.'+o.col).join('');
@@ -176,7 +196,7 @@ reviews.post('/configs',async c=>{
    saved=true;break;
   }catch{/* colonne absente : variante suivante */}
  }
- if(!saved)fail(409,'Une migration récente manque (0011 commentaires, 0012 modes, 0013 relais, 0014 portée automatique) : elle est additive, à appliquer avant d’activer cette option.');
+ if(!saved)fail(409,'Une migration récente manque (0011 commentaires, 0012 modes, 0013 relais, 0014 portée automatique, 0015 sans plafond) : elle est additive, à appliquer avant d’activer cette option.');
  return c.json({ok:true,message:input.enabled?'Relecture périodique activée pour les nouvelles versions de PR.':'Configuration enregistrée ; aucun lancement automatique.'});
 });
 reviews.post('/start',async c=>{

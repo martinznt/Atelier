@@ -21,3 +21,14 @@ test('analyse existante, file, IA, plafonds',()=>{
  assert.equal(st({todayRepo:2}),'cap');
  assert.equal(st({todayUser:8}),'cap');
 });
+test('sans plafond : le plafond du dépôt et celui de 8 ne bloquent plus, la sécurité à 100 oui',()=>{
+ const cfg={...base.config,no_daily_cap:1,daily_limit:1};
+ assert.equal(st({config:cfg,todayRepo:50,todayUser:50}),'will_queue');
+ assert.equal(st({config:cfg,todayUser:100}),'cap');
+ assert.equal(st({config:{...base.config,no_daily_cap:0},todayUser:8}),'cap');
+});
+test('toutes les IA en pause : état no_ai avec l’heure de reprise',()=>{
+ const v=watchVerdict({...base,aiUsable:false,aiPause:{until:'2026-11-06T00:00:00.000Z',source:'provider'}});
+ assert.equal(v.state,'no_ai');assert.equal(v.until,'2026-11-06T00:00:00.000Z');assert.equal(v.until_source,'provider');
+ assert.match(v.label,/toutes les IA/);
+});
