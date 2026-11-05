@@ -206,8 +206,9 @@ export function ReviewPanel({project}:{project:string}){
   {notifyState==='granted'&&<p className="muted">Notifications du navigateur actives tant qu'Atelier est ouvert. Elles ne remplacent pas une notification poussée sur téléphone, non disponible pour l'instant ; l'écran Activité conserve toutes les alertes.</p>}
   <hr/>
   <h3>Rapports récents</h3>
-  {!runs.length?<p className="muted">Aucune analyse réalisée pour ce projet.</p>:<div className="stack">{runs.map(r=><article className="panel" key={r.id}>
-   <div className="panel-heading"><div><strong>{r.full_name} · PR #{r.pr_number}</strong><p>{r.status==='queued'&&r.report?.waiting?'En pause : reprise automatique prévue':(statuses[r.status]||r.status)} · {date(r.created_at)} · commit {r.head_sha.slice(0,8)}</p></div>{r.status==='completed'?<CheckCircle2 size={20}/>:<ShieldAlert size={20}/>}</div>
+  {!runs.length?<p className="muted">Aucune analyse réalisée pour ce projet.</p>:<div className="stack">{runs.map(r=><details className="panel run-card" key={r.id}>
+   <summary className="run-summary"><span className="run-icon">{r.status==='completed'?<CheckCircle2 size={18}/>:<ShieldAlert size={18}/>}</span><span className="run-main"><strong>{r.full_name} · PR #{r.pr_number}</strong><small className="muted">{date(r.created_at)} · {r.status==='queued'&&r.report?.waiting?'En pause : reprise automatique prévue':(statuses[r.status]||r.status)}{r.report?.needs_user?.length?' · à faire de votre part':''}</small></span></summary>
+   <p className="muted">Commit {r.head_sha.slice(0,8)}</p>
    {r.error&&<p className="muted">{r.error}</p>}
    {r.diagnostic&&<details open><summary>Diagnostic de l’interruption</summary><ul>
     <li>PR #{r.pr_number} · commit {r.head_sha}</li>
@@ -239,6 +240,6 @@ export function ReviewPanel({project}:{project:string}){
     </section>)}
     <small className="muted">{r.report.warning}</small>
    </div>}
-  </article>)}</div>}
+  </details>)}</div>}
  </section>;
 }
