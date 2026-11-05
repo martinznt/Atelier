@@ -530,3 +530,6 @@ Le propriétaire indique que ses clés IA fonctionnent et que l'analyse des PR f
 Conditions officielles lues le 5/11/2026 (Groq : en-têtes « requêtes » = quota par jour ; Gemini : limites par projet, offre gratuite = contenu utilisé pour améliorer les produits) :
 voir `docs/REVUE_IA.md` et `docs/LIMITES_GRATUITES.md`. Le relais traite maintenant les en-têtes Groq selon cette documentation.
 Les 14 branches d'Atelier sont toutes entièrement fusionnées (0 commit d'avance sur `main`) ; leur suppression est refusée par le proxy GitHub de l'agent : à supprimer depuis GitHub.
+
+## Relais pour les discussions (5 novembre 2026)
+`worker.ts` : relais avant le début de la réponse (même orchestrateur que les revues), avec `share_consent` obligatoire, sans reprise automatique (l'état d'une discussion en cours n'est pas reprenable sans doublon). Observations de limites fusionnées par modèle (plus d'écrasement de l'état d'une connexion), historique `ai_usage` (`task_kind='chat'`), événement `relay` dans Activité. Test D1 : Mistral refuse → Gemini répond ; sans consentement → statut `quota`, aucun autre fournisseur appelé.
