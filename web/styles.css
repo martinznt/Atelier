@@ -40,3 +40,17 @@
 .fold-summary::after{content:"▾";position:absolute;right:14px;top:50%;margin-top:-10px;color:var(--muted);transition:transform .15s}
 .fold[open]>.fold-summary::after{transform:rotate(180deg)}
 .fold-body{padding:0 14px 14px}
+
+/* Pilotage : onglets d'espaces, carte « prochaine action », aperçu de transmission. */
+.space-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.space-tabs button{min-height:44px;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface);font-weight:600}
+.space-tabs button.active{background:var(--green-soft);border-color:var(--green)}
+.guide-card{border:2px solid var(--green);border-radius:14px;padding:14px;background:var(--surface)}
+.guide-card h3{margin:4px 0 10px}
+.guide-card dl{display:grid;grid-template-columns:1fr;gap:2px;margin:0}
+.guide-card dt{font-weight:600;font-size:12px;color:var(--muted);margin-top:8px}
+.guide-card dd{margin:0;overflow-wrap:anywhere}
+.handoff-preview{max-height:320px;overflow:auto;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:10px;overflow-wrap:anywhere}
+.plain{list-style:none;padding:0;margin:8px 0}.plain li{margin:6px 0;overflow-wrap:anywhere}
+.space-body{margin-top:12px}
+@media(min-width:720px){.guide-card dl{grid-template-columns:170px 1fr;gap:6px 14px}.guide-card dt{margin-top:0}}

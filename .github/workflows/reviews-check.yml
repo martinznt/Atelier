@@ -21,6 +21,10 @@ on:
       - "tests/github-checks.test.mjs"
       - "tests/watch-status.test.mjs"
       - "tests/pr-mark.test.mjs"
+      - "tests/plan-core.test.mjs"
+      - "tests/handoff-core.test.mjs"
+      - "tests/project-guide.test.mjs"
+      - "tests/github-tracking.test.mjs"
       - "tests/configure-cloudflare.test.mjs"
       - "scripts/**"
       - ".github/workflows/production-smoke.yml"
@@ -45,7 +49,7 @@ jobs:
       - name: Installer les dépendances
         run: npm install --no-audit --no-fund
       - name: Contrats de relecture
-        run: node --test tests/review-core.test.mjs tests/review-team.test.mjs tests/migration-sql.test.mjs tests/readiness.test.mjs tests/operational-error.test.mjs tests/provider-http.test.mjs tests/github-probe.test.mjs tests/review-diagnostics.test.mjs tests/groq-connector.test.mjs tests/review-comment.test.mjs tests/review-plan.test.mjs tests/review-effort.test.mjs tests/ai-relay.test.mjs tests/schema-status.test.mjs tests/review-roles.test.mjs tests/github-checks.test.mjs tests/watch-status.test.mjs tests/pr-mark.test.mjs
+        run: node --test tests/review-core.test.mjs tests/review-team.test.mjs tests/migration-sql.test.mjs tests/readiness.test.mjs tests/operational-error.test.mjs tests/provider-http.test.mjs tests/github-probe.test.mjs tests/review-diagnostics.test.mjs tests/groq-connector.test.mjs tests/review-comment.test.mjs tests/review-plan.test.mjs tests/review-effort.test.mjs tests/ai-relay.test.mjs tests/schema-status.test.mjs tests/review-roles.test.mjs tests/github-checks.test.mjs tests/watch-status.test.mjs tests/pr-mark.test.mjs tests/plan-core.test.mjs tests/handoff-core.test.mjs tests/project-guide.test.mjs tests/github-tracking.test.mjs
       - name: Typescript
         run: npm run check
       - name: Vérifications cœur, migrations et sauvegardes

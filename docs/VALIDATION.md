@@ -425,3 +425,11 @@ non exécuté n’est marqué vérifié.
    sans consentement correspondant.
 7. Tester D1/R2 et le CPU du hachage sur Cloudflare de test après déploiement par le
    propriétaire ; vérifier la restauration et les coûts avant ouverture aux autres.
+
+## Pilotage de deux projets (11 novembre 2026) — commandes réellement exécutées
+- `npx tsc --noEmit` : propre. `npm run build` (tsc + vite + `wrangler deploy --dry-run`, sans publication) : réussi.
+- `npx vitest run` : 53 tests d'intégration (D1 + Miniflare, GitHub simulé par `fetchMock`) dont 7 nouveaux scénarios : espaces séparés, association GitHub, plan, décisions, transmission (aperçu = export, « Copié » jamais « Envoyé », contexte du seul projet, SHA obsolète), secrets, suivi GitHub.
+- Tests purs (`node --experimental-strip-types tests/<f>.test.mjs`) : `plan-core`, `handoff-core`, `project-guide`, `github-tracking`, `schema-status`, `pr-mark`, `watch-status` : tous passent.
+- `npm run test:regressions` (9) et `npm run test:core` (6 tests Python de schéma) : passent.
+- Navigateur : aperçu Playwright de l'application construite à 360 px et 390 px avec une API simulée : aucun débordement horizontal, sections repliées lisibles. Pas de test E2E complet.
+- **Simulé** : toutes les réponses GitHub. **Réel** : aucun appel à GitHub, aucun fournisseur IA, aucune production.
