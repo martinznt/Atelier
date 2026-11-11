@@ -13,7 +13,10 @@ const checks:{id:string;table:string;columns:string[]}[]=[
  {id:'0013',table:'ai_usage',columns:['connection_id','outcome']},
  {id:'0014',table:'review_configs',columns:['auto_scope']},
  {id:'0015',table:'review_configs',columns:['no_daily_cap']},
- {id:'0016',table:'review_configs',columns:['auto_mark']}
+ {id:'0016',table:'review_configs',columns:['auto_mark']},
+ {id:'0017',table:'handoff_packages',columns:['content_hash','status']},
+ {id:'0017',table:'plan_tasks',columns:['depends_on','proof']},
+ {id:'0017',table:'repositories',columns:['verified_at']}
 ];
 let cache:{at:number;value:SchemaStatus}|null=null;
 /** Cache de 60 s par instance : la page de santé est publique, elle ne doit pas solliciter D1 à chaque appel. */

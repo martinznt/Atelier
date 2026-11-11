@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import {schemaStatus,resetSchemaCache} from '../server/schema-status.ts';
 const tables={
  users:['id','email'],review_runs:['head_sha','report','stage','diagnostic','resume_at','resume_state'],
- review_configs:['daily_limit','post_comment','review_mode','relay','relay_max_attempts','auto_scope','no_daily_cap','auto_mark'],ai_usage:['connection_id','outcome']
+ review_configs:['daily_limit','post_comment','review_mode','relay','relay_max_attempts','auto_scope','no_daily_cap','auto_mark'],ai_usage:['connection_id','outcome'],
+ handoff_packages:['content_hash','status'],plan_tasks:['depends_on','proof'],repositories:['verified_at']
 };
 const fake=(t)=>({prepare:sql=>({all:async()=>{const m=/table_info\((\w+)\)/.exec(sql);return {results:(t[m[1]]||[]).map(name=>({name}))};}})});
 test('toutes les migrations présentes : complet, liste appliquée, rien de manquant',async()=>{

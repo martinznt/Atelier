@@ -560,6 +560,23 @@ Migration additive `0016_auto_mark.sql` (`review_configs.auto_mark`, texte de 1 
 Choix de l'utilisateur : la marque est le titre « EN VÉRIFICATION » (utilisé par Claude dans Livre-de-recettes, PR #111/#112) ; l'étiquette GitHub n'est pas gérée.
 Testé : `tests/pr-mark.test.mjs`, `watch-status`, scénario D1 (mise en file, enregistrement, retrait). Non testé : sur les vraies PR de l'utilisateur.
 
+## Pilotage de deux projets : Livre de recettes et Sport / Mes séances (11 novembre 2026)
+
+Base `5d05587` (vérifiée au début de la session : `main` propre, 16 migrations avant ce lot, Node 22). Une branche, une PR non fusionnée, aucun déploiement ni migration distante lancés.
+
+**Livré (noyau prioritaire A à D + F partiel)**
+- **A – Espaces séparés** : `POST /api/spaces/init` crée explicitement « Livre de recettes » ou « Sport / Mes séances » (jamais par migration, jamais pour tous les comptes) ; aucun dépôt n'est associé à la création. Association d'un dépôt : `POST /api/spaces/:projet/repository` lit le dépôt chez GitHub avec le connecteur existant (nom, droit de lecture, branche principale, dernier commit) ; refus si introuvable, inaccessible ou sans lecture ; le même dépôt n'est pas associé à deux projets sans `confirm_shared` (trace : `shared_ack`, événement). Aucun nom de dépôt n'est codé en dur.
+- **B – Plan** : phases et tâches MÉTIER (`plan_phases`, `plan_tasks`), distinctes de la table `tasks` des jobs techniques (testé : la table des jobs n'est jamais modifiée). Dépendances sans cycle, « prêt / en cours / à vérifier / terminé » refusés tant que les prérequis ne sont pas terminés, « bloqué » exige une question, « terminé sans preuve » n'est pas compté « vérifié ». Vue d'ensemble : où en est-on, terminé et vérifié, ce qui bloque, et UNE action manuelle (où aller, quoi ouvrir, quoi faire, résultat, vérification, si rien n'apparaît).
+- **C – Transmissions** : `handoff_packages` versionnés. Paquet construit par allowlist (décisions, tâches, fichiers du projet choisis un à un ; mémoire générale et recherche globale JAMAIS lues). Texte figé à « Prêt à copier » avec empreinte SHA-256 : aperçu = export (testé). Statuts : Brouillon, Prêt à copier, Copié, Exporté, Réponse reçue, Terminé ; « Envoyé » n'existe pas (contrainte SQL et API). Refus de tout texte ou pièce qui ressemble à un secret. Si un dépôt et un SHA sont indiqués, le SHA est comparé à GitHub avant de figer (409 si la branche a avancé).
+- **D – Suivi GitHub** : lecture seule via le connecteur : branche principale, dernier commit, 8 PR ouvertes au plus, contrôles par PR (check-runs puis repli GitHub Actions), rapports Atelier existants, tâches et transmissions liées, prochaine action par PR ; états « réussi / échec / en attente / inconnu », jamais de réussite sans information ; liens GitHub exacts.
+- **F (partiel)** : décisions rattachées à leur projet (statut, source, remplacement) et liste « À trancher » (tâches bloquées avec question, décisions proposées).
+
+**Non livré (hors noyau ou faute de place)** : E (documents de référence par projet : la bibliothèque existante reste utilisable, les fichiers du projet peuvent être joints aux transmissions, mais aucun type de document ni lien dédié n'a été ajouté) ; refus serveur d'une « approbation expirée » : aucune nouvelle action distante n'est introduite (les écritures GitHub existantes gardent leurs confirmations).
+
+**Réutilisé** : `projects`, `repositories` (+ 5 colonnes additives), connecteur GitHub et `credentialsFor`, `loadChecks`, `review_runs`, bibliothèque de fichiers (`getVersion`/`readVersion`).
+**Une migration** : `0017_project_spaces.sql` (additive : 5 tables, 5 colonnes de `repositories`).
+**Limites** : le plan n'a pas de glisser-déposer ni de sous-tâches dans l'interface (la colonne `parent_id` existe) ; mémoire et recherche globales non cloisonnées par projet : exclues des paquets ; le suivi GitHub lit au plus 3 dépôts par projet.
+
 ## Build de branche Cloudflare : bloc `previews` (11 novembre 2026)
 Cause documentée (journaux collés par le propriétaire le 4 novembre) : le contrôle « Workers Builds » des branches de PR lance `wrangler preview`, qui exige un bloc `previews` dans la configuration ; il échouait donc sur toutes les PR, sans effet sur la production.
 Correction : `wrangler.jsonc` reçoit un bloc `previews` avec des variables seulement (inscriptions fermées) et **aucune liaison** (ni D1, ni file, ni KV, ni R2) : un aperçu de branche ne touche jamais aux données de production. Testé : `tests/wrangler-previews.test.mjs`, `npm run build` (simulation), `configure-cloudflare` (la production garde sa base et ses liaisons ; le bloc est ignoré par `wrangler deploy`).

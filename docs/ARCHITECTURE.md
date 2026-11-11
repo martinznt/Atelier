@@ -257,3 +257,6 @@ Contexte/Envoyer restent près du message. Le déplacement de ces contrôles con
 le même état React et la même sauvegarde de brouillon/équipe, sans modifier les
 permissions serveur. La référence d’usage est décrite en section 25 du cahier des
 charges ; aucun appel aux services d’Open Chat n’est ajouté.
+
+## Espaces projet (migration 0017)
+Routes `/api/spaces/*` (profil, dépôt vérifié, plan, décisions, vue d'ensemble, suivi GitHub) et `/api/handoffs/*` (dossiers de transmission). Tables : `project_profiles`, `plan_phases`, `plan_tasks` (tâches métier, sans lien avec `tasks`), `project_decisions`, `handoff_packages`, colonnes additives de `repositories`. Chaque requête filtre par `user_id` ET `project_id`. Modules purs : `plan-core`, `handoff-core`, `project-guide`, `github-tracking`.

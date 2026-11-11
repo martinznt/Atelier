@@ -682,3 +682,172 @@ describe('relais automatique entre IA : analyse réelle (base D1 de test) avec f
   expect((await ctx.db.prepare('SELECT pr_number FROM review_runs WHERE repository_id=? ORDER BY pr_number').bind(ctx.repoId).all<any>()).results.map((x:any)=>x.pr_number)).toEqual([301,302]);
  });
 });
+
+describe('pilotage de deux projets : espaces, plan, transmissions, suivi GitHub',()=>{
+ const REPO='martinznt/Livre-de-recettes',SHA='1'.repeat(40),SHA2='2'.repeat(40);
+ const github=()=>mockNetwork.get('https://api.github.com');
+ let recettes:string,sport:string,conn:string;
+ const raw=(path:string,method='GET',cookie=a)=>mf.dispatchFetch(`${origin}/api${path}`,{method,headers:{Origin:origin,Cookie:cookie}});
+ it('deux espaces séparés, initialisation explicite, aucun dépôt associé ni deviné',async()=>{
+  const before=await json('/spaces');expect(before.status).toBe(200);expect(before.body.items).toHaveLength(0);
+  expect(before.body.templates.map((t:any)=>t.key).sort()).toEqual(['livre_recettes','sport']);
+  const r=await json('/spaces/init','POST',{template:'livre_recettes'});expect(r.status).toBe(201);recettes=r.body.project_id;
+  const s=await json('/spaces/init','POST',{template:'sport'});expect(s.status).toBe(201);sport=s.body.project_id;
+  expect(recettes).not.toBe(sport);
+  expect((await json('/spaces/init','POST',{template:'sport'})).body).toMatchObject({project_id:sport,created:false});
+  const list=await json('/spaces');expect(list.body.items).toHaveLength(2);
+  for(const item of list.body.items)expect(item.repositories).toEqual([]);
+  expect((await json('/spaces/init','POST',{template:'autre'})).status).toBe(400);
+  // Bob n'a rien : ses espaces sont indépendants et invisibles pour Alice.
+  expect((await json('/spaces','GET',undefined,b)).body.items).toHaveLength(0);
+  expect((await json('/spaces/'+recettes+'/overview','GET',undefined,b)).status).toBe(404);
+  expect((await json('/spaces/'+recettes+'/plan','GET',undefined,b)).status).toBe(404);
+  const ov=await json('/spaces/'+sport+'/overview');expect(ov.status).toBe(200);expect(ov.body.repositories).toEqual([]);
+  expect(['add_github_connection','link_repository']).toContain(ov.body.next_action.code);  // selon les connexions déjà présentes sur le compte de test
+ });
+ it('association GitHub : sélection explicite, vérification par le connecteur, branche lue chez GitHub, refus si inaccessible, double association confirmée',async()=>{
+  conn=(await json('/connections','POST',{provider:'github',label:'GitHub pilotage',secret:'exemple-jeton-factice-2026',scopes:['read']})).body.id;
+  expect((await json('/spaces/'+recettes+'/overview')).body.next_action.code).toBe('link_repository');
+  github().intercept({path:'/repos/'+REPO,method:'GET'}).reply(200,{full_name:REPO,default_branch:'trunk',permissions:{pull:true,push:false}}).times(3);
+  github().intercept({path:'/repos/'+REPO+'/branches/trunk',method:'GET'}).reply(200,{commit:{sha:SHA}}).times(3);
+  github().intercept({path:'/repos/martinznt/Inconnu',method:'GET'}).reply(404,{message:'Not Found'}).persist();
+  github().intercept({path:'/repos/martinznt/Sans-lecture',method:'GET'}).reply(200,{full_name:'martinznt/Sans-lecture',default_branch:'main',permissions:{pull:false,push:false}}).persist();
+  const ok=await json('/spaces/'+recettes+'/repository','POST',{connection_id:conn,full_name:REPO});
+  expect(ok.status).toBe(201);expect(ok.body.repositories[0]).toMatchObject({full_name:REPO,branch:'trunk',head_sha:SHA,verified:true,can_push:false});
+  // Refus : dépôt introuvable, ou sans droit de lecture : rien n'est enregistré.
+  expect((await json('/spaces/'+recettes+'/repository','POST',{connection_id:conn,full_name:'martinznt/Inconnu'})).status).toBe(403);
+  expect((await json('/spaces/'+recettes+'/repository','POST',{connection_id:conn,full_name:'martinznt/Sans-lecture'})).status).toBe(403);
+  expect((await json('/spaces/'+recettes+'/overview')).body.repositories).toHaveLength(1);
+  // Le même dépôt n'est pas associé à Sport sans confirmation explicite, dont la trace est conservée.
+  const refused=await json('/spaces/'+sport+'/repository','POST',{connection_id:conn,full_name:REPO});
+  expect(refused.status).toBe(409);expect(JSON.stringify(refused.body)).toContain('Livre de recettes');
+  expect((await json('/spaces/'+sport+'/overview')).body.repositories).toHaveLength(0);
+  const confirmed=await json('/spaces/'+sport+'/repository','POST',{connection_id:conn,full_name:REPO,confirm_shared:true});
+  expect(confirmed.status).toBe(201);expect(confirmed.body.repositories[0].shared_ack).toBe(true);
+  // Bob ne peut pas utiliser la connexion d'Alice ni associer à son projet.
+  expect((await json('/spaces/'+recettes+'/repository','POST',{connection_id:conn,full_name:REPO},b)).status).toBe(404);
+  // Sans connexion GitHub, le reste du projet reste utilisable (plan, décisions).
+  expect((await json('/spaces/'+recettes+'/phases','POST',{title:'Cadrage'})).status).toBe(201);
+ });
+ it('plan métier : dépendances, cycles, blocage, isolation par projet, jobs techniques intouchés',async()=>{
+  const db=await mf.getD1Database('DB');
+  const jobsBefore=(await db.prepare('SELECT COUNT(*) AS n FROM tasks').first<any>()).n;
+  const ph=(await json('/spaces/'+recettes+'/phases','POST',{title:'Phase 1'})).body;
+  const t1=(await json('/spaces/'+recettes+'/tasks','POST',{title:'Cahier des charges',phase_id:ph.id,priority:1,owner:'user',acceptance:'Validé par Martin'})).body;
+  const t2=(await json('/spaces/'+recettes+'/tasks','POST',{title:'Écran liste',phase_id:ph.id,depends_on:[t1.id],owner:'claude_code',status:'todo'})).body;
+  expect((await json('/spaces/'+recettes+'/tasks','POST',{title:'Trop tôt',depends_on:[t1.id],status:'ready'})).status).toBe(409);
+  const patch=(id:string,d:any,p=recettes)=>json('/spaces/'+p+'/tasks/'+id,'PATCH',d);
+  expect((await patch(t2.id,{status:'in_progress',revision:1})).status).toBe(409);
+  expect((await patch(t1.id,{depends_on:[t2.id],revision:1})).status).toBe(409);       // cycle
+  expect((await patch(t1.id,{status:'blocked',revision:1})).status).toBe(409);         // question obligatoire
+  const plan=await json('/spaces/'+recettes+'/plan');expect(plan.body.tasks.find((t:any)=>t.id===t2.id).effective_status).toBe('waiting');
+  const done=await patch(t1.id,{status:'done',proof:'Relu et validé le 11/11',revision:1});expect(done.status).toBe(200);
+  expect((await patch(t2.id,{status:'in_progress',revision:1})).status).toBe(200);
+  expect((await patch(t2.id,{title:'Écran',revision:1})).status).toBe(409);            // révision périmée
+  // Isolation : une tâche de Livre de recettes est invisible et inutilisable depuis Sport.
+  expect((await json('/spaces/'+sport+'/plan')).body.tasks).toHaveLength(0);
+  expect((await patch(t1.id,{title:'x',revision:2},sport)).status).toBe(404);
+  expect((await json('/spaces/'+sport+'/tasks','POST',{title:'Autre',depends_on:[t1.id]})).status).toBe(400);
+  expect((await json('/spaces/'+sport+'/tasks','POST',{title:'Autre',phase_id:ph.id})).status).toBe(400);
+  expect((await json('/spaces/'+recettes+'/tasks/'+t1.id,'PATCH',{title:'pirate',revision:2},b)).status).toBe(404);
+  const ov=await json('/spaces/'+recettes+'/overview');
+  expect(ov.body.progress).toMatchObject({done:1,verified:1,in_progress:1});expect(ov.body.answers.verified[0].title).toBe('Cahier des charges');
+  expect(ov.body.next_action.code).not.toBe('nothing');
+  // Les tâches du plan ne passent jamais par la table des jobs asynchrones.
+  expect((await db.prepare('SELECT COUNT(*) AS n FROM tasks').first<any>()).n).toBe(jobsBefore);
+ });
+ it('décisions : rattachées à leur projet, source conservée, remplacement, aucune fuite entre projets',async()=>{
+  const d=(await json('/spaces/'+recettes+'/decisions','POST',{title:'Format des fiches',reason:'Plus lisible',status:'validated',source_kind:'pr',source_ref:'PR 111'})).body;
+  expect(d.decided_at).toBeTruthy();
+  const d2=(await json('/spaces/'+recettes+'/decisions','POST',{title:'Format des fiches v2',supersedes_id:d.id,status:'validated'})).body;
+  const list=(await json('/spaces/'+recettes+'/decisions')).body.items;
+  expect(list.find((x:any)=>x.id===d.id).status).toBe('superseded');expect(list.find((x:any)=>x.id===d2.id).supersedes_id).toBe(d.id);
+  expect((await json('/spaces/'+sport+'/decisions')).body.items).toHaveLength(0);
+  expect((await json('/spaces/'+sport+'/decisions','POST',{title:'X',supersedes_id:d.id})).status).toBe(400);
+  expect((await json('/spaces/'+recettes+'/decisions/'+d.id,'PATCH',{status:'rejected',revision:99})).status).toBe(409);
+  expect((await json('/spaces/'+sport+'/decisions/'+d.id,'PATCH',{status:'rejected',revision:2})).status).toBe(404);
+ });
+ it('transmission : aperçu = export, statut « Copié » jamais « Envoyé », contexte du seul projet, aucun secret, réponse liée à la tâche',async()=>{
+  const decision=(await json('/spaces/'+recettes+'/decisions','POST',{title:'Pas de R2',reason:'Gratuit uniquement',status:'validated',source_kind:'other'})).body;
+  const foreign=(await json('/spaces/'+sport+'/decisions','POST',{title:'Décision SPORT CONFIDENTIELLE',reason:'ne doit jamais apparaître',status:'validated'})).body;
+  const task=(await json('/spaces/'+recettes+'/tasks','POST',{title:'Corriger le planning',objective:'Corriger',owner:'claude_code'})).body;
+  const f=(await json('/files/text','POST',{project_id:recettes,name:'consignes.md',content:'Consigne de test : garder les quantités.'})).body.file_id;
+  const fSport=(await json('/files/text','POST',{project_id:sport,name:'sport.md',content:'FICHIER SPORT'})).body.file_id;
+  const db=await mf.getD1Database('DB');
+  await db.prepare('INSERT INTO memory(id,user_id,project_id,title,content,kind,source,pinned,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?)').bind(crypto.randomUUID(),ownerA,recettes,'Mémoire','MÉMOIRE-GENERALE-JAMAIS-INCLUSE','note','test',1,new Date().toISOString(),new Date().toISOString()).run();
+  const repoId=(await json('/spaces/'+recettes+'/overview')).body.repositories[0].id;
+  // Pièces d'un autre projet ou d'un autre compte : refusées.
+  const bad=(items:any[])=>json('/handoffs','POST',{project_id:recettes,title:'X',destination:'claude_code',items});
+  expect((await bad([{kind:'decision',ref:foreign.id}])).status).toBe(400);
+  expect((await bad([{kind:'file',ref:fSport}])).status).toBe(400);
+  expect((await json('/handoffs','POST',{project_id:recettes,title:'X',destination:'claude_code',task_id:crypto.randomUUID()})).status).toBe(400);
+  expect((await json('/handoffs','POST',{project_id:recettes,title:'X',destination:'claude_code'},b)).status).toBe(404);
+  const created=await json('/handoffs','POST',{project_id:recettes,title:'Corriger le planning',destination:'claude_code',task_id:task.id,objective:'Corriger le bug',instruction:'Reproduis d’abord.',constraints:'Rien hors périmètre',success_criteria:'Test vert',repository_id:repoId,branch:'trunk',base_sha:SHA,pr_number:111,
+   items:[{kind:'decision',ref:decision.id},{kind:'task',ref:task.id},{kind:'file',ref:f,include_content:true}]});
+  expect(created.status).toBe(201);expect(created.body.status).toBe('draft');const id=created.body.id;
+  expect((await json('/handoffs/'+id+'/export')).status).toBe(409);                       // pas d'export avant « Prêt à copier »
+  const draft=(await json('/handoffs/'+id)).body;
+  for(const s of ['Pas de R2','Corriger le planning','Consigne de test','garder les quantités','pull/111',SHA])expect(draft.rendered).toContain(s);
+  for(const s of ['MÉMOIRE-GENERALE-JAMAIS-INCLUSE','SPORT','CONFIDENTIELLE',ownerA,'Cookie','exemple-jeton-factice'])expect(draft.rendered).not.toContain(s);
+  expect(draft.provenance.map((p:any)=>p.kind).sort()).toEqual(['decision','file','task']);
+  // SHA devenu obsolète : GitHub est ailleurs, le dossier n'est pas figé.
+  github().intercept({path:'/repos/'+REPO+'/branches/trunk',method:'GET'}).reply(200,{commit:{sha:SHA2}}).times(2);
+  expect((await json('/handoffs/'+id+'/ready','POST',{})).status).toBe(409);
+  expect((await json('/handoffs/'+id)).body.status).toBe('draft');
+  expect((await json('/handoffs/'+id,'PATCH',{base_sha:SHA2,revision:1})).status).toBe(200);
+  const ready=await json('/handoffs/'+id+'/ready','POST',{});expect(ready.status).toBe(200);expect(ready.body.status).toBe('ready');
+  const exported=await raw('/handoffs/'+id+'/export');const text=await exported.text();
+  expect(text).toBe(ready.body.rendered);expect(exported.headers.get('x-content-hash')).toBe(ready.body.content_hash);
+  const hash=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text));
+  expect(Buffer.from(hash).toString('hex')).toBe(ready.body.content_hash);
+  expect((await json('/handoffs/'+id,'PATCH',{title:'x',revision:3})).status).toBe(409);   // figé
+  // Statuts : « Copié » après une action locale, « Envoyé » n'existe pas.
+  expect((await json('/handoffs/'+id+'/transfer','POST',{mode:'sent'})).status).toBe(400);
+  const copied=await json('/handoffs/'+id+'/transfer','POST',{mode:'clipboard'});
+  expect(copied.body.status).toBe('copied');expect(copied.body.status_label).toBe('Copié');expect(JSON.stringify(copied.body)).not.toMatch(/Envoy/);
+  // Réponse : liée au bon dossier et à la bonne tâche.
+  github().intercept({path:'/repos/'+REPO+'/pulls/112',method:'GET'}).reply(200,{number:112}).times(1);
+  const resp=await json('/handoffs/'+id+'/response','POST',{text:'Corrigé, tests verts.',pr_number:112});
+  expect(resp.status).toBe(200);expect(resp.body).toMatchObject({status:'response_received',result_pr:112,result_verified:1});
+  expect((await json('/spaces/'+recettes+'/plan')).body.tasks.find((t:any)=>t.id===task.id).pr_number).toBe(112);
+  expect((await json('/handoffs/'+id+'/response','POST',{text:'x'},b)).status).toBe(404);
+  expect((await json('/handoffs/'+id+'/close','POST',{})).body.status).toBe('done');
+  const v2=await json('/handoffs/'+id+'/new-version','POST',{});expect(v2.body).toMatchObject({version:2,status:'draft',parent_id:id});
+  // Aucune pièce d'Alice dans la liste de Bob ; Sport ne voit pas les dossiers de Livre de recettes.
+  expect((await json('/handoffs?project='+sport)).body.items).toHaveLength(0);expect((await json('/handoffs?project='+recettes,'GET',undefined,b)).status).toBe(404);
+ });
+ it('secrets : une pièce ou un texte qui ressemble à un secret n’est jamais transmis',async()=>{
+  const faux='ghp_'+'a'.repeat(30);
+  const f=(await json('/files/text','POST',{project_id:recettes,name:'notes.md',content:'Mon jeton : '+faux})).body.file_id;
+  const p=(await json('/handoffs','POST',{project_id:recettes,title:'Secret',destination:'chatgpt',instruction:'Voir pièce',items:[{kind:'file',ref:f,include_content:true}]})).body;
+  const preview=await json('/handoffs/'+p.id);expect(preview.body.rendered).toBeNull();expect(preview.body.preview_error).toContain('secret');expect(JSON.stringify(preview.body)).not.toContain(faux);
+  expect((await json('/handoffs/'+p.id+'/ready','POST',{})).status).toBe(400);
+  // En référence seulement, la même pièce est acceptée (le contenu n'est pas transmis).
+  expect((await json('/handoffs/'+p.id,'PATCH',{items:[{kind:'file',ref:f}],revision:1})).status).toBe(200);
+  const ok=await json('/handoffs/'+p.id+'/ready','POST',{});expect(ok.status).toBe(200);expect(ok.body.rendered).not.toContain(faux);expect(ok.body.rendered).toContain('contenu non inclus');
+  const q=(await json('/handoffs','POST',{project_id:recettes,title:'Secret 2',destination:'codex',instruction:'password=Abcdefgh1234'})).body;
+  expect((await json('/handoffs/'+q.id+'/ready','POST',{})).status).toBe(400);
+ });
+ it('suivi GitHub : états CI réels, « inconnu » sans information, liens exacts, indisponibilité signalée',async()=>{
+  const sha='3'.repeat(40),shaFail='4'.repeat(40);
+  github().intercept({path:'/repos/'+REPO+'/pulls?state=open&sort=updated&per_page=8',method:'GET'}).reply(200,[
+   {number:5,title:'PR verte',draft:false,head:{sha,ref:'claude/a'},updated_at:'2026-11-10T10:00:00Z'},
+   {number:6,title:'PR rouge',draft:false,head:{sha:shaFail,ref:'claude/b'},updated_at:'2026-11-10T11:00:00Z'}]).persist();
+  github().intercept({path:'/repos/'+REPO+'/commits/'+SHA2+'/check-runs?per_page=30',method:'GET'}).reply(200,{check_runs:[]}).persist();
+  github().intercept({path:'/repos/'+REPO+'/commits/'+sha+'/check-runs?per_page=30',method:'GET'}).reply(200,{check_runs:[{name:'check',status:'completed',conclusion:'success'}]}).persist();
+  github().intercept({path:'/repos/'+REPO+'/commits/'+shaFail+'/check-runs?per_page=30',method:'GET'}).reply(200,{check_runs:[{name:'check',status:'completed',conclusion:'failure'}]}).persist();
+  github().intercept({path:'/repos/'+REPO+'/branches/trunk',method:'GET'}).reply(200,{commit:{sha:SHA2,commit:{committer:{date:'2026-11-10T09:00:00Z'},message:'Titre du commit\nsuite'}}}).times(1);
+  github().intercept({path:'/repos/'+REPO,method:'GET'}).reply(200,{full_name:REPO,default_branch:'trunk'}).times(1);
+  const g=await json('/spaces/'+recettes+'/github');expect(g.status).toBe(200);
+  const repo=g.body.repositories[0];
+  expect(repo).toMatchObject({available:true,default_branch:'trunk'});expect(repo.head).toMatchObject({sha:SHA2,message:'Titre du commit',url:'https://github.com/'+REPO+'/commit/'+SHA2});
+  expect(repo.head_ci.state).toBe('unknown');                              // aucun contrôle reçu : jamais « réussi »
+  const green=repo.prs.find((p:any)=>p.number===5),red=repo.prs.find((p:any)=>p.number===6);
+  expect(green.ci.state).toBe('success');expect(green.url).toBe('https://github.com/'+REPO+'/pull/5');expect(red.ci.state).toBe('failure');expect(red.next_action.code).toBe('fix');
+  expect(g.body.next_action.code).toBe('ci_failed');
+  expect((await json('/spaces/'+recettes+'/github','GET',undefined,b)).status).toBe(404);
+  // Dépôt devenu inaccessible : indisponible, avec la raison, sans fausse réussite.
+  github().intercept({path:'/repos/'+REPO,method:'GET'}).reply(403,{message:'rate limited'}).times(1);
+  const down=await json('/spaces/'+recettes+'/github');expect(down.body.repositories[0].available).toBe(false);expect(down.body.repositories[0].reason).toContain('403');expect(down.body.repositories[0].prs).toBeUndefined();
+ });
+});
