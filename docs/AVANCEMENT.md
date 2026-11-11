@@ -576,3 +576,8 @@ Base `5d05587` (vérifiée au début de la session : `main` propre, 16 migration
 **Réutilisé** : `projects`, `repositories` (+ 5 colonnes additives), connecteur GitHub et `credentialsFor`, `loadChecks`, `review_runs`, bibliothèque de fichiers (`getVersion`/`readVersion`).
 **Une migration** : `0017_project_spaces.sql` (additive : 5 tables, 5 colonnes de `repositories`).
 **Limites** : le plan n'a pas de glisser-déposer ni de sous-tâches dans l'interface (la colonne `parent_id` existe) ; mémoire et recherche globales non cloisonnées par projet : exclues des paquets ; le suivi GitHub lit au plus 3 dépôts par projet.
+
+## Build de branche Cloudflare : bloc `previews` (11 novembre 2026)
+Cause documentée (journaux collés par le propriétaire le 4 novembre) : le contrôle « Workers Builds » des branches de PR lance `wrangler preview`, qui exige un bloc `previews` dans la configuration ; il échouait donc sur toutes les PR, sans effet sur la production.
+Correction : `wrangler.jsonc` reçoit un bloc `previews` avec des variables seulement (inscriptions fermées) et **aucune liaison** (ni D1, ni file, ni KV, ni R2) : un aperçu de branche ne touche jamais aux données de production. Testé : `tests/wrangler-previews.test.mjs`, `npm run build` (simulation), `configure-cloudflare` (la production garde sa base et ses liaisons ; le bloc est ignoré par `wrangler deploy`).
+**À vérifier après ouverture de la PR** : le résultat du contrôle « Workers Builds » sur cette PR est la seule preuve réelle. Le journal du build Cloudflare n'étant pas lisible depuis GitHub, la cause exacte n'a pas été relue.
