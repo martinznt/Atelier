@@ -54,3 +54,12 @@ Reprise du 5 novembre 2026 : l'état actuel est la section « Mise en service »
 avec migrations). Les constats plus anciens de ces fichiers sont historiques. Ne jamais déclarer testé ce qui ne l'a pas été avec de vraies connexions.
 
 Reprise du 12 novembre 2026 : poste de pilotage sur `feat/atelier-poste-de-pilotage` (migration 0018, non fusionnée sans accord de Martin). Lire le haut de docs/AVANCEMENT.md et docs/audits/RAPPORT_MISSION_0002.md. Lancer aussi `node --test tests/workbench-core.test.mjs`. Les appels GitHub du référentiel et de l'audit ne sont testés qu'en simulation : ne pas les déclarer validés. Exigences nouvelles : préfixe PIL-28 ; ne pas renuméroter les 465 historiques.
+
+## Économie des quotas (demande de Martin du 12 novembre 2026)
+
+- Modèle par défaut : Sonnet 5.5, effort moyen. Effort élevé seulement si la complexité le justifie ; jamais d’effort maximal par habitude.
+- Opus : vérification indépendante d’un travail important, audit, architecture complexe. Fable : blocage réel après analyse de l’échec. Ne pas utiliser Fable pour auditer ce qu’un test vérifie.
+- Tests automatisés avant toute nouvelle analyse par un modèle. Pas de sous-agent sans bénéfice expliqué.
+- Lire seulement les fichiers de la tâche ; ne pas relire le dépôt entier pour une modification localisée ; ne pas refaire une analyse notée dans docs/ ou dans le dossier de la tâche.
+- Session longue : écrire un point de reprise (objectif, terminé, reste, décisions, fichiers, erreurs, tests, prochaine action) et repartir dans une session neuve.
+- Ne jamais inventer un état de quota. Détail : docs/QUOTAS_CLAUDE.md. Lancer aussi `node --test tests/claude-advisor.test.mjs`.

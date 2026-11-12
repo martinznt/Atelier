@@ -448,3 +448,7 @@ Exécutés en local sur la branche `feat/atelier-poste-de-pilotage` :
 - `tests/e2e/flow.spec.ts` : réussi en Chromium bureau et 360 px (WebKit et Firefox non installés ici : non exécutés).
 
 **Simulé, donc non prouvé en réel :** tous les appels GitHub (référentiel, audit, contrôles, PR). **Non exécuté :** export ChatGPT réel, hors connexion réel, téléphone réel, production.
+
+# Pilotage Claude — contrôles du 12 novembre 2026
+
+Exécutés en local sur `feat/atelier-quotas-claude` : `tsc --noEmit` ; `npm test` 67/67 ; `node --test tests/*.test.mjs` (dont 11 pour `claude-advisor`) ; `npm run test:regressions` ; `npm run test:core` ; `npm run build` ; migration 0019 sur base neuve et `/api/health` local complet 0007→0019 ; navigateur réel (Chromium) à 360 et 390 px sur Accueil, Quel modèle, Quotas, Reprise, Retours, avec ajout d’un relevé sur capture : aucun débordement, aucun contrôle de moins de 30 px, aucune erreur d’API. **Non exécuté :** téléphone réel, WebKit, Firefox, production. **Aucune mesure réelle de quota n’existe dans Atelier.**

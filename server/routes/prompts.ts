@@ -5,6 +5,8 @@ import {event,fail,jsonBody,many,now,one,owned,run,uid,userId} from '../core.ts'
 import {PROMPT_LABEL,canSetStatus,cleanCommands,nextCode,parsePromptDocument,promptMarkdown,promptText,statusFromMeta,type PromptStatus} from '../prompt-core.ts';
 import {secretFindings,sha256Hex} from '../handoff-core.ts';
 import {devPrompt} from '../workbench-core.ts';
+import {VERIFICATION_LABEL,adviceLine,recommend} from '../claude-advisor.ts';
+import {taskAdviceInput} from './claude.ts';
 import {memoryDocContent} from './memory-repo.ts';
 import type {AppEnv,Env,Row} from '../types.ts';
 export const prompts=new Hono<AppEnv>();
@@ -148,10 +150,17 @@ prompts.post('/from-task',async c=>{
  let deps:string[]=[];try{deps=JSON.parse(task.depends_on);}catch{/* dépendances illisibles */}
  const dependencies=[];for(const id of deps){const r=await one<Row>(c.env,'SELECT title,status FROM plan_tasks WHERE id=? AND user_id=? AND project_id=?',id,user,project.id);if(r)dependencies.push({title:r.title,status:r.status});}
  const repo=await one<Row>(c.env,'SELECT full_name,branch,default_branch,head_sha,verified_at FROM repositories WHERE user_id=? AND project_id=? ORDER BY created_at LIMIT 1',user,project.id);
- const body=devPrompt({project:project.name,task:{title:task.title,objective:task.objective,acceptance:task.acceptance,context:task.context,files_hint:task.files_hint,tests:task.tests,risks:task.risks,next_action:task.next_action,owner:task.owner},
+ const advice=recommend(taskAdviceInput(task));
+ const previous=await one<Row>(c.env,'SELECT worked_at,outcome,results,unresolved,tests_run,files_modified FROM work_sessions WHERE user_id=? AND task_id=? ORDER BY worked_at DESC LIMIT 1',user,task.id);
+ const checkpoint=await one<Row>(c.env,'SELECT title,next_action,remaining FROM checkpoints WHERE user_id=? AND task_id=? ORDER BY updated_at DESC LIMIT 1',user,task.id);
+ const body=devPrompt({project:project.name,advice:{line:adviceLine(advice),verification:VERIFICATION_LABEL[advice.verification],reasons:advice.reasons,warnings:advice.warnings},
+  previous:previous?{worked_at:previous.worked_at,outcome:previous.outcome,results:previous.results,unresolved:previous.unresolved,tests_run:previous.tests_run,files_modified:previous.files_modified}:null,
+  checkpoint:checkpoint?{title:checkpoint.title,next_action:checkpoint.next_action,remaining:checkpoint.remaining}:null,
+  task:{title:task.title,objective:task.objective,acceptance:task.acceptance,context:task.context,files_hint:task.files_hint,tests:task.tests,risks:task.risks,next_action:task.next_action,owner:task.owner,
+   constraints_text:task.constraints_text,do_not_touch:task.do_not_touch,already_verified:task.already_verified,difficulties:task.difficulties},
   repository:repo?{full_name:repo.full_name,branch:repo.default_branch||repo.branch,head_sha:repo.head_sha,verified:Boolean(repo.verified_at)}:null,decisions,dependencies});
  const code=nextCode((await many<Row>(c.env,'SELECT code FROM prompts WHERE user_id=?',user)).map(r=>r.code),'PROMPT-'+d.recipient.replace(/\s+/g,''));
- const id=await createPrompt(c.env,user,{project_id:project.id,title:task.title,kind:'development',recipient:d.recipient,task_id:task.id,objective:task.objective},code,body,[],{source_note:'Préparé depuis la tâche du plan « '+task.title+' ».'});
+ const id=await createPrompt(c.env,user,{project_id:project.id,title:task.title,kind:'development',recipient:d.recipient,task_id:task.id,objective:task.objective,model:advice.model==='none'?'':({haiku:'Haiku',sonnet:'Sonnet 5.5',opus:'Opus',fable:'Fable 5.2'} as Record<string,string>)[advice.model],effort:advice.effort||''},code,body,[],{source_note:'Préparé depuis la tâche du plan « '+task.title+' ».'});
  return c.json(view(await mine(c.env,user,id)),201);
 });
 /** Fiche de prompt créée depuis un dossier de transmission figé : le texte figé devient la version 1. */
