@@ -21,7 +21,7 @@ export function parsePromptDocument(md:string):{meta:Record<string,string>;body:
  if(!m)return {meta:{},body:text.trim(),title};
  const meta:Record<string,string>={};
  for(const line of m[2].split('\n')){const i=line.indexOf(':');if(i<1)continue;const k=line.slice(0,i).trim().toLowerCase();if(/^[a-z_]{2,40}$/.test(k))meta[k]=line.slice(i+1).trim();}
- const body=(text.slice(0,m.index)+'\n'+text.slice(m.index+m[0].length)).trim();
+ const body=[text.slice(0,m.index).trim(),text.slice(m.index+m[0].length).trim()].filter(Boolean).join('\n\n');
  return {meta,body,title};
 }
 const STATUS_HINTS:[RegExp,PromptStatus][]=[[/obsol|abandon/i,'obsolete'],[/trait/i,'processed'],[/r[ée]ponse re[cç]ue/i,'response_received'],[/attente/i,'awaiting'],[/d[ée]j[aà] (donn|envoy|transmis)/i,'given'],[/[àa] donner/i,'to_give'],[/pr[ée]parer/i,'to_prepare']];

@@ -31,11 +31,11 @@ memoryRepo.post('/',async c=>{
  if(conn.provider!=='github')fail(400,'Connexion GitHub requise.');
  // Un dépôt mémoire n'est jamais confondu avec un dépôt de code d'un projet.
  if(await one(c.env,'SELECT id FROM repositories WHERE user_id=? AND lower(full_name)=lower(?) LIMIT 1',user,d.full_name))fail(409,'Ce dépôt est déjà associé à un projet comme dépôt de code : il ne peut pas servir aussi de référentiel mémoire.');
+ if(await one(c.env,'SELECT id FROM memory_repos WHERE user_id=? AND lower(full_name)=lower(?)',user,d.full_name))fail(409,'Ce référentiel est déjà connecté.');
  let info:any;try{info=(await jsonRequest('github',secret,'/repos/'+d.full_name)).data;}catch(e){fail(403,githubError(e,'dépôt')+' Rien n’est enregistré.');}
  if(String(info?.full_name||'').toLowerCase()!==d.full_name.toLowerCase())fail(400,'Le dépôt renvoyé par GitHub ne correspond pas au nom choisi : rien n’est enregistré.');
  const branch=d.branch||String(info?.default_branch||'');if(!branch)fail(502,'GitHub n’a pas indiqué la branche principale.');
  try{await jsonRequest('github',secret,'/repos/'+d.full_name+'/branches/'+encodeURIComponent(branch));}catch(e){fail(400,githubError(e,'branche « '+branch+' »')+' Rien n’est enregistré.');}
- if(await one(c.env,'SELECT id FROM memory_repos WHERE user_id=? AND lower(full_name)=lower(?)',user,d.full_name))fail(409,'Ce référentiel est déjà connecté.');
  const id=uid();
  await run(c.env,'INSERT INTO memory_repos(id,user_id,connection_id,full_name,branch,created_at) VALUES(?,?,?,?,?,?)',id,user,d.connection_id,String(info.full_name),branch,now());
  await event(c.env,user,'memory_repo_linked','Référentiel mémoire connecté en lecture seule : '+info.full_name+' ('+branch+')');

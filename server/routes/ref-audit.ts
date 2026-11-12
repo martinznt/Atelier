@@ -33,13 +33,14 @@ refAudit.post('/',async c=>{
  if(!repo)fail(404,'Ce dépôt n’est pas associé à ce projet.');
  const {secret}=await credentialsFor(c.env,repo.connection_id,user,'read'),branch=repo.default_branch||repo.branch;
  let head:any,tree:any;
- try{head=(await jsonRequest('github',secret,'/repos/'+repo.full_name+'/branches/'+encodeURIComponent(branch))).data;
-  const treeSha=String(head?.commit?.commit?.tree?.sha||'');if(!/^[0-9a-f]{40}$/.test(treeSha))throw Object.assign(new Error('arbre'),{status:502});
-  tree=(await jsonRequest('github',secret,'/repos/'+repo.full_name+'/git/trees/'+treeSha+'?recursive=1')).data;}
- catch(e:any){fail(502,'GitHub n’a pas renvoyé le commit ou l’arbre du dépôt'+(e?.status?' (HTTP '+e.status+')':'')+' : aucun audit n’est créé.');}
- const commit=String(head.commit.sha),treeSha=String(head.commit.commit.tree.sha);
+ const ghFail=(e:any):never=>fail(502,'GitHub n’a pas renvoyé le commit ou l’arbre du dépôt'+(e?.status?' (HTTP '+e.status+')':'')+' : aucun audit n’est créé.');
+ try{head=(await jsonRequest('github',secret,'/repos/'+repo.full_name+'/branches/'+encodeURIComponent(branch))).data;}catch(e){ghFail(e);}
+ const commit=String(head?.commit?.sha||''),treeSha=String(head?.commit?.commit?.tree?.sha||'');
+ if(!/^[0-9a-f]{40}$/.test(commit)||!/^[0-9a-f]{40}$/.test(treeSha))ghFail(null);
+ // Même commit : on reprend l'audit existant sans relire l'arbre.
  const existing=await one<Row>(c.env,'SELECT * FROM ref_audits WHERE user_id=? AND repository_id=? AND commit_sha=?',user,repo.id,commit);
  if(existing)return c.json({...(await view(c.env,user,existing)),resumed:true});
+ try{tree=(await jsonRequest('github',secret,'/repos/'+repo.full_name+'/git/trees/'+treeSha+'?recursive=1')).data;}catch(e){ghFail(e);}
  const files=treeToDocs(Array.isArray(tree?.tree)?tree.tree:[]);
  if(files.length>6000)fail(413,'Ce dépôt dépasse 6 000 fichiers : l’audit de référence n’est pas pris en charge à cette taille.');
  const previous=await one<Row>(c.env,'SELECT id,commit_sha FROM ref_audits WHERE user_id=? AND repository_id=? ORDER BY created_at DESC LIMIT 1',user,repo.id);
