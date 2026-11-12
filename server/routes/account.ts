@@ -21,6 +21,14 @@ account.get('/export',async c=>{
  meta.backup={self_contained:false,kind:'metadata-and-references',notice:'Les métadonnées seules ne contiennent aucun fichier. Les dépôts GitHub et données locales nécessitent une sauvegarde séparée.'};
  meta.connections=await many(c.env,'SELECT id,provider,label,scopes,status,created_at FROM connections WHERE user_id=?',user);
  if(project){const ownedProjects=meta.projects as any[];if(!ownedProjects.some(p=>p.id===project))fail(404,'Projet introuvable.');for(const table of ['projects','conversations','memory','files','tasks','repositories','deployment_targets','deployments','events'])meta[table]=(meta[table] as any[]).filter(r=>table==='projects'?r.id===project:r.project_id===project);const conversations=new Set((meta.conversations as any[]).map(r=>r.id));meta.messages=(meta.messages as any[]).filter(r=>conversations.has(r.conversation_id));const memories=new Set((meta.memory as any[]).map(r=>r.id));meta.memory_history=(meta.memory_history as any[]).filter(r=>memories.has(r.memory_id));const files=new Set((meta.files as any[]).map(r=>r.id));meta.file_versions=(meta.file_versions as any[]).filter(r=>files.has(r.file_id));delete meta.connections;}
+ // Données du poste de pilotage (migrations 0017 et 0018). Le cache de contenu du référentiel mémoire est exclu : sa source est le dépôt Git.
+ const projectIds=new Set((meta.projects as any[]).map(p=>p.id));
+ for(const table of ['project_profiles','plan_phases','plan_tasks','project_decisions','handoff_packages','conversation_links','object_links','martin_actions','atelier_questions','prompts','prompt_versions','prompt_responses','project_documents','memory_repos','export_batches','export_conversations','export_analyses','ref_audits','ref_audit_files','ref_audit_findings']){
+  const rows=await many(c.env,`SELECT * FROM ${table} WHERE user_id=? LIMIT 20001`,user);
+  if(rows.length>20000)fail(413,'Ce compte dépasse la taille du petit export intégré. Utilisez la procédure d’export administrateur documentée.');
+  meta[table]=project&&rows.length&&'project_id' in rows[0]?rows.filter(r=>r.project_id===project&&projectIds.has(r.project_id)):rows;
+ }
+ meta.memory_docs=await many(c.env,'SELECT id,repo_id,path,blob_sha,size,doc_type,project_key,title,doc_date,doc_ref,indexed_commit,present FROM memory_docs WHERE user_id=? LIMIT 20001',user);
  const bridgeSpaces=await many(c.env,'SELECT s.* FROM bridge_spaces s LEFT JOIN bridge_project_spaces l ON l.space_id=s.id WHERE s.owner_id=? AND (? IS NULL OR l.project_id=?)',user,project,project);
  const allowedSpaces=new Set(bridgeSpaces.map(s=>s.id));meta.bridge_spaces=bridgeSpaces;
  for(const table of ['bridge_context_versions','bridge_conversations','bridge_handoffs']){
