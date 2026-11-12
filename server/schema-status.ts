@@ -16,7 +16,11 @@ const checks:{id:string;table:string;columns:string[]}[]=[
  {id:'0016',table:'review_configs',columns:['auto_mark']},
  {id:'0017',table:'handoff_packages',columns:['content_hash','status']},
  {id:'0017',table:'plan_tasks',columns:['depends_on','proof']},
- {id:'0017',table:'repositories',columns:['verified_at']}
+ {id:'0017',table:'repositories',columns:['verified_at']},
+ {id:'0018',table:'conversations',columns:['category','status']},
+ {id:'0018',table:'atelier_questions',columns:['dedupe_key']},
+ {id:'0018',table:'prompt_versions',columns:['locked','sent_at']},
+ {id:'0018',table:'ref_audit_files',columns:['read_status']}
 ];
 let cache:{at:number;value:SchemaStatus}|null=null;
 /** Cache de 60 s par instance : la page de santé est publique, elle ne doit pas solliciter D1 à chaque appel. */

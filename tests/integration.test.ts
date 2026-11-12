@@ -851,3 +851,257 @@ describe('pilotage de deux projets : espaces, plan, transmissions, suivi GitHub'
   const down=await json('/spaces/'+recettes+'/github');expect(down.body.repositories[0].available).toBe(false);expect(down.body.repositories[0].reason).toContain('403');expect(down.body.repositories[0].prs).toBeUndefined();
  });
 });
+
+describe('poste de pilotage : accueil, boîte de Martin, questions, discussions, mémoire, prompts, export, audit de référence',()=>{
+ const MEM='martinznt/Memoire-Projets',CODE='martinznt/Sport-Test',C1='a1'.repeat(20),T1='b1'.repeat(20),C2='a2'.repeat(20),T2='b2'.repeat(20);
+ const B=(n:number)=>String(n).padStart(2,'0').repeat(20);
+ const github=()=>mockNetwork.get('https://api.github.com');
+ const b64=(s:string)=>Buffer.from(s,'utf8').toString('base64');
+ const raw=(path:string,cookie=a)=>mf.dispatchFetch(`${origin}/api${path}`,{headers:{Origin:origin,Cookie:cookie}});
+ let pA:string,pB:string,bobProject:string,conn:string,conv1:string,conv2:string,msg:string;
+ it('prépare deux projets d’Alice et un projet de Bob',async()=>{
+  pA=(await json('/projects','POST',{name:'Pilotage A'})).body.id;pB=(await json('/projects','POST',{name:'Pilotage B'})).body.id;
+  bobProject=(await json('/projects','POST',{name:'Projet de Bob'},b)).body.id;
+  conn=(await json('/connections','POST',{provider:'github',label:'GitHub mémoire',secret:'exemple-jeton-factice-2026',scopes:['read']})).body.id;
+  conv1=(await json('/conversations','POST',{project_id:pA,title:'Vision du produit'})).body.id;conv2=(await json('/conversations','POST',{project_id:pA,title:'Bugs du planning'})).body.id;
+  const note=await json('/conversations/'+conv1+'/notes','POST',{content:'Martin veut un mode cuisine en pages. Décision : garder les quantités visibles.'});expect(note.status).toBe(201);msg=note.body.id;
+ });
+ it('À faire par Martin : action bloquante en tête, preuve exigée, isolation des comptes et des projets',async()=>{
+  expect((await json('/workbench/actions','POST',{project_id:bobProject,title:'x'})).status).toBe(404);
+  const t=(await json('/spaces/'+pB+'/tasks','POST',{title:'Tâche de B'})).body;
+  expect((await json('/workbench/actions','POST',{project_id:pA,title:'x',task_id:t.id})).status).toBe(400);
+  const act=await json('/workbench/actions','POST',{project_id:pA,title:'Tester sur le téléphone',why:'Seul Martin a l’appareil',expected:'Ouvrir le site et noter le résultat',kind:'test',blocking:true});
+  expect(act.status).toBe(201);
+  const home=await json('/workbench/home');expect(home.status).toBe(200);
+  const card=home.body.projects.find((p:any)=>p.id===pA);
+  expect(card.next_action.code).toBe('do_martin_action');expect(card.counts.blocking_actions).toBe(1);expect(home.body.inbox.actions).toBeGreaterThanOrEqual(1);
+  expect(home.body.projects.some((p:any)=>p.id===bobProject)).toBe(false);
+  expect((await json('/workbench/actions/'+act.body.id,'PATCH',{status:'done',revision:1})).status).toBe(400);            // ni réponse ni preuve
+  expect((await json('/workbench/actions/'+act.body.id,'PATCH',{status:'done',proof:'x',revision:1},b)).status).toBe(404);
+  const done=await json('/workbench/actions/'+act.body.id,'PATCH',{status:'done',proof:'Testé le 12/11, page correcte',revision:1});
+  expect(done.status).toBe(200);expect(done.body.done_at).toBeTruthy();
+  expect((await json('/workbench/actions/'+act.body.id,'PATCH',{title:'y',revision:1})).status).toBe(409);               // révision périmée
+  expect((await json('/workbench/actions?project='+pA)).body.items).toHaveLength(0);
+  expect((await json('/workbench/actions?project='+pA+'&status=all')).body.items).toHaveLength(1);
+  expect((await json('/workbench/actions?project='+pB)).body.items).toHaveLength(0);
+ });
+ it('Questions d’Atelier : une question déjà posée ou répondue n’est jamais reposée ; réponse conservée ; décision validée seulement par Martin',async()=>{
+  const q=await json('/workbench/questions','POST',{project_id:pA,theme:'UX',question:'Quel format pour les fiches ?',reason:'Change l’écran de saisie',options:[{label:'Cartes',tradeoff:'plus visuel',recommended:true},{label:'Liste',tradeoff:'plus dense'}],priority:1});
+  expect(q.status).toBe(201);
+  const dup=await json('/workbench/questions','POST',{project_id:pA,question:'  quel FORMAT, pour les fiches'});
+  expect(dup.status).toBe(409);expect(dup.body.existing.id).toBe(q.body.id);
+  expect((await json('/workbench/questions','POST',{project_id:pB,question:'Quel format pour les fiches ?'})).status).toBe(201);   // autre projet : autre périmètre
+  expect((await json('/workbench/home')).body.projects.find((p:any)=>p.id===pA).next_action.code).toBe('answer_question');
+  expect((await json('/workbench/questions/'+q.body.id+'/answer','POST',{selected:[0,1]})).status).toBe(400);              // choix unique
+  expect((await json('/workbench/questions/'+q.body.id+'/answer','POST',{})).status).toBe(400);
+  expect((await json('/workbench/questions/'+q.body.id+'/answer','POST',{selected:[0]},b)).status).toBe(404);
+  const ans=await json('/workbench/questions/'+q.body.id+'/answer','POST',{selected:[0],text:'avec photo',create_decision:true});
+  expect(ans.status).toBe(200);expect(ans.body).toMatchObject({status:'answered',answer_text:'Cartes ; avec photo'});expect(ans.body.decision_id).toBeTruthy();
+  const decisions=(await json('/spaces/'+pA+'/decisions')).body.items;expect(decisions.find((d:any)=>d.id===ans.body.decision_id).status).toBe('validated');
+  const again=await json('/workbench/questions','POST',{project_id:pA,question:'Quel format pour les fiches ?'});
+  expect(again.status).toBe(409);expect(again.body.error).toContain('déjà reçu une réponse');expect(again.body.existing.answer_text).toBe('Cartes ; avec photo');
+  // Questionnaire rempli hors ligne : réponses groupées, erreurs par question.
+  const q2=(await json('/workbench/questions','POST',{project_id:pA,question:'Faut-il un thème clair ?',allow_unknown:true})).body;
+  const bulk=await json('/workbench/questions/answers','POST',{answers:[{id:q2.id,unknown:true},{id:crypto.randomUUID(),text:'x'}]});
+  expect(bulk.body.answered).toBe(1);expect(bulk.body.errors).toHaveLength(1);
+  const exp=await json('/workbench/questions/export');expect(exp.body.questions.length).toBeGreaterThanOrEqual(3);
+  const csv=await (await raw('/workbench/questions/export?format=csv')).text();expect(csv).toContain('Quel format pour les fiches ?');expect(csv).toContain('Je ne sais pas');
+  expect((await json('/workbench/questions/export','GET',undefined,b)).body.questions).toHaveLength(0);
+ });
+ it('discussions : catégorie et statut sans toucher aux messages, recherche qui ouvre le message exact, liens, reprise d’extrait, extraction candidate',async()=>{
+  const upd=await json('/workbench/conversations/'+conv1,'PATCH',{category:'Vision',status:'to_resume',objective:'Cadrer le mode cuisine',pinned:true});
+  expect(upd.status).toBe(200);expect(upd.body).toMatchObject({category:'Vision',status:'to_resume',pinned:1});
+  expect((await json('/workbench/conversations/'+conv1,'PATCH',{status:'archived'},b)).status).toBe(404);
+  const list=await json('/workbench/conversations?project='+pA+'&status=to_resume');expect(list.body.items.map((x:any)=>x.id)).toEqual([conv1]);expect(list.body.items[0].message_count).toBe(1);
+  await json('/workbench/conversations/'+conv1,'PATCH',{status:'archived'});
+  expect((await json('/conversations/'+conv1+'/messages')).body.items).toHaveLength(1);                                      // archivée : messages intacts
+  const found=await json('/workbench/search?project='+pA+'&q=mode cuisine');
+  expect(found.body.items).toHaveLength(1);expect(found.body.items[0]).toMatchObject({id:msg,conversation_id:conv1,project_id:pA});expect(found.body.items[0].excerpt).toContain('mode cuisine');
+  expect((await json('/workbench/search?project='+pB+'&q=mode cuisine')).body.items).toHaveLength(0);                         // limité au projet courant
+  expect((await json('/workbench/search?project='+pA+'&q=mode cuisine','GET',undefined,b)).status).toBe(404);
+  expect((await json('/workbench/search?project='+pA+'&q=100%25')).body.items).toHaveLength(0);                               // % n'est pas un joker
+  // Liens entre discussions : même projet seulement, sans fusion.
+  const other=(await json('/conversations','POST',{project_id:pB,title:'Autre projet'})).body.id;
+  expect((await json('/workbench/conversations/'+conv1+'/links','POST',{to_id:other})).status).toBe(400);
+  expect((await json('/workbench/conversations/'+conv1+'/links','POST',{to_id:conv2,note:'même sujet'})).status).toBe(201);
+  expect((await json('/workbench/conversations/'+conv2+'/links','POST',{to_id:conv1})).status).toBe(409);
+  // Réutiliser un extrait : passage exact, citation datée dans la cible, original inchangé.
+  expect((await json('/workbench/messages/'+msg+'/reuse','POST',{target_conversation_id:conv2,excerpt:'phrase inventée'})).status).toBe(400);
+  expect((await json('/workbench/messages/'+msg+'/reuse','POST',{target_conversation_id:other,excerpt:'mode cuisine'})).status).toBe(400);
+  const reuse=await json('/workbench/messages/'+msg+'/reuse','POST',{target_conversation_id:conv2,excerpt:'garder les quantités visibles'});expect(reuse.status).toBe(201);
+  const target=(await json('/conversations/'+conv2+'/messages')).body.items;expect(target).toHaveLength(1);expect(target[0].role).toBe('note');expect(target[0].content).toContain('> garder les quantités visibles');expect(target[0].content).toContain(msg);
+  expect((await json('/conversations/'+conv1+'/messages')).body.items[0].content).toBe('Martin veut un mode cuisine en pages. Décision : garder les quantités visibles.');
+  // Extraction : une décision issue d'un message reste « proposée ».
+  const ex=await json('/workbench/messages/'+msg+'/extract','POST',{kind:'decision',title:'Garder les quantités visibles',excerpt:'garder les quantités visibles'});
+  expect(ex.status).toBe(201);expect(ex.body.status).toBe('proposed');
+  expect((await json('/spaces/'+pA+'/decisions')).body.items.find((d:any)=>d.id===ex.body.id).status).toBe('proposed');
+  expect((await json('/workbench/messages/'+msg+'/extract','POST',{kind:'decision',title:'x y z',excerpt:'mode cuisine'},b)).status).toBe(404);
+  const links=await json('/workbench/conversations/'+conv1+'/links');
+  expect(links.body.links[0]).toMatchObject({other_id:conv2,other_title:'Bugs du planning'});expect(links.body.objects.map((o:any)=>o.target_kind).sort()).toEqual(['conversation','decision']);
+  const prov=await json('/workbench/links?project='+pA+'&target_kind=decision&target_id='+ex.body.id);expect(prov.body.items[0]).toMatchObject({source_kind:'message',source_id:msg,excerpt:'garder les quantités visibles'});
+  // Lien manuel refusé si la cible est d'un autre projet.
+  const tB=(await json('/spaces/'+pB+'/tasks','POST',{title:'Cible B'})).body.id;
+  expect((await json('/workbench/links','POST',{project_id:pA,source_kind:'message',source_id:msg,target_kind:'plan_task',target_id:tB})).status).toBe(400);
+ });
+ it('référentiel mémoire : lecture seule, commit épinglé, cache par blob, périmé signalé, jamais confondu avec un dépôt de code',async()=>{
+  const fiche='# PROMPT-CLAUDECODE-0009 — Test\n\n---\nid: PROMPT-CLAUDECODE-0009\ntitle: Mission de test\nrecipient: Claude Code\nprovider: Anthropic\nmodel: À choisir\nsent_at:\nstatus: À donner — pas encore envoyé\nversion: 1\n---\n\n# 1. Mission\nTexte exact du prompt.\n';
+  github().intercept({path:'/repos/'+MEM,method:'GET'}).reply(200,{full_name:MEM,default_branch:'main',private:true}).persist();
+  github().intercept({path:'/repos/'+MEM+'/branches/main',method:'GET'}).reply(200,{commit:{sha:C1,commit:{tree:{sha:T1},committer:{date:'2026-11-11T17:45:23Z'}}}}).times(2);
+  github().intercept({path:'/repos/'+MEM+'/git/trees/'+T1+'?recursive=1',method:'GET'}).reply(200,{truncated:false,tree:[
+   {path:'00_PILOTAGE',type:'tree',sha:B(1)},{path:'00_PILOTAGE/ETAT_GLOBAL.md',type:'blob',sha:B(2),size:40},
+   {path:'04_PROMPTS/01_A_DONNER/PROMPT-CLAUDECODE-0009.md',type:'blob',sha:B(3),size:fiche.length},{path:'01_SPORT/CAHIER_DES_CHARGES.md',type:'blob',sha:B(4),size:30},{path:'image.png',type:'blob',sha:B(5),size:10}]}).times(1);
+  github().intercept({path:'/repos/'+MEM+'/git/blobs/'+B(2),method:'GET'}).reply(200,{encoding:'base64',content:b64('État global : Atelier d’abord.')}).times(1);
+  github().intercept({path:'/repos/'+MEM+'/git/blobs/'+B(3),method:'GET'}).reply(200,{encoding:'base64',content:b64(fiche)}).times(1);
+  expect((await json('/memory-repo','POST',{connection_id:conn,full_name:MEM},b)).status).toBe(404);                         // connexion d'Alice
+  const link=await json('/memory-repo','POST',{connection_id:conn,full_name:MEM});expect(link.status).toBe(201);expect(link.body).toMatchObject({branch:'main',status:'never',stale:true});
+  const repoId=link.body.id;
+  expect((await json('/memory-repo','POST',{connection_id:conn,full_name:MEM})).status).toBe(409);
+  // Ce dépôt ne peut pas devenir le dépôt de code d'un projet.
+  expect((await json('/spaces/'+pA+'/repository','POST',{connection_id:conn,full_name:MEM})).status).toBe(409);
+  const sync=await json('/memory-repo/'+repoId+'/sync','POST',{});
+  if(sync.status!==200)console.log('SYNC',JSON.stringify(sync.body));
+  expect(sync.status).toBe(200);expect(sync.body).toMatchObject({commit_sha:C1,status:'ok',file_count:4,truncated:false,stale:false});
+  expect((await json('/memory-repo/'+repoId+'/sync','POST',{},b)).status).toBe(404);
+  const docs=await json('/memory-repo/'+repoId+'/docs?type=prompt');expect(docs.body.items).toHaveLength(1);expect(docs.body.items[0]).toMatchObject({doc_ref:'PROMPT-CLAUDECODE-0009',content_state:'none',indexed_commit:C1});
+  expect((await json('/memory-repo/'+repoId+'/docs?project=sport')).body.items.map((d:any)=>d.path)).toEqual(['01_SPORT/CAHIER_DES_CHARGES.md']);
+  const etat=(await json('/memory-repo/'+repoId+'/docs?q=ETAT')).body.items[0];
+  const doc=await json('/memory-repo/docs/'+etat.id);
+  expect(doc.body).toMatchObject({content:'État global : Atelier d’abord.',content_state:'fresh',commit:C1,blob_sha:B(2),path:'00_PILOTAGE/ETAT_GLOBAL.md'});expect(doc.body.url).toContain('/blob/'+C1+'/00_PILOTAGE/ETAT_GLOBAL.md');
+  expect((await json('/memory-repo/docs/'+etat.id)).body.content_state).toBe('fresh');                                       // second appel : cache, aucun appel réseau
+  expect((await json('/memory-repo/docs/'+etat.id,'GET',undefined,b)).status).toBe(404);
+  expect((await json('/memory-repo/'+repoId+'/docs?q=Atelier d’abord&content=1')).body.items[0].excerpt).toContain('Atelier d’abord');
+  const img=(await json('/memory-repo/'+repoId+'/docs?q=image')).body.items[0];expect((await json('/memory-repo/docs/'+img.id)).body).toMatchObject({content:null,content_state:'none'});
+  // Import d'une fiche de prompt : champs lus dans la fiche ; sans date d'envoi, jamais « Déjà donné ».
+  const promptDoc=docs.body.items[0];
+  const imp=await json('/prompts/import-memory','POST',{memory_doc_id:promptDoc.id,project_id:pA});
+  expect(imp.status).toBe(201);expect(imp.body).toMatchObject({code:'PROMPT-CLAUDECODE-0009',status:'to_give',recipient:'Claude Code',model:'À choisir'});expect(imp.body.source_note).toContain(C1.slice(0,8));
+  expect((await json('/prompts/import-memory','POST',{memory_doc_id:promptDoc.id})).status).toBe(409);
+  const full=await json('/prompts/'+imp.body.id);expect(full.body.versions[0].body).toBe('# PROMPT-CLAUDECODE-0009 — Test\n\n# 1. Mission\nTexte exact du prompt.');expect(full.body.versions[0].locked).toBe(false);
+  // Nouveau commit : le fichier change, l'ancien cache est signalé périmé ; un fichier supprimé disparaît de l'index.
+  await (await mf.getD1Database('DB')).prepare('UPDATE memory_repos SET last_attempt_at=NULL WHERE id=?').bind(repoId).run();
+  github().intercept({path:'/repos/'+MEM+'/branches/main',method:'GET'}).reply(200,{commit:{sha:C2,commit:{tree:{sha:T2},committer:{date:'2026-11-12T08:00:00Z'}}}}).times(1);
+  github().intercept({path:'/repos/'+MEM+'/git/trees/'+T2+'?recursive=1',method:'GET'}).reply(200,{truncated:true,tree:[{path:'00_PILOTAGE/ETAT_GLOBAL.md',type:'blob',sha:B(6),size:50}]}).times(1);
+  const sync2=await json('/memory-repo/'+repoId+'/sync','POST',{});
+  expect(sync2.body).toMatchObject({commit_sha:C2,status:'partial',truncated:true});expect(sync2.body.last_error).toContain('tronqué');
+  expect((await json('/memory-repo/'+repoId+'/docs?q=ETAT')).body.items[0]).toMatchObject({content_state:'stale',blob_sha:B(6),indexed_commit:C2});
+  expect((await json('/memory-repo/'+repoId+'/docs?type=prompt')).body.items).toHaveLength(1);                                // arbre tronqué : rien n'est déclaré supprimé
+  github().intercept({path:'/repos/'+MEM+'/git/blobs/'+B(6),method:'GET'}).reply(503,{message:'down'}).times(1);
+  const stale=await json('/memory-repo/docs/'+etat.id);expect(stale.body.content_state).toBe('stale');expect(stale.body.notice).toContain('périmé');
+  expect((await json('/workbench/home')).body.alerts.join(' ')).toContain('synchronisation partielle');
+  // Document de référence de projet : pointe vers le référentiel, la bibliothèque ou une adresse ; jamais vers le fichier d'un autre projet.
+  const d1=await json('/workbench/documents','POST',{project_id:pA,title:'État global',doc_type:'reference',source_kind:'memory_doc',memory_doc_id:etat.id,reliability:'verified'});
+  expect(d1.status).toBe(201);expect(d1.body).toMatchObject({memory_path:'00_PILOTAGE/ETAT_GLOBAL.md',memory_commit:C2,memory_repo:MEM});
+  const fB=(await json('/files/text','POST',{project_id:pB,name:'b.md',content:'B'})).body.file_id;
+  expect((await json('/workbench/documents','POST',{project_id:pA,title:'x',source_kind:'file',file_id:fB})).status).toBe(400);
+  expect((await json('/workbench/documents','POST',{project_id:pA,title:'x',source_kind:'url',url:'http://non-securise'})).status).toBe(400);
+  expect((await json('/workbench/documents?project='+pA)).body.items).toHaveLength(1);expect((await json('/workbench/documents?project='+pB)).body.items).toHaveLength(0);
+  expect((await json('/workbench/documents?project='+pA,'GET',undefined,b)).status).toBe(404);
+ });
+ it('prompts : copie exacte, version transmise immuable, date réelle exigée, réponse rattachée, secret refusé',async()=>{
+  expect((await json('/prompts','POST',{title:'Secret',body:'clé : ghp_'+'a'.repeat(30)})).status).toBe(400);
+  const p=await json('/prompts','POST',{project_id:pA,title:'Finaliser le planning',prefix:'PROMPT-CLAUDECODE',recipient:'Claude Code',provider:'Anthropic',product:'Claude Code',body:'Ligne 1\n\n  Ligne 2 avec espaces  \n',commands:[{label:'Quota',command:'/usage',where_when:'au début de la session'}]});
+  expect(p.status).toBe(201);expect(p.body.code).toBe('PROMPT-CLAUDECODE-0010');expect(p.body.status).toBe('to_prepare');const id=p.body.id;
+  const txt=await raw('/prompts/'+id+'/export?format=txt');expect(await txt.text()).toBe('Ligne 1\n\n  Ligne 2 avec espaces  \n\n');
+  const md=await (await raw('/prompts/'+id+'/export?format=md')).text();expect(md).toContain('model: inconnu');expect(md).toContain('sent_at: \n');expect(md).toContain('`/usage`');expect(md).toContain('Ligne 1\n\n  Ligne 2 avec espaces  \n');
+  expect((await raw('/prompts/'+id+'/export?format=txt',b)).status).toBe(404);
+  expect((await json('/prompts/'+id,'PATCH',{status:'given',revision:1})).status).toBe(409);                                 // « Déjà donné » sans confirmation
+  expect((await json('/prompts/'+id+'/responses','POST',{response:'ok'})).status).toBe(409);                                 // pas de réponse à un prompt non transmis
+  expect((await json('/prompts/'+id+'/body','PUT',{body:'Version corrigée'})).body).toMatchObject({version:1,new_version:false});
+  expect((await json('/prompts/'+id+'/sent','POST',{confirm:true,sent_at:'2999-01-01'})).status).toBe(400);                  // date future
+  expect((await json('/prompts/'+id+'/sent','POST',{sent_at:'2026-11-12'})).status).toBe(400);                               // sans confirmation
+  const sent=await json('/prompts/'+id+'/sent','POST',{confirm:true,sent_at:'2026-11-12',recipient:'Claude Code'});expect(sent.body.status).toBe('given');
+  expect((await json('/prompts/'+id+'/sent','POST',{confirm:true,sent_at:'2026-11-12'})).status).toBe(409);
+  const v2=await json('/prompts/'+id+'/body','PUT',{body:'Version 2 après retour'});expect(v2.status).toBe(201);expect(v2.body).toMatchObject({version:2,new_version:true});
+  const full=await json('/prompts/'+id);
+  expect(full.body.versions.map((v:any)=>[v.version,v.locked,v.body,v.sent_at])).toEqual([[2,false,'Version 2 après retour',null],[1,true,'Version corrigée','2026-11-12']]);
+  expect(full.body.status).toBe('to_give');
+  expect(await (await raw('/prompts/'+id+'/export?format=txt&version=1')).text()).toBe('Version corrigée\n');                // l'ancienne version reste lisible telle quelle
+  await json('/prompts/'+id+'/sent','POST',{confirm:true,sent_at:'2026-11-12T10:00:00Z'});
+  const resp=await json('/prompts/'+id+'/responses','POST',{response:'PR ouverte, tests verts.',url:'https://github.com/o/r/pull/3'});expect(resp.status).toBe(201);
+  expect((await json('/prompts/'+id)).body).toMatchObject({status:'response_received'});
+  expect((await json('/prompts?project='+pB)).body.items).toHaveLength(0);expect((await json('/prompts','GET',undefined,b)).body.items).toHaveLength(0);
+  // Depuis une tâche : références exactes ; une décision non validée ne peut pas être citée comme règle.
+  const task=(await json('/spaces/'+pA+'/tasks','POST',{title:'Corriger le planning',objective:'Corriger',acceptance:'Test vert',owner:'claude_code'})).body;
+  await json('/workbench/tasks/'+task.id+'/details','PATCH',{files_hint:'public/js/planner.js',tests:'npm test'});
+  const proposed=(await json('/spaces/'+pA+'/decisions')).body.items.find((d:any)=>d.status==='proposed');
+  expect((await json('/prompts/from-task','POST',{task_id:task.id,decision_ids:[proposed.id]})).status).toBe(400);
+  const fromTask=await json('/prompts/from-task','POST',{task_id:task.id});expect(fromTask.status).toBe(201);
+  const body=(await json('/prompts/'+fromTask.body.id)).body.versions[0].body;
+  for(const s of ['Corriger le planning','public/js/planner.js','Test vert','npm test','Aucun dépôt associé'])expect(body).toContain(s);
+  expect((await json('/prompts/from-task','POST',{task_id:task.id},b)).status).toBe(404);
+  // Validation réelle par Martin : seulement une tâche terminée avec preuve.
+  expect((await json('/workbench/tasks/'+task.id+'/validate','POST',{validated:true})).status).toBe(409);
+  await json('/spaces/'+pA+'/tasks/'+task.id,'PATCH',{status:'done',proof:'CI verte',revision:1});
+  expect((await json('/workbench/tasks/'+task.id+'/validate','POST',{validated:true})).body.validated_at).toBeTruthy();
+  const prog=(await json('/workbench/home')).body.projects.find((p:any)=>p.id===pA).progress;expect(prog.validated).toBe(1);expect(prog.formula).toContain('preuve');
+ });
+ it('export ChatGPT : inventaire repris par empreinte, lots stables, deux analyses avant croisement, couverture honnête',async()=>{
+  const sha='c'.repeat(64);
+  const batch=await json('/exports','POST',{provider:'ChatGPT',filename:'export.zip',size:1234,sha256:sha,declared_total:3});expect(batch.status).toBe(201);const id=batch.body.id;
+  expect((await json('/exports','POST',{provider:'ChatGPT',filename:'copie.zip',size:1234,sha256:sha,declared_total:3})).body).toMatchObject({id,resumed:true});
+  const row=(s:string,n:number,o:any={})=>({source_id:s,title:'Conv '+s,created_time:'2026-10-0'+n+'T10:00:00.000Z',updated_time:null,message_count:10*n,node_count:12*n,branch_count:n-1,attachment_refs:0,non_text_parts:0,parse_status:'complete',parse_note:'',...o});
+  expect((await json('/exports/'+id+'/conversations','POST',{rows:[row('c1',1),row('c2',2,{attachment_refs:2,parse_status:'partial',parse_note:'2 pièces jointes référencées'})]})).body).toMatchObject({inventoried:2,declared:3});
+  expect((await json('/exports/'+id+'/conversations','POST',{rows:[row('c1',1)]},b)).status).toBe(404);
+  let cov=(await json('/exports/'+id+'/coverage')).body.coverage;
+  expect(cov.complete).toBe(false);expect(cov.conversations).toMatchObject({declared:3,inventoried:2,missing_from_inventory:1,partial:1});expect(cov.attachments).toMatchObject({referenced:2,accessible:0});
+  const list=(await json('/exports/'+id+'/conversations')).body.items;
+  expect((await json('/exports/'+id+'/conversations','PATCH',{ids:[list[0].id],ignore:true})).status).toBe(400);            // pas d'exclusion sans raison
+  expect((await json('/exports/'+id+'/conversations','PATCH',{ids:[list[0].id],project_id:bobProject})).status).toBe(404);
+  await json('/exports/'+id+'/conversations','PATCH',{ids:[list[0].id],project_id:pA});
+  expect((await json('/exports/'+id+'/conversations')).body.items[0]).toMatchObject({project_id:pA,project_confirmed:0});    // candidat, pas confirmé
+  await json('/exports/'+id+'/conversations','PATCH',{ids:[list[0].id],project_confirmed:true});
+  expect((await json('/exports/'+id+'/lots','POST',{max_messages:50})).body.lots).toBe(1);
+  expect((await json('/exports/'+id+'/analyses','POST',{lot:'LOT-999',kind:'independent',assistant:'ChatGPT',report:'x'})).status).toBe(400);
+  expect((await json('/exports/'+id+'/analyses','POST',{lot:'LOT-001',kind:'cross',assistant:'Claude',report:'x'})).status).toBe(409);
+  for(const assistant of ['ChatGPT','Claude'])expect((await json('/exports/'+id+'/analyses','POST',{lot:'LOT-001',kind:'independent',assistant,report:'Rapport de '+assistant})).status).toBe(201);
+  expect((await json('/exports/'+id+'/analyses','POST',{lot:'LOT-001',kind:'cross',assistant:'Mistral',report:'Croisement'})).status).toBe(201);
+  cov=(await json('/exports/'+id+'/refresh-imports','POST',{})).body;
+  expect(cov.imports).toMatchObject({imported:0,not_imported:2});expect(cov.lots).toMatchObject({total:1,with_two_independent:1,with_cross:1});expect(cov.projects).toMatchObject({assigned:1,confirmed:1,unassigned:1});
+  expect((await json('/exports','GET',undefined,b)).body.items).toHaveLength(0);
+ });
+ it('audit de référence : manifeste au commit figé, statuts par fichier, reprise des blobs inchangés, jamais « intégral » sans preuve',async()=>{
+  github().intercept({path:'/repos/'+CODE,method:'GET'}).reply(200,{full_name:CODE,default_branch:'main',permissions:{pull:true,push:false}}).times(1);
+  github().intercept({path:'/repos/'+CODE+'/branches/main',method:'GET'}).reply(200,{commit:{sha:C1,commit:{tree:{sha:T1}}}}).times(3);
+  github().intercept({path:'/repos/'+CODE+'/git/trees/'+T1+'?recursive=1',method:'GET'}).reply(200,{truncated:false,tree:[{path:'src/app.ts',type:'blob',sha:B(11),size:30},{path:'tests/app.test.ts',type:'blob',sha:B(12),size:20},{path:'README.md',type:'blob',sha:B(13),size:10},{path:'logo.png',type:'blob',sha:B(14),size:99}]}).times(1);
+  const repos=await json('/spaces/'+pA+'/repository','POST',{connection_id:conn,full_name:CODE});expect(repos.status).toBe(201);const repoId=repos.body.repositories[0].id;
+  expect((await json('/ref-audits','POST',{project_id:pB,repository_id:repoId})).status).toBe(404);                           // dépôt d'un autre projet
+  const audit=await json('/ref-audits','POST',{project_id:pA,repository_id:repoId});
+  if(audit.status!==201)console.log('AUDIT',JSON.stringify(audit.body));
+  expect(audit.status).toBe(201);expect(audit.body).toMatchObject({commit_sha:C1,file_count:4,truncated:false});expect(audit.body.coverage).toMatchObject({total:4,integral:false,not_covered:4});const id=audit.body.id;
+  for(const s of [B(11),B(12),B(13)])github().intercept({path:'/repos/'+CODE+'/git/blobs/'+s,method:'GET'}).reply(200,{encoding:'base64',content:b64('ligne 1\nligne 2 // TODO\n')}).times(1);
+  const an=await json('/ref-audits/'+id+'/analyse','POST',{});expect(an.body).toMatchObject({analysed:4,failed:0,remaining:0});
+  let full=(await json('/ref-audits/'+id)).body;
+  expect(full.files.find((f:any)=>f.path==='src/app.ts')).toMatchObject({kind:'code',read_status:'tool',lines:3});expect(full.files.find((f:any)=>f.path==='logo.png').read_status).toBe('metadata');
+  expect(full.coverage.integral).toBe(false);expect(full.coverage.statement).toContain('partiel');                            // analysé par outil ≠ lu
+  expect((await json('/ref-audits/'+id+'/files','PATCH',{paths:['logo.png'],read_status:'excluded'})).status).toBe(400);     // exclusion sans motif
+  await json('/ref-audits/'+id+'/files','PATCH',{paths:['src/app.ts'],read_status:'full',note:'Relu en entier'});
+  await json('/ref-audits/'+id+'/files','PATCH',{paths:['logo.png'],read_status:'excluded',note:'Image'});
+  full=(await json('/ref-audits/'+id)).body;expect(full.coverage.integral).toBe(true);expect(full.coverage.code).toMatchObject({total:1,full:1});
+  expect((await json('/ref-audits/'+id+'/findings','POST',{title:'Chemin inconnu',path:'absent.ts'})).status).toBe(400);
+  expect((await json('/ref-audits/'+id+'/findings','POST',{title:'Validation manquante',severity:'P1',confidence:'medium',path:'src/app.ts',reproduction:'Appeler sans jeton'})).status).toBe(201);
+  const report=await (await raw('/ref-audits/'+id+'/report')).text();
+  for(const s of [C1,'truncated=false','État : intégral','[P1] Validation manquante','| src/app.ts | code | Lu intégralement |'])expect(report).toContain(s);
+  expect((await json('/ref-audits/'+id,'GET',undefined,b)).status).toBe(404);expect((await raw('/ref-audits/'+id+'/report',b)).status).toBe(404);
+  expect((await json('/ref-audits','POST',{project_id:pA,repository_id:repoId})).body).toMatchObject({id,resumed:true});      // même commit : même audit
+  // Nouveau commit : un fichier change, les autres gardent leur statut (blob identique).
+  github().intercept({path:'/repos/'+CODE+'/branches/main',method:'GET'}).reply(200,{commit:{sha:C2,commit:{tree:{sha:T2}}}}).times(1);
+  github().intercept({path:'/repos/'+CODE+'/git/trees/'+T2+'?recursive=1',method:'GET'}).reply(200,{truncated:true,tree:[{path:'src/app.ts',type:'blob',sha:B(15),size:35},{path:'README.md',type:'blob',sha:B(13),size:10}]}).times(1);
+  const second=await json('/ref-audits','POST',{project_id:pA,repository_id:repoId});
+  expect(second.status).toBe(201);expect(second.body).toMatchObject({commit_sha:C2,reused:1,truncated:true});expect(second.body.warning).toContain('tronqué');
+  const f2=(await json('/ref-audits/'+second.body.id)).body.files;
+  expect(f2.find((f:any)=>f.path==='README.md')).toMatchObject({read_status:'tool',reused_from:id});expect(f2.find((f:any)=>f.path==='src/app.ts').read_status).toBe('not_started');
+  expect(await (await raw('/ref-audits/'+second.body.id+'/report')).text()).toContain('État : partiel');
+ });
+ it('synthèse de reprise, journal par projet et export du compte',async()=>{
+  const resume=await json('/workbench/resume?project='+pA);expect(resume.status).toBe(200);
+  for(const s of ['# Reprise du projet — Pilotage A','Propositions non validées','Garder les quantités visibles','aucun résumé IA',CODE])expect(resume.body.text).toContain(s);
+  expect(resume.body.text).not.toContain('Cible B');expect((await json('/workbench/resume?project='+pA,'GET',undefined,b)).status).toBe(404);
+  const journal=await json('/workbench/journal?project='+pA);expect(journal.body.items.length).toBeGreaterThan(3);expect(journal.body.items.every((e:any)=>e.project_id===pA)).toBe(true);
+  expect((await json('/workbench/journal?project='+pA,'GET',undefined,b)).status).toBe(404);
+  const exported=await json('/account/export?metadata=true');expect(exported.status).toBe(200);
+  for(const t of ['plan_tasks','project_decisions','handoff_packages','martin_actions','atelier_questions','prompts','prompt_versions','object_links','project_documents','memory_repos','memory_docs','export_batches','ref_audits','ref_audit_files'])expect(Array.isArray(exported.body[t])).toBe(true);
+  expect(exported.body.prompt_versions.length).toBeGreaterThanOrEqual(3);expect(exported.body.memory_docs[0].content).toBeUndefined();
+  expect(JSON.stringify(exported.body)).not.toContain('exemple-jeton-factice');
+  const bob=await json('/account/export?metadata=true','GET',undefined,b);expect(bob.body.prompts).toHaveLength(0);expect(bob.body.martin_actions).toHaveLength(0);
+ });
+});

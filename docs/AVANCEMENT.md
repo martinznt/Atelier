@@ -1,3 +1,35 @@
+# 12 novembre 2026 — Poste de pilotage (mission PROMPT-CLAUDECODE-0002, branche non fusionnée)
+
+**État actuel de ce lot.** Branche `feat/atelier-poste-de-pilotage`, partie de `main` `9219114`. Rien n’est en ligne : la migration 0018 n’est pas appliquée en production tant que la PR n’est pas fusionnée par Martin.
+
+## Réalisé (code et tests locaux)
+
+- **Accueil** : une carte par projet (avancement expliqué, prochaine action), compteurs « à faire par vous », questions, prompts à donner, retours attendus.
+- **Discussions** : catégorie, statut, objectif, épingle, résumé manuel, liens entre discussions, recherche ouvrant le message exact, réutilisation d’un extrait avec sa source, création d’un objet depuis un message.
+- **À traiter** : boîte « À faire par Martin » et « Questions d’Atelier » dédupliquées, questionnaire avec brouillon local, export/import JSON, export CSV.
+- **Mémoire** : référentiel `Memoire-Projets` en lecture seule (commit épinglé, index, recherche, cache par empreinte), bibliothèque de prompts versionnés, inventaire d’un export ChatGPT lu sur l’appareil.
+- **Pilotage** : dossier documentaire, audit de référence à commit figé, synthèse de reprise, journal, consigne préparée depuis une tâche, validation par Martin.
+- Migration additive `0018_workbench.sql` ; `/api/health` l’attend désormais.
+- 25 exigences nouvelles `PIL-28-001` à `PIL-28-025` ; les 465 exigences historiques sont inchangées (identifiants et statuts).
+
+## Vérifié le 12 novembre 2026 (réellement exécuté, en local)
+
+`tsc --noEmit` ; 62 scénarios Miniflare (`npm test`) ; 286 tests `node --test tests/*.test.mjs` ; `npm run test:regressions` ; `npm run test:core` ; `npm run test:bridge` (27) ; `npm run build` (compilation et simulation de publication) ; parcours Playwright réel sur le serveur local à 360 et 390 px (Chromium) sans débordement ; `tests/e2e/flow.spec.ts` en Chromium bureau et 360 px.
+
+## Non vérifié, partiel ou bloqué
+
+- Aucune synchronisation réelle du référentiel ni aucun audit réel : GitHub est simulé dans les tests.
+- L’export ChatGPT de Martin n’a pas été reçu : l’inventaire n’a tourné que sur des fichiers d’essai.
+- Analyses automatiques et croisées des lots d’export : non réalisées (`PIL-28-015`).
+- Quotas réels des assistants : rien de nouveau (`PIL-28-024`).
+- WebKit, Firefox et le Galaxy A05s réel : non testés. Hors connexion réel : non rejoué.
+- Mise à jour de `Memoire-Projets` : accès en écriture non accordé (`PIL-28-025`).
+- Lecture du dépôt : voir `docs/audits/MANIFESTE_2026-11-12.md` ; ce n’est pas un audit intégral.
+
+Rapport complet et chemin vers le 17 novembre : `docs/audits/RAPPORT_MISSION_0002.md`. Guides : `docs/GUIDE_REPRISE_PROJET.md`, `docs/GUIDE_QUESTIONS.md`.
+
+---
+
 # 26 octobre 2026 — Chaîne de revue IA des PR (branche, non déployée)
 
 Branche `feature/chaine-revue-ia`, PR #3 (brouillon). Une première version en lecture seule a été ajoutée : migration D1 0008, API de configurations et rapports, revue par IA connectée, déclenchement Queue/cron, panneau « Vérifications IA » et connecteur Mistral. Chaque analyse est rattachée à un SHA de PR. Les alertes ne sont pas des tests exécutés. Aucune écriture GitHub du dépôt inspecté n'est ajoutée.

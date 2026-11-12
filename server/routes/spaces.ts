@@ -18,14 +18,16 @@ const repoName=z.string().regex(/^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/);
 const sha40=z.string().regex(/^[0-9a-f]{40}$/);
 
 /* ───────── Profil / initialisation ───────── */
-async function profileOf(env:Env,user:string,project:string){return one<Row>(env,'SELECT * FROM project_profiles WHERE project_id=? AND user_id=?',project,user);}
-async function repositoriesOf(env:Env,user:string,project:string){
+export async function profileOf(env:Env,user:string,project:string){return one<Row>(env,'SELECT * FROM project_profiles WHERE project_id=? AND user_id=?',project,user);}
+export async function repositoriesOf(env:Env,user:string,project:string){
  return many<Row>(env,'SELECT id,connection_id,full_name,branch,head_sha,default_branch,can_push,verified_at,shared_ack,shared_ack_at,created_at FROM repositories WHERE user_id=? AND project_id=? ORDER BY created_at',user,project);
 }
-const repoView=(r:Row)=>({id:r.id,full_name:r.full_name,branch:r.default_branch||r.branch,head_sha:r.head_sha,can_push:r.can_push===null||r.can_push===undefined?null:Boolean(r.can_push),verified:Boolean(r.verified_at),verified_at:r.verified_at||null,shared_ack:Boolean(r.shared_ack),url:'https://github.com/'+r.full_name});
+export const repoView=(r:Row)=>({id:r.id,full_name:r.full_name,branch:r.default_branch||r.branch,head_sha:r.head_sha,can_push:r.can_push===null||r.can_push===undefined?null:Boolean(r.can_push),verified:Boolean(r.verified_at),verified_at:r.verified_at||null,shared_ack:Boolean(r.shared_ack),url:'https://github.com/'+r.full_name});
 spaces.get('/',async c=>{
  const user=userId(c);
- const rows=await many<Row>(c.env,'SELECT p.id,p.name,pr.space_key,pr.state,pr.objective,pr.site_url FROM project_profiles pr JOIN projects p ON p.id=pr.project_id WHERE pr.user_id=? AND p.user_id=? AND p.archived=0 ORDER BY p.created_at',user,user);
+ // `?all=1` : tous les projets actifs, même sans profil de pilotage (le profil est créé au premier enregistrement).
+ const all=c.req.query('all')==='1';
+ const rows=await many<Row>(c.env,`SELECT p.id,p.name,pr.space_key,COALESCE(pr.state,'active') AS state,COALESCE(pr.objective,'') AS objective,pr.site_url FROM projects p ${all?'LEFT ':''}JOIN project_profiles pr ON pr.project_id=p.id AND pr.user_id=p.user_id WHERE p.user_id=? AND p.archived=0 ORDER BY p.created_at`,user);
  const items=[];for(const r of rows){const repos=await repositoriesOf(c.env,user,r.id);items.push({project_id:r.id,name:r.name,space_key:r.space_key,state:r.state,objective:r.objective,site_url:r.site_url,repositories:repos.map(repoView)});}
  const have=new Set(rows.map(r=>r.space_key));
  return c.json({items,templates:Object.entries(TEMPLATES).map(([key,t])=>({key,label:t.name,exists:have.has(key)}))});
@@ -63,6 +65,8 @@ spaces.post('/:project/repository',async c=>{
  const d=z.object({connection_id:z.string().uuid(),full_name:repoName,confirm_shared:z.boolean().default(false)}).parse(await jsonBody(c));
  const {conn,secret}=await credentialsFor(c.env,d.connection_id,user,'read');
  if(conn.provider!=='github')fail(400,'Connexion GitHub requise.');
+ // Le référentiel mémoire n'est jamais associé comme dépôt de code d'un projet.
+ if(await one(c.env,'SELECT id FROM memory_repos WHERE user_id=? AND lower(full_name)=lower(?) LIMIT 1',user,d.full_name))fail(409,'Ce dépôt est votre référentiel mémoire : il ne peut pas être associé comme dépôt de code d’un projet.');
  let info:any,head:any;
  try{info=(await jsonRequest('github',secret,'/repos/'+d.full_name)).data;}
  catch(e:any){const s=Number(e?.status);fail(s===404||s===403||s===401?403:502,s===404?'Dépôt introuvable avec cet accès : il n’est pas associé.':s===401||s===403?'GitHub refuse l’accès à ce dépôt : il n’est pas associé.':'GitHub n’a pas répondu : le dépôt n’est pas associé.');}
@@ -106,8 +110,8 @@ spaces.delete('/:project/repository/:id',async c=>{
 });
 
 /* ───────── Plan : phases et tâches métier ───────── */
-const toTask=(r:Row):PlanTask=>({id:r.id,title:r.title,status:r.status,depends_on:parseIds(r.depends_on),priority:r.priority,position:r.position,phase_id:r.phase_id,parent_id:r.parent_id,owner:r.owner,proof:r.proof,blocking_question:r.blocking_question,next_action:r.next_action,pr_number:r.pr_number});
-async function taskRows(env:Env,user:string,project:string){return many<Row>(env,'SELECT * FROM plan_tasks WHERE user_id=? AND project_id=? ORDER BY priority,position,created_at',user,project);}
+export const toTask=(r:Row):PlanTask=>({id:r.id,title:r.title,status:r.status,depends_on:parseIds(r.depends_on),priority:r.priority,position:r.position,phase_id:r.phase_id,parent_id:r.parent_id,owner:r.owner,proof:r.proof,blocking_question:r.blocking_question,next_action:r.next_action,pr_number:r.pr_number});
+export async function taskRows(env:Env,user:string,project:string){return many<Row>(env,'SELECT * FROM plan_tasks WHERE user_id=? AND project_id=? ORDER BY priority,position,created_at',user,project);}
 const text=(n:number)=>z.string().max(n);
 const taskInput=z.object({
  title:z.string().trim().min(1).max(200),phase_id:z.string().uuid().nullable(),parent_id:z.string().uuid().nullable(),objective:text(2000),acceptance:text(2000),
@@ -215,7 +219,7 @@ spaces.patch('/:project/decisions/:id',async c=>{
 });
 
 /* ───────── Vue d'ensemble, suivi GitHub et guide ───────── */
-async function guideInputs(env:Env,user:string,project:string,github:{available:boolean;prs:{number:number;title:string;ci:string;review:string|null}[]}|null){
+export async function guideInputs(env:Env,user:string,project:string,github:{available:boolean;prs:{number:number;title:string;ci:string;review:string|null}[]}|null){
  const repos=await repositoriesOf(env,user,project),rows=await taskRows(env,user,project),tasks=rows.map(toTask);
  const phases=await many<Row>(env,'SELECT id,position FROM plan_phases WHERE user_id=? AND project_id=?',user,project);
  const phaseOrder:Record<string,number>={};for(const ph of phases)phaseOrder[ph.id]=ph.position;

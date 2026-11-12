@@ -260,3 +260,19 @@ charges ; aucun appel aux services d’Open Chat n’est ajouté.
 
 ## Espaces projet (migration 0017)
 Routes `/api/spaces/*` (profil, dépôt vérifié, plan, décisions, vue d'ensemble, suivi GitHub) et `/api/handoffs/*` (dossiers de transmission). Tables : `project_profiles`, `plan_phases`, `plan_tasks` (tâches métier, sans lien avec `tasks`), `project_decisions`, `handoff_packages`, colonnes additives de `repositories`. Chaque requête filtre par `user_id` ET `project_id`. Modules purs : `plan-core`, `handoff-core`, `project-guide`, `github-tracking`.
+
+## Poste de pilotage (12 novembre 2026)
+
+Migration `0018_workbench.sql` (additive). Règles pures, testables sans réseau : `server/workbench-core.ts`, `prompt-core.ts`, `memory-index.ts`, `export-inventory.ts`, `audit-core.ts`. Lecture GitHub d’un fichier : `server/github-blob.ts`.
+
+| Route | Fichier | Rôle |
+|---|---|---|
+| `/api/workbench` | `server/routes/workbench.ts` | accueil, actions, questions, discussions organisées, recherche, liens, documents, journal, synthèse de reprise |
+| `/api/memory-repo` | `server/routes/memory-repo.ts` | référentiel mémoire en lecture seule (commit et arbre épinglés, cache par empreinte) |
+| `/api/prompts` | `server/routes/prompts.ts` | fiches de prompt versionnées, transmission confirmée, réponses |
+| `/api/exports` | `server/routes/exports.ts` | inventaire d’export, lots, analyses, couverture |
+| `/api/ref-audits` | `server/routes/ref-audit.ts` | audit de référence à commit figé |
+
+Tables : `conversation_links`, `object_links`, `martin_actions`, `atelier_questions`, `memory_repos`, `memory_docs`, `prompts`, `prompt_versions`, `prompt_responses`, `export_batches`, `export_conversations`, `export_analyses`, `project_documents`, `ref_audits`, `ref_audit_files`, `ref_audit_findings` ; colonnes ajoutées à `conversations`, `plan_tasks`, `handoff_packages`.
+
+Interface : `web/Home.tsx`, `Inbox.tsx`, `MemoryHub.tsx`, `Prompts.tsx`, `ExportImport.tsx`, `Discussions.tsx`, `ProjectExtras.tsx`. L’archive d’export est lue dans le navigateur ; seul l’inventaire (identifiants, titres, compteurs, empreinte) est envoyé au serveur, et les messages uniquement si Martin les importe par la passerelle existante.

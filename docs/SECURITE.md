@@ -88,3 +88,12 @@ un extrait d'erreur de fournisseur est nettoyé (séquences de 24 caractères ou
 Points d'attention (non corrigés, acceptés) : la page de santé publique expose la version et le numéro des migrations (aucune donnée de compte) ; `style-src 'unsafe-inline'` (styles React) ;
 le relais peut envoyer des extraits de code à d'autres fournisseurs autorisés par l'utilisateur (option décochable) ; Gemini gratuit peut utiliser le contenu pour améliorer les produits de Google.
 Non fait : audit complet de tout le projet par un outil dédié, test d'intrusion, revue du code du Livre de recettes.
+
+## Poste de pilotage (12 novembre 2026)
+
+- Le jeton GitHub ne quitte jamais le serveur ; le navigateur ne reçoit que des métadonnées et du texte déjà mis en cache.
+- Le référentiel mémoire est en lecture seule : aucune route n’écrit vers GitHub. Il ne peut pas être associé comme dépôt de code d’un projet.
+- Les documents du référentiel, les conversations importées et les réponses d’IA sont des données : ils ne sont jamais exécutés ni interprétés comme consignes.
+- Les prompts et les réponses enregistrés passent par la détection de secrets existante ; un texte qui ressemble à une clé est refusé.
+- L’archive d’export ChatGPT reste sur l’appareil ; elle n’est jamais publiée sur GitHub.
+- Chaque requête filtre par compte et par projet ; les modifications concurrentes sont refusées par numéro de révision.

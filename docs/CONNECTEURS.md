@@ -182,3 +182,7 @@ production, mais ni les droits ni son contenu n’ont été interrogés par l’
 Cela ne valide pas le connecteur Cloudflare Pages intégré à Atelier, les API IA,
 ou les clients MCP. La configuration de l’hébergement et les connexions de chaque
 utilisateur restent des systèmes distincts.
+
+## GitHub pour le référentiel mémoire et l’audit de référence (12 novembre 2026)
+
+Même connexion GitHub que pour les revues, en lecture : contenu du dépôt (`Contents: read`) et métadonnées. Appels utilisés : dépôt, branche, arbre récursif, fichier par empreinte, contrôles d’un commit, PR ouvertes. Aucune écriture. **Jamais exécuté avec une vraie connexion à ce jour** : seulement avec des réponses simulées.
