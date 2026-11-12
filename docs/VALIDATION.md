@@ -433,3 +433,18 @@ non exécuté n’est marqué vérifié.
 - `npm run test:regressions` (9) et `npm run test:core` (6 tests Python de schéma) : passent.
 - Navigateur : aperçu Playwright de l'application construite à 360 px et 390 px avec une API simulée : aucun débordement horizontal, sections repliées lisibles. Pas de test E2E complet.
 - **Simulé** : toutes les réponses GitHub. **Réel** : aucun appel à GitHub, aucun fournisseur IA, aucune production.
+
+# Poste de pilotage — contrôles du 12 novembre 2026
+
+Exécutés en local sur la branche `feat/atelier-poste-de-pilotage` :
+
+- `npx tsc --noEmit` : aucune erreur.
+- `npm test` : 62 scénarios Miniflare réussis, dont 9 pour le poste de pilotage (cloisonnement par compte et projet, déduplication des questions, prompt immuable après transmission, arbre tronqué → synchronisation partielle, audit repris par commit).
+- `node --test tests/*.test.mjs` : 286 réussis, dont `tests/workbench-core.test.mjs`.
+- `npm run test:regressions`, `npm run test:core`, `npm run test:bridge` (27) : réussis.
+- `npm run build` : compilation et simulation de publication réussies.
+- Migration 0018 appliquée sur une base locale neuve ; `/api/health` local : schéma complet 0007→0018.
+- Navigateur réel (Chromium, serveur local) à 360 et 390 px sur Accueil, Pilotage, Discussions, À traiter, Mémoire, Prompts, Export, Projets, avec une action, une question et un prompt aux textes longs : aucun débordement horizontal, aucun contrôle de moins de 30 px, aucune erreur de page.
+- `tests/e2e/flow.spec.ts` : réussi en Chromium bureau et 360 px (WebKit et Firefox non installés ici : non exécutés).
+
+**Simulé, donc non prouvé en réel :** tous les appels GitHub (référentiel, audit, contrôles, PR). **Non exécuté :** export ChatGPT réel, hors connexion réel, téléphone réel, production.

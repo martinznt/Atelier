@@ -3763,5 +3763,230 @@
     "statut": "réalisé",
     "preuve": "server/routes/tasks.ts ; server/worker.ts ; web/Chat.tsx ; tests/submission.test.mjs",
     "limite": "Proposition confirmée avant la tâche, accord de partage et clé d’idempotence ; relais pendant une tâche encore manuel."
+  },
+  {
+    "id": "PIL-28-001",
+    "section": 28,
+    "source": "PROMPT-CLAUDECODE-0002 (12 novembre 2026)",
+    "exigence": "Accueil : une carte par projet avec avancement expliqué, prochaine action, compteurs d’actions, de questions et de prompts.",
+    "statut": "réalisé",
+    "preuve": "server/routes/workbench.ts (/home) ; web/Home.tsx ; tests/integration.test.ts (poste de pilotage) ; tests/workbench-core.test.mjs",
+    "limite": "Avancement calculé sur les tâches enregistrées ; aucune estimation de date n’est inventée."
+  },
+  {
+    "id": "PIL-28-002",
+    "section": 28,
+    "source": "PROMPT-CLAUDECODE-0002 (12 novembre 2026)",
+    "exigence": "Discussions organisées : catégorie, statut (active, à reprendre, en attente, archivée), objectif, épingle, résumé manuel ; l’archivage ne supprime aucun message.",
+    "statut": "réalisé",
+    "preuve": "migrations/0018_workbench.sql ; server/routes/workbench.ts ; web/Discussions.tsx ; tests/integration.test.ts (poste de pilotage) ; tests/workbench-core.test.mjs",
+    "limite": "Le résumé est saisi à la main ; aucun résumé IA automatique."
+  },
+  {
+    "id": "PIL-28-003",
+    "section": 28,
+    "source": "PROMPT-CLAUDECODE-0002 (12 novembre 2026)",
+    "exigence": "Recherche dans les titres et les messages, limitée au projet courant par défaut, ouvrant le message exact.",
+    "statut": "réalisé",
+    "preuve": "server/routes/workbench.ts (/search, /messages/:id) ; web/Chat.tsx ; tests/integration.test.ts (poste de pilotage) ; tests/workbench-core.test.mjs",
+    "limite": "Recherche par texte (LIKE), sans classement par pertinence."
+  },
+  {
+    "id": "PIL-28-004",
+    "section": 28,
+    "source": "PROMPT-CLAUDECODE-0002 (12 novembre 2026)",
+    "exigence": "Liens entre discussions et réutilisation d’un extrait avec lien vers le message source, original inchangé.",
+    "statut": "réalisé",
+    "preuve": "server/routes/workbench.ts (/conversations/:id/links, /messages/:id/reuse) ; tests/integration.test.ts (poste de pilotage) ; tests/workbench-core.test.mjs",
+    "limite": null
+  },
+  {
+    "id": "PIL-28-005",
+    "section": 28,
+    "source": "PROMPT-CLAUDECODE-0002 (12 novembre 2026)",
+    "exigence": "Création d’un objet (décision candidate, question, tâche, action) depuis un message, avec le message source conservé ; une proposition d’assistant n’est jamais promue automatiquement.",
+    "statut": "réalisé",
+    "preuve": "server/routes/workbench.ts (/messages/:id/extract, /links) ; tests/integration.test.ts (poste de pilotage) ; tests/workbench-core.test.mjs",
+    "limite": "L’extraction est faite par Martin ; Atelier ne propose pas encore lui-même les extractions."
+  },
+  {
+    "id": "PIL-28-006",
+    "section": 28,
+    "source": "PROMPT-CLAUDECODE-0002 (12 novembre 2026)",
+    "exigence": "Boîte « À faire par Martin » : action, raison, résultat attendu, conséquence, caractère bloquant, tâche liée.",
+    "statut": "réalisé",
+    "preuve": "server/routes/workbench.ts (/actions) ; web/Inbox.tsx ; tests/integration.test.ts (poste de pilotage) ; tests/workbench-core.test.mjs",
+    "limite": null
+  },
+  {
+    "id": "PIL-28-007",
+    "section": 28,
+    "source": "PROMPT-CLAUDECODE-0002 (12 novembre 2026)",
+    "exigence": "« Questions d’Atelier » dédupliquées par projet : une question déjà posée ou déjà répondue n’est pas reposée.",
+    "statut": "réalisé",
+    "preuve": "server/workbench-core.ts (questionKey) ; server/routes/workbench.ts ; tests/integration.test.ts (poste de pilotage) ; tests/workbench-core.test.mjs",
+    "limite": "Déduplication sur le texte normalisé ; deux formulations très différentes de la même question ne sont pas détectées."
+  },
+  {
+    "id": "PIL-28-008",
+    "section": 28,
+    "source": "PROMPT-CLAUDECODE-0002 (12 novembre 2026)",
+    "exigence": "Questionnaire utilisable hors connexion : brouillon local, progression, réponses multiples, texte libre, « je ne sais pas », export et import JSON, export CSV.",
+    "statut": "réalisé",
+    "preuve": "web/Inbox.tsx ; server/routes/workbench.ts (/questions/export, /questions/answers) ; tests/integration.test.ts (poste de pilotage) ; tests/workbench-core.test.mjs",
+    "limite": "Parcours hors connexion non rejoué dans un navigateur réellement coupé du réseau."
+  },
+  {
+    "id": "PIL-28-009",
+    "section": 28,
+    "source": "PROMPT-CLAUDECODE-0002 (12 novembre 2026)",
+    "exigence": "Documents de référence par projet, reliés à un fichier de la bibliothèque, à un document du référentiel mémoire ou à un lien, avec fiabilité et provenance.",
+    "statut": "réalisé",
+    "preuve": "server/routes/workbench.ts (/documents) ; web/ProjectExtras.tsx ; tests/integration.test.ts (poste de pilotage) ; tests/workbench-core.test.mjs",
+    "limite": null
+  },
+  {
+    "id": "PIL-28-010",
+    "section": 28,
+    "source": "PROMPT-CLAUDECODE-0002 (12 novembre 2026)",
+    "exigence": "Référentiel Memoire-Projets en lecture seule : commit et arbre épinglés, index, recherche, cache par empreinte de fichier, provenance affichée ; aucun envoi vers ce dépôt.",
+    "statut": "réalisé",
+    "preuve": "server/routes/memory-repo.ts ; server/memory-index.ts ; web/MemoryHub.tsx ; tests/integration.test.ts (poste de pilotage) ; tests/workbench-core.test.mjs",
+    "limite": "Testé avec des réponses GitHub simulées ; aucune synchronisation réelle exécutée avec le jeton de Martin."
+  },
+  {
+    "id": "PIL-28-011",
+    "section": 28,
+    "source": "PROMPT-CLAUDECODE-0002 (12 novembre 2026)",
+    "exigence": "Un arbre GitHub tronqué donne une synchronisation « partielle » : rien n’est déclaré supprimé.",
+    "statut": "réalisé",
+    "preuve": "server/routes/memory-repo.ts ; tests/integration.test.ts (poste de pilotage) ; tests/workbench-core.test.mjs",
+    "limite": null
+  },
+  {
+    "id": "PIL-28-012",
+    "section": 28,
+    "source": "PROMPT-CLAUDECODE-0002 (12 novembre 2026)",
+    "exigence": "Bibliothèque de prompts versionnés : copie exacte, export Markdown et texte, commandes séparées du texte, versions transmises immuables.",
+    "statut": "réalisé",
+    "preuve": "server/routes/prompts.ts ; server/prompt-core.ts ; web/Prompts.tsx ; tests/integration.test.ts (poste de pilotage) ; tests/workbench-core.test.mjs",
+    "limite": null
+  },
+  {
+    "id": "PIL-28-013",
+    "section": 28,
+    "source": "PROMPT-CLAUDECODE-0002 (12 novembre 2026)",
+    "exigence": "Un prompt n’est « déjà donné » que sur confirmation de Martin avec une date réelle non future ; Atelier n’envoie rien lui-même.",
+    "statut": "réalisé",
+    "preuve": "server/routes/prompts.ts (/sent) ; tests/integration.test.ts (poste de pilotage) ; tests/workbench-core.test.mjs",
+    "limite": null
+  },
+  {
+    "id": "PIL-28-014",
+    "section": 28,
+    "source": "PROMPT-CLAUDECODE-0002 (12 novembre 2026)",
+    "exigence": "Inventaire d’un export ChatGPT lu sur l’appareil : empreinte SHA-256, conversations, branches, pièces jointes absentes, lots reproductibles, couverture.",
+    "statut": "réalisé",
+    "preuve": "server/export-inventory.ts ; server/routes/exports.ts ; web/ExportImport.tsx ; tests/integration.test.ts (poste de pilotage) ; tests/workbench-core.test.mjs",
+    "limite": "Testé sur des fichiers d’essai ; l’export réel de Martin n’a pas été reçu."
+  },
+  {
+    "id": "PIL-28-015",
+    "section": 28,
+    "source": "PROMPT-CLAUDECODE-0002 (12 novembre 2026)",
+    "exigence": "Analyses indépendantes par lot enregistrées séparément par assistant, avec croisement.",
+    "statut": "à faire",
+    "preuve": "server/routes/exports.ts (enregistrement des analyses)",
+    "limite": "Seul l’enregistrement manuel d’une analyse existe ; le lancement et le croisement automatiques ne sont pas réalisés."
+  },
+  {
+    "id": "PIL-28-016",
+    "section": 28,
+    "source": "PROMPT-CLAUDECODE-0002 (12 novembre 2026)",
+    "exigence": "Consigne de développement préparée depuis une tâche (contexte, fichiers, tests, risques, décisions validées citées).",
+    "statut": "réalisé",
+    "preuve": "server/workbench-core.ts (devPrompt) ; server/routes/prompts.ts (/from-task) ; web/ProjectExtras.tsx ; tests/integration.test.ts (poste de pilotage) ; tests/workbench-core.test.mjs",
+    "limite": null
+  },
+  {
+    "id": "PIL-28-017",
+    "section": 28,
+    "source": "PROMPT-CLAUDECODE-0002 (12 novembre 2026)",
+    "exigence": "Validation d’une tâche par Martin distincte de « terminée » : possible seulement avec une preuve.",
+    "statut": "réalisé",
+    "preuve": "server/routes/workbench.ts (/tasks/:id/validate) ; tests/integration.test.ts (poste de pilotage) ; tests/workbench-core.test.mjs",
+    "limite": null
+  },
+  {
+    "id": "PIL-28-018",
+    "section": 28,
+    "source": "PROMPT-CLAUDECODE-0002 (12 novembre 2026)",
+    "exigence": "Audit de référence d’un dépôt à un commit figé : manifeste complet, statut de lecture par fichier, couverture ; « intégral » seulement si tout le code est lu intégralement.",
+    "statut": "réalisé",
+    "preuve": "server/routes/ref-audit.ts ; server/audit-core.ts ; web/ProjectExtras.tsx ; tests/integration.test.ts (poste de pilotage) ; tests/workbench-core.test.mjs",
+    "limite": "Testé avec des réponses GitHub simulées ; l’analyse par outil ne remplace pas une lecture."
+  },
+  {
+    "id": "PIL-28-019",
+    "section": 28,
+    "source": "PROMPT-CLAUDECODE-0002 (12 novembre 2026)",
+    "exigence": "Contexte d’audit : contrôles du commit, PR ouvertes et PR empilées.",
+    "statut": "réalisé",
+    "preuve": "server/routes/ref-audit.ts (/context) ; server/audit-core.ts (prGraph) ; tests/integration.test.ts (poste de pilotage) ; tests/workbench-core.test.mjs",
+    "limite": "Simulé uniquement."
+  },
+  {
+    "id": "PIL-28-020",
+    "section": 28,
+    "source": "PROMPT-CLAUDECODE-0002 (12 novembre 2026)",
+    "exigence": "Synthèse de reprise et journal par projet assemblés depuis les objets enregistrés, sans résumé IA.",
+    "statut": "réalisé",
+    "preuve": "server/routes/workbench.ts (/resume, /journal) ; tests/integration.test.ts (poste de pilotage) ; tests/workbench-core.test.mjs",
+    "limite": null
+  },
+  {
+    "id": "PIL-28-021",
+    "section": 28,
+    "source": "PROMPT-CLAUDECODE-0002 (12 novembre 2026)",
+    "exigence": "Cloisonnement : chaque lecture et écriture du poste de pilotage est filtrée par compte et par projet.",
+    "statut": "réalisé",
+    "preuve": "tests/integration.test.ts (poste de pilotage) ; tests/workbench-core.test.mjs",
+    "limite": "Couvert par les scénarios écrits ; pas d’audit de sécurité externe."
+  },
+  {
+    "id": "PIL-28-022",
+    "section": 28,
+    "source": "PROMPT-CLAUDECODE-0002 (12 novembre 2026)",
+    "exigence": "Navigation mobile : quatre entrées principales et « Plus », sans débordement à 360 et 390 px, contrôles d’au moins 30 px.",
+    "statut": "réalisé",
+    "preuve": "web/App.tsx ; web/styles.css ; tests/e2e/flow.spec.ts",
+    "limite": "Vérifié le 12 novembre 2026 sur Chromium local à 360 et 390 px ; ni WebKit, ni Firefox, ni le Galaxy A05s réel."
+  },
+  {
+    "id": "PIL-28-023",
+    "section": 28,
+    "source": "PROMPT-CLAUDECODE-0002 (12 novembre 2026)",
+    "exigence": "Export du compte incluant les tables de pilotage (sans le contenu mis en cache du référentiel).",
+    "statut": "réalisé",
+    "preuve": "server/routes/account.ts",
+    "limite": "Non couvert par un test dédié."
+  },
+  {
+    "id": "PIL-28-024",
+    "section": 28,
+    "source": "PROMPT-CLAUDECODE-0002 (12 novembre 2026)",
+    "exigence": "Quotas et capacités réelles des assistants affichés sans invention.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": "Seul l’écran existant « Disponibilité de vos IA » est conservé ; rien de nouveau dans ce lot."
+  },
+  {
+    "id": "PIL-28-025",
+    "section": 28,
+    "source": "PROMPT-CLAUDECODE-0002 (12 novembre 2026)",
+    "exigence": "Mise à jour historisée de Memoire-Projets (état global, registre des tâches) après la mission.",
+    "statut": "bloqué",
+    "preuve": null,
+    "limite": "Accès en écriture à ce dépôt non accordé à cette session ; texte proposé dans docs/audits/RAPPORT_MISSION_0002.md."
   }
 ]

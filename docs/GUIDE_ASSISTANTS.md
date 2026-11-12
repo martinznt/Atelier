@@ -46,3 +46,7 @@ ne prouve pas qu’il est meilleur pour chaque tâche.
 Le connecteur Claude présent utilise l’API Anthropic. Il ne connecte pas un compte
 Claude Pro ou gratuit par son mot de passe. Les runtimes officiels Claude Code et
 Codex, leur hébergement isolé et leurs authentifications restent à intégrer.
+
+## Poste de pilotage (12 novembre 2026)
+
+Une IA ne crée jamais une décision : elle propose, Martin valide. Un prompt n’est « donné » que lorsque Martin le confirme. Une question déjà répondue n’est pas reposée : chercher d’abord dans « À traiter → Questions ». Voir `docs/GUIDE_REPRISE_PROJET.md`.

@@ -52,3 +52,5 @@ publiés. Ne pas pousser le root-commit local en remplaçant l’historique du d
 
 Reprise du 5 novembre 2026 : l'état actuel est la section « Mise en service » de docs/AVANCEMENT.md et docs/REVUE_IA.md (relais, modes, reprise, rapport, `/api/health`
 avec migrations). Les constats plus anciens de ces fichiers sont historiques. Ne jamais déclarer testé ce qui ne l'a pas été avec de vraies connexions.
+
+Reprise du 12 novembre 2026 : poste de pilotage sur `feat/atelier-poste-de-pilotage` (migration 0018, non fusionnée sans accord de Martin). Lire le haut de docs/AVANCEMENT.md et docs/audits/RAPPORT_MISSION_0002.md. Lancer aussi `node --test tests/workbench-core.test.mjs`. Les appels GitHub du référentiel et de l'audit ne sont testés qu'en simulation : ne pas les déclarer validés. Exigences nouvelles : préfixe PIL-28 ; ne pas renuméroter les 465 historiques.
