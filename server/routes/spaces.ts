@@ -25,7 +25,9 @@ export async function repositoriesOf(env:Env,user:string,project:string){
 export const repoView=(r:Row)=>({id:r.id,full_name:r.full_name,branch:r.default_branch||r.branch,head_sha:r.head_sha,can_push:r.can_push===null||r.can_push===undefined?null:Boolean(r.can_push),verified:Boolean(r.verified_at),verified_at:r.verified_at||null,shared_ack:Boolean(r.shared_ack),url:'https://github.com/'+r.full_name});
 spaces.get('/',async c=>{
  const user=userId(c);
- const rows=await many<Row>(c.env,'SELECT p.id,p.name,pr.space_key,pr.state,pr.objective,pr.site_url FROM project_profiles pr JOIN projects p ON p.id=pr.project_id WHERE pr.user_id=? AND p.user_id=? AND p.archived=0 ORDER BY p.created_at',user,user);
+ // `?all=1` : tous les projets actifs, même sans profil de pilotage (le profil est créé au premier enregistrement).
+ const all=c.req.query('all')==='1';
+ const rows=await many<Row>(c.env,`SELECT p.id,p.name,pr.space_key,COALESCE(pr.state,'active') AS state,COALESCE(pr.objective,'') AS objective,pr.site_url FROM projects p ${all?'LEFT ':''}JOIN project_profiles pr ON pr.project_id=p.id AND pr.user_id=p.user_id WHERE p.user_id=? AND p.archived=0 ORDER BY p.created_at`,user);
  const items=[];for(const r of rows){const repos=await repositoriesOf(c.env,user,r.id);items.push({project_id:r.id,name:r.name,space_key:r.space_key,state:r.state,objective:r.objective,site_url:r.site_url,repositories:repos.map(repoView)});}
  const have=new Set(rows.map(r=>r.space_key));
  return c.json({items,templates:Object.entries(TEMPLATES).map(([key,t])=>({key,label:t.name,exists:have.has(key)}))});

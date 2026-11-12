@@ -54,3 +54,36 @@
 .plain{list-style:none;padding:0;margin:8px 0}.plain li{margin:6px 0;overflow-wrap:anywhere}
 .space-body{margin-top:12px}
 @media(min-width:720px){.guide-card dl{grid-template-columns:170px 1fr;gap:6px 14px}.guide-card dt{margin-top:0}}
+
+/* Discussions organisées : filtres, résultats de recherche dans le projet, message ouvert depuis une recherche. */
+.discussion-tools{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.filter-row{display:flex;gap:8px;flex-wrap:wrap}.filter-row>*{flex:1 1 130px;min-width:0}.filter-row>.button{flex:0 0 auto}
+.search-hits{display:flex;flex-direction:column;gap:6px;max-height:320px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:8px;background:var(--bg)}
+.search-hit{display:flex;flex-direction:column;gap:2px;text-align:left;padding:8px;border-radius:8px;background:var(--surface);border:1px solid var(--line);overflow-wrap:anywhere;min-height:44px}
+.link-button{color:var(--green);text-decoration:underline;padding:6px 4px;min-height:32px;font:inherit}.link-button.danger{color:var(--danger)}
+.message-focus{outline:3px solid #bd9152;outline-offset:3px;border-radius:10px}
+/* Poste de pilotage : accueil, boîte à traiter, mémoire, navigation « Plus ». */
+.nav-more{display:none}
+.home-counters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:20px}
+.home-counters>button,.home-counters>div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 12px;text-align:left;min-height:64px;min-width:0;overflow-wrap:anywhere}
+.home-counters strong{display:block;font-size:22px}
+.home-counters small,.home-counters span{font-size:11px;color:var(--muted)}
+.home-card{display:flex;flex-direction:column;gap:10px}
+.home-card h2{margin:0;font-size:18px;overflow-wrap:anywhere}
+.progress-line{height:8px;border-radius:5px;background:var(--green-soft);overflow:hidden}
+.progress-line>span{display:block;height:100%;background:var(--green);border-radius:5px}
+.next-step{background:var(--green-soft);border-radius:8px;padding:11px 13px;font-size:13px;overflow-wrap:anywhere}
+.export-row{align-items:flex-start;overflow-wrap:anywhere}
+label.button{display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.button.disabled{opacity:.55;pointer-events:none}
+.home,.inbox,.memory-hub{min-width:0}
+.home pre,.inbox pre,.memory-hub pre,.handoff-preview{max-width:100%;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:640px){
+ .home-counters{grid-template-columns:1fr 1fr}
+ .sidebar nav{grid-template-columns:repeat(5,1fr)}
+ .sidebar nav button.nav-more{display:flex}
+ .sidebar nav button.nav-secondary{display:none}
+ .sidebar nav button.nav-secondary.nav-open{display:flex;grid-row:1}
+ .sidebar nav button.nav-more{grid-row:2;grid-column:5}
+ .sidebar nav button:not(.nav-secondary):not(.nav-more){grid-row:2}
+}

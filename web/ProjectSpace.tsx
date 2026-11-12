@@ -2,6 +2,7 @@
 import {useCallback,useEffect,useState} from 'react';
 import {api,post,patch,remove,date,download} from './api';
 import {Button,Field,ErrorBox,Empty,SectionTitle,Loading} from './ui';
+import {DocumentsSection,ResumeSection,JournalSection,RefAuditSection,TaskExtras} from './ProjectExtras';
 
 const STATUS:Record<string,string>={todo:'À faire',ready:'Prêt',in_progress:'En cours',waiting:'En attente',blocked:'Bloqué',to_verify:'À vérifier',done:'Terminé',abandoned:'Abandonné'};
 const OWNER:Record<string,string>={user:'Vous',chatgpt:'ChatGPT',claude_code:'Claude Code',codex:'Codex',gemini:'Gemini',mistral:'Mistral',other_ai:'Autre IA',automation:'Automatisation'};
@@ -17,7 +18,7 @@ function Fold({title,summary,open,children}:{title:string;summary?:string;open?:
 
 export function ProjectSpace({onProject,refresh}:{onProject:(p:any)=>void;refresh:number}){
  const [spaces,setSpaces]=useState<any>(null),[selected,setSelected]=useState(()=>{try{return sessionStorage.getItem('atelier:pilotage')||'';}catch{return '';}}),[error,setError]=useState<unknown>(null),[busy,setBusy]=useState(false);
- const loadSpaces=useCallback(async()=>{try{const d=await api('/spaces');setSpaces(d);setSelected(s=>s&&d.items.some((i:any)=>i.project_id===s)?s:d.items[0]?.project_id||'');}catch(e){setError(e);}},[]);
+ const loadSpaces=useCallback(async()=>{try{const d=await api('/spaces?all=1');setSpaces(d);setSelected(s=>s&&d.items.some((i:any)=>i.project_id===s)?s:d.items[0]?.project_id||'');}catch(e){setError(e);}},[]);
  useEffect(()=>{void loadSpaces();},[loadSpaces,refresh]);
  useEffect(()=>{try{if(selected)sessionStorage.setItem('atelier:pilotage',selected);}catch{/* stockage indisponible */}},[selected]);
  async function init(template:string){setBusy(true);setError(null);try{const r=await post('/spaces/init',{template});await loadSpaces();setSelected(r.project_id);}catch(e){setError(e);}finally{setBusy(false);}}
@@ -60,9 +61,13 @@ function Space({id}:{id:string;onOpenProject:(p:any)=>void}){
   </Fold>
   <RepoSection id={id} repos={ov.repositories} onChanged={reload}/>
   <GithubSection gh={gh}/>
-  <PlanSection id={id} plan={plan} onChanged={reload}/>
+  <PlanSection id={id} plan={plan} decisions={decisions} onChanged={reload}/>
   <HandoffSection id={id} plan={plan} decisions={decisions} repos={ov.repositories} gh={gh} onChanged={reload}/>
   <DecisionSection id={id} decisions={decisions} plan={plan} onChanged={reload}/>
+  <DocumentsSection id={id}/>
+  <RefAuditSection id={id} repos={ov.repositories}/>
+  <ResumeSection id={id}/>
+  <JournalSection id={id}/>
  </div>;
 }
 
@@ -121,14 +126,14 @@ function GithubSection({gh}:{gh:any}){
  </Fold>;
 }
 
-function PlanSection({id,plan,onChanged}:{id:string;plan:any;onChanged:()=>void}){
+function PlanSection({id,plan,decisions,onChanged}:{id:string;plan:any;decisions:any[];onChanged:()=>void}){
  const [phaseTitle,setPhaseTitle]=useState(''),[title,setTitle]=useState(''),[phase,setPhase]=useState(''),[owner,setOwner]=useState('user'),[priority,setPriority]=useState(2),[deps,setDeps]=useState<string[]>([]),[acceptance,setAcceptance]=useState(''),[error,setError]=useState<unknown>(null),[busy,setBusy]=useState(false);
  const run=async(fn:()=>Promise<any>)=>{setBusy(true);setError(null);try{await fn();onChanged();}catch(e){setError(e);}finally{setBusy(false);}};
  const tasks:any[]=plan.tasks;
  return <Fold title="Plan" summary={plan.phases.length+' phase(s) · '+tasks.length+' tâche(s)'}>
   <ErrorBox error={error}/>
-  {plan.phases.map((ph:any)=><div key={ph.id}><h4>{ph.title}</h4>{tasks.filter(t=>t.phase_id===ph.id).map(t=><TaskCard key={t.id} id={id} task={t} all={tasks} run={run} busy={busy}/>)}</div>)}
-  {tasks.some(t=>!t.phase_id)&&<div><h4>Sans phase</h4>{tasks.filter(t=>!t.phase_id).map(t=><TaskCard key={t.id} id={id} task={t} all={tasks} run={run} busy={busy}/>)}</div>}
+  {plan.phases.map((ph:any)=><div key={ph.id}><h4>{ph.title}</h4>{tasks.filter(t=>t.phase_id===ph.id).map(t=><TaskCard key={t.id} id={id} task={t} all={tasks} run={run} busy={busy} decisions={decisions} onChanged={onChanged}/>)}</div>)}
+  {tasks.some(t=>!t.phase_id)&&<div><h4>Sans phase</h4>{tasks.filter(t=>!t.phase_id).map(t=><TaskCard key={t.id} id={id} task={t} all={tasks} run={run} busy={busy} decisions={decisions} onChanged={onChanged}/>)}</div>}
   <div className="stack"><Field label="Nouvelle phase"><input value={phaseTitle} maxLength={160} onChange={e=>setPhaseTitle(e.target.value)}/></Field>
    <Button kind="secondary" disabled={busy||!phaseTitle.trim()} onClick={()=>void run(async()=>{await post(`/spaces/${id}/phases`,{title:phaseTitle.trim()});setPhaseTitle('');})}>Ajouter la phase</Button></div>
   <div className="stack"><h4>Nouvelle tâche du plan</h4>
@@ -142,11 +147,12 @@ function PlanSection({id,plan,onChanged}:{id:string;plan:any;onChanged:()=>void}
   <p className="muted">Ce plan est celui de votre projet. Il est distinct des tâches techniques d’Atelier (traitements en arrière-plan).</p>
  </Fold>;
 }
-function TaskCard({id,task,all,run,busy}:{id:string;task:any;all:any[];run:(fn:()=>Promise<any>)=>Promise<void>;busy:boolean}){
+function TaskCard({id,task,all,run,busy,decisions,onChanged}:{id:string;task:any;all:any[];run:(fn:()=>Promise<any>)=>Promise<void>;busy:boolean;decisions:any[];onChanged:()=>void}){
+ const [taskNotice,setTaskNotice]=useState(''),[taskError,setTaskError]=useState<unknown>(null);
  const [proof,setProof]=useState(task.proof||''),[question,setQuestion]=useState(task.blocking_question||''),[next,setNext]=useState(task.next_action||'');
  const deps=task.depends_on.map((d:string)=>all.find(t=>t.id===d)?.title||'introuvable');
  const set=(status:string)=>run(async()=>{await patch(`/spaces/${id}/tasks/${task.id}`,{status,proof,blocking_question:question,next_action:next,revision:task.revision});});
- return <details className="fold"><summary className="fold-summary"><strong>{task.title}</strong><small className="muted">{STATUS[task.effective_status]||task.status} · {OWNER[task.owner]} · priorité {PRIORITY[task.priority].toLowerCase()}{task.status==='done'&&!String(task.proof||'').trim()?' · sans preuve':''}</small></summary>
+ return <details className="fold"><summary className="fold-summary"><strong>{task.title}</strong><small className="muted">{STATUS[task.effective_status]||task.status} · {OWNER[task.owner]} · priorité {PRIORITY[task.priority].toLowerCase()}{task.status==='done'&&!String(task.proof||'').trim()?' · sans preuve':''}{task.validated_at?' · validée par vous':''}</small></summary>
   <div className="fold-body stack">
    {task.acceptance&&<p><strong>Critère d’acceptation :</strong> {task.acceptance}</p>}
    {deps.length>0&&<p className="muted">Dépend de : {deps.join(', ')}{task.effective_status==='waiting'?' — prérequis non terminés : la tâche ne peut pas démarrer.':''}</p>}
@@ -157,6 +163,8 @@ function TaskCard({id,task,all,run,busy}:{id:string;task:any;all:any[];run:(fn:(
    <div className="stack">{Object.entries(STATUS).filter(([k])=>k!==task.status&&k!=='waiting').map(([k,v])=><Button key={k} kind="secondary" disabled={busy} onClick={()=>void set(k)}>{v}</Button>)}
     <Button kind="text" disabled={busy} onClick={()=>void run(()=>patch(`/spaces/${id}/tasks/${task.id}`,{proof,blocking_question:question,next_action:next,revision:task.revision}))}>Enregistrer les notes</Button>
     <Button kind="text danger" disabled={busy} onClick={()=>void run(()=>remove(`/spaces/${id}/tasks/${task.id}`))}>Supprimer</Button></div>
+   <ErrorBox error={taskError}/>{taskNotice&&<p className="notice" role="status">{taskNotice}</p>}
+   <TaskExtras task={task} decisions={decisions} onChanged={onChanged} setNotice={setTaskNotice} setError={setTaskError}/>
   </div></details>;
 }
 
