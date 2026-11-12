@@ -276,3 +276,7 @@ Migration `0018_workbench.sql` (additive). Règles pures, testables sans réseau
 Tables : `conversation_links`, `object_links`, `martin_actions`, `atelier_questions`, `memory_repos`, `memory_docs`, `prompts`, `prompt_versions`, `prompt_responses`, `export_batches`, `export_conversations`, `export_analyses`, `project_documents`, `ref_audits`, `ref_audit_files`, `ref_audit_findings` ; colonnes ajoutées à `conversations`, `plan_tasks`, `handoff_packages`.
 
 Interface : `web/Home.tsx`, `Inbox.tsx`, `MemoryHub.tsx`, `Prompts.tsx`, `ExportImport.tsx`, `Discussions.tsx`, `ProjectExtras.tsx`. L’archive d’export est lue dans le navigateur ; seul l’inventaire (identifiants, titres, compteurs, empreinte) est envoyé au serveur, et les messages uniquement si Martin les importe par la passerelle existante.
+
+## Pilotage du travail avec Claude (12 novembre 2026)
+
+`migrations/0019_claude_work.sql` : colonnes de dossier sur `plan_tasks` ; tables `quota_readings`, `quota_alerts`, `work_sessions`, `checkpoints`. Règles pures : `server/claude-advisor.ts`. Routes `/api/claude` (`server/routes/claude.ts`) : `/advise`, `/tasks/:id/advice`, `/tasks/:id/brief`, `/quotas`, `/quotas/import-statusline`, `/alerts`, `/sessions`, `/sessions/parse`, `/checkpoints`, `/checkpoints/draft`. Interface : `web/ClaudePilot.tsx`. Aucun appel réseau vers Anthropic n’est ajouté.

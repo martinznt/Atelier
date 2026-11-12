@@ -3988,5 +3988,113 @@
     "statut": "bloqué",
     "preuve": null,
     "limite": "Accès en écriture à ce dépôt non accordé à cette session ; texte proposé dans docs/audits/RAPPORT_MISSION_0002.md."
+  },
+  {
+    "id": "QCL-29-001",
+    "section": 29,
+    "source": "Mission « Optimiser la consommation des quotas Claude » (12 novembre 2026)",
+    "exigence": "Conseil de modèle par tâche : modèle, effort, complexité, importance, vérification, raison, économies ; le moins coûteux jugé suffisant.",
+    "statut": "réalisé",
+    "preuve": "server/claude-advisor.ts ; tests/claude-advisor.test.mjs ; tests/integration.test.ts (pilotage Claude)",
+    "limite": "Règles fixées par la stratégie de Martin ; aucune évaluation mesurée des modèles."
+  },
+  {
+    "id": "QCL-29-002",
+    "section": 29,
+    "source": "Mission « Optimiser la consommation des quotas Claude » (12 novembre 2026)",
+    "exigence": "Une vérification mécanique ne mobilise aucun modèle ; un échec non analysé ne fait pas monter en gamme.",
+    "statut": "réalisé",
+    "preuve": "tests/claude-advisor.test.mjs ; tests/integration.test.ts (pilotage Claude)",
+    "limite": null
+  },
+  {
+    "id": "QCL-29-003",
+    "section": 29,
+    "source": "Mission « Optimiser la consommation des quotas Claude » (12 novembre 2026)",
+    "exigence": "Dossier de travail avant transmission : objectif, contexte, décisions, contraintes, fichiers concernés, fichiers interdits, tests, critères, déjà vérifié, difficultés.",
+    "statut": "réalisé",
+    "preuve": "server/workbench-core.ts (devPrompt) ; server/routes/claude.ts (/tasks/:id/brief) ; tests/claude-advisor.test.mjs ; tests/integration.test.ts (pilotage Claude)",
+    "limite": null
+  },
+  {
+    "id": "QCL-29-004",
+    "section": 29,
+    "source": "Mission « Optimiser la consommation des quotas Claude » (12 novembre 2026)",
+    "exigence": "La consigne reprend le dernier retour de travail et le dernier point de reprise de la tâche, pour ne pas refaire une analyse.",
+    "statut": "réalisé",
+    "preuve": "server/routes/prompts.ts (/from-task) ; tests/claude-advisor.test.mjs ; tests/integration.test.ts (pilotage Claude)",
+    "limite": null
+  },
+  {
+    "id": "QCL-29-005",
+    "section": 29,
+    "source": "Mission « Optimiser la consommation des quotas Claude » (12 novembre 2026)",
+    "exigence": "Retour de travail structuré : modifications, fichiers, tests réellement exécutés, résultats, problèmes non résolus, décisions, prochaines étapes.",
+    "statut": "réalisé",
+    "preuve": "server/routes/claude.ts (/sessions, /sessions/parse) ; tests/claude-advisor.test.mjs ; tests/integration.test.ts (pilotage Claude)",
+    "limite": "Le classement repose sur les titres ; un texte sans titre est à classer à la main."
+  },
+  {
+    "id": "QCL-29-006",
+    "section": 29,
+    "source": "Mission « Optimiser la consommation des quotas Claude » (12 novembre 2026)",
+    "exigence": "Points de reprise : objectif, terminé, reste, décisions, fichiers, erreurs, tests, prochaine action exacte ; manques signalés.",
+    "statut": "réalisé",
+    "preuve": "server/routes/claude.ts (/checkpoints) ; tests/claude-advisor.test.mjs ; tests/integration.test.ts (pilotage Claude)",
+    "limite": "Le brouillon vient des objets enregistrés ; Atelier ne lit pas la session Claude."
+  },
+  {
+    "id": "QCL-29-007",
+    "section": 29,
+    "source": "Mission « Optimiser la consommation des quotas Claude » (12 novembre 2026)",
+    "exigence": "Suivi des quotas par modèle et par type de limite, uniquement à partir de relevés saisis, chacun avec sa source ; un relevé dont la fenêtre est passée est marqué périmé.",
+    "statut": "réalisé",
+    "preuve": "server/routes/claude.ts (/quotas) ; tests/claude-advisor.test.mjs ; tests/integration.test.ts (pilotage Claude)",
+    "limite": "Aucune mesure automatique : aucune interface officielle ne donne le quota d’un abonnement à une application tierce."
+  },
+  {
+    "id": "QCL-29-008",
+    "section": 29,
+    "source": "Mission « Optimiser la consommation des quotas Claude » (12 novembre 2026)",
+    "exigence": "Import du JSON officiel de la ligne d’état de Claude Code (rate_limits).",
+    "statut": "réalisé",
+    "preuve": "server/claude-advisor.ts (parseStatusline) ; tests/claude-advisor.test.mjs ; tests/integration.test.ts (pilotage Claude)",
+    "limite": "Testé sur un JSON conforme à la documentation ; pas sur un JSON produit par la session de Martin."
+  },
+  {
+    "id": "QCL-29-009",
+    "section": 29,
+    "source": "Mission « Optimiser la consommation des quotas Claude » (12 novembre 2026)",
+    "exigence": "Relevé sur capture d’écran : image gardée sur l’appareil, nom et empreinte conservés.",
+    "statut": "réalisé",
+    "preuve": "web/ClaudePilot.tsx ; server/routes/claude.ts",
+    "limite": "Pas de lecture automatique de l’image ; le stockage intégré n’accepte que du texte."
+  },
+  {
+    "id": "QCL-29-010",
+    "section": 29,
+    "source": "Mission « Optimiser la consommation des quotas Claude » (12 novembre 2026)",
+    "exigence": "Alertes configurables quand un relevé encore valable dépasse un seuil ; rappel sur l’Accueil.",
+    "statut": "réalisé",
+    "preuve": "server/routes/claude.ts (/alerts) ; server/routes/workbench.ts (/home) ; tests/claude-advisor.test.mjs ; tests/integration.test.ts (pilotage Claude)",
+    "limite": "Pas de notification hors de l’application."
+  },
+  {
+    "id": "QCL-29-011",
+    "section": 29,
+    "source": "Mission « Optimiser la consommation des quotas Claude » (12 novembre 2026)",
+    "exigence": "Répartition par modèle et travaux ayant le plus consommé, d’après les consommations relevées seulement.",
+    "statut": "réalisé",
+    "preuve": "server/routes/claude.ts (/quotas) ; tests/claude-advisor.test.mjs ; tests/integration.test.ts (pilotage Claude)",
+    "limite": "Le coût en dollars est l’estimation affichée par Claude Code, pas une facture."
+  },
+  {
+    "id": "QCL-29-012",
+    "section": 29,
+    "source": "Mission « Optimiser la consommation des quotas Claude » (12 novembre 2026)",
+    "exigence": "Mesure automatique de la consommation de Claude Code (collecte OpenTelemetry ou équivalent officiel).",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": "Nécessite un collecteur hébergé et une configuration sur le poste de Martin ; ne donnerait pas le quota restant."
   }
 ]

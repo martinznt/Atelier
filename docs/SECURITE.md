@@ -97,3 +97,7 @@ Non fait : audit complet de tout le projet par un outil dédié, test d'intrusio
 - Les prompts et les réponses enregistrés passent par la détection de secrets existante ; un texte qui ressemble à une clé est refusé.
 - L’archive d’export ChatGPT reste sur l’appareil ; elle n’est jamais publiée sur GitHub.
 - Chaque requête filtre par compte et par projet ; les modifications concurrentes sont refusées par numéro de révision.
+
+## Quotas Claude (12 novembre 2026)
+
+Aucun identifiant, cookie ou session Claude n’est lu ni demandé. Les relevés sont saisis par l’utilisateur. Une capture d’écran n’est jamais envoyée au serveur : seuls son nom et son empreinte SHA-256 sont enregistrés. Les textes de dossier, de retour et de reprise passent par la détection de secrets.

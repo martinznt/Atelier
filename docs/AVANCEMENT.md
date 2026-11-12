@@ -1,3 +1,15 @@
+# 12 novembre 2026 — Pilotage du travail avec Claude (branche empilée, non fusionnée)
+
+Branche `feat/atelier-quotas-claude`, au-dessus de `feat/atelier-poste-de-pilotage` (PR 36). Migration additive `0019_claude_work.sql`. Rien en ligne.
+
+**Réalisé :** conseil de modèle par règles (`server/claude-advisor.ts`), dossier de travail complet dans la consigne, relevés de quota saisis avec source et péremption, alertes, retours de travail classés, points de reprise, écran « Claude ». Détail et limites : `docs/QUOTAS_CLAUDE.md`.
+
+**Vérifié en local le 12 novembre :** `tsc`, 67 scénarios Miniflare (dont 5 nouveaux), `tests/claude-advisor.test.mjs` (11), régressions, compilation, navigateur réel à 360 et 390 px.
+
+**Non fait ou impossible :** aucune mesure automatique des quotas d’abonnement (aucune interface officielle) ; pas de lecture automatique des captures d’écran ; pas de collecte OpenTelemetry ; rien testé sur téléphone réel ni en production.
+
+---
+
 # 12 novembre 2026 — Poste de pilotage (mission PROMPT-CLAUDECODE-0002, branche non fusionnée)
 
 **État actuel de ce lot.** Branche `feat/atelier-poste-de-pilotage`, partie de `main` `9219114`. Rien n’est en ligne : la migration 0018 n’est pas appliquée en production tant que la PR n’est pas fusionnée par Martin.
