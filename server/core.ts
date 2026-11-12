@@ -6,7 +6,7 @@ export function fail(status:400|401|403|404|409|413|422|429|500|502|503, message
 export const one = <T=Row>(env:Env,sql:string,...args:any[]) => env.DB.prepare(sql).bind(...args).first<T>();
 export async function many<T=Row>(env:Env,sql:string,...args:any[]):Promise<T[]> { return (await env.DB.prepare(sql).bind(...args).all<T>()).results; }
 export const run = (env:Env,sql:string,...args:any[]) => env.DB.prepare(sql).bind(...args).run();
-const ownedTables = new Set(['projects','connections','conversations','memory','files','tasks','repositories','deployment_targets','deployments','plan_tasks','plan_phases','project_decisions','handoff_packages','prompts','memory_repos','export_batches','ref_audits','work_sessions','checkpoints']);
+const ownedTables = new Set(['projects','connections','conversations','memory','files','tasks','repositories','deployment_targets','deployments','plan_tasks','plan_phases','project_decisions','handoff_packages','prompts','memory_repos','export_batches','ref_audits']);
 export async function owned<T=Row>(env:Env,table:string,id:string,userId:string):Promise<T> {
  if(!ownedTables.has(table)) throw new Error('Unknown table');
  const row = await one<T>(env,`SELECT * FROM ${table} WHERE id=? AND user_id=?`,id,userId);

@@ -6,7 +6,6 @@ import {guideInputs,profileOf,repoView,repositoriesOf} from './spaces.ts';
 import {nextAction,type Guide} from '../project-guide.ts';
 import {CONVERSATION_CATEGORIES,answerText,progressDetail,questionKey,questionsCsv,resumeText} from '../workbench-core.ts';
 import {secretFindings,sha256Hex} from '../handoff-core.ts';
-import {readingState,triggeredAlerts,type Reading} from '../claude-advisor.ts';
 import type {AppEnv,Env,Row} from '../types.ts';
 export const workbench=new Hono<AppEnv>();
 const like=(q:string)=>'%'+q.slice(0,120).replace(/[\\%_]/g,m=>'\\'+m)+'%';
@@ -41,10 +40,6 @@ workbench.get('/home',async c=>{
  const memory=(await many<Row>(c.env,'SELECT id,full_name,branch,commit_sha,status,synced_at,last_error,file_count,truncated FROM memory_repos WHERE user_id=? ORDER BY created_at',user)).map((m:Row):Row=>({...m,stale:!m.synced_at||Date.now()-Date.parse(m.synced_at)>7*86400000}));
  const alerts:string[]=[];
  for(const m of memory){if(m.status==='error')alerts.push('Référentiel mémoire '+m.full_name+' : dernière synchronisation en erreur.');else if(m.status==='partial')alerts.push('Référentiel mémoire '+m.full_name+' : synchronisation partielle.');else if(m.stale)alerts.push('Référentiel mémoire '+m.full_name+' : '+(m.synced_at?'synchronisation de plus de 7 jours.':'jamais synchronisé.'));}
- {const at=now(),rows=await many<Row>(c.env,'SELECT scope,model_family,used_percent,resets_at,observed_at,source FROM quota_readings WHERE user_id=? ORDER BY observed_at DESC,created_at DESC LIMIT 60',user),seen=new Set<string>(),latest=[];
-  for(const r of rows){const k=r.scope+'|'+r.model_family;if(seen.has(k))continue;seen.add(k);latest.push(readingState(r as unknown as Reading,at));}
-  const rules=(await many<Row>(c.env,'SELECT scope,model_family,threshold,enabled FROM quota_alerts WHERE user_id=?',user)).map(r=>({scope:r.scope,model_family:r.model_family,threshold:r.threshold,enabled:Boolean(r.enabled)}));
-  for(const a of triggeredAlerts(latest,rules))alerts.push('Quota Claude — '+a.text);}
  return c.json({projects:cards,inbox:{actions:global?.actions||0,questions:global?.questions||0},prompts:{to_give:global?.prompts_to_give||0,awaiting:global?.prompts_awaiting||0},memory,alerts,generated_at:now()});
 });
 

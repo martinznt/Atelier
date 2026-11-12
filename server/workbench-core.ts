@@ -71,15 +71,9 @@ export function resumeText(i:ResumeInput):string{
 }
 
 export interface DevPromptInput{
- project:string;task:{title:string;objective:string;acceptance:string;context:string;files_hint:string;tests:string;risks:string;next_action:string;owner:string;
-  constraints_text?:string;do_not_touch?:string;already_verified?:string;difficulties?:string};
+ project:string;task:{title:string;objective:string;acceptance:string;context:string;files_hint:string;tests:string;risks:string;next_action:string;owner:string};
  repository:{full_name:string;branch:string;head_sha:string;verified:boolean}|null;
  decisions:{title:string;source_ref:string}[];dependencies:{title:string;status:string}[];
- /** Conseil calculé par claude-advisor (stratégie de Martin), jamais une mesure. */
- advice?:{line:string;verification:string;reasons:string[];warnings:string[]}|null;
- /** Dernier travail enregistré sur cette tâche : évite de refaire une analyse déjà faite. */
- previous?:{worked_at:string;outcome:string;results:string;unresolved:string;tests_run:string;files_modified:string}|null;
- checkpoint?:{title:string;next_action:string;remaining:string}|null;
 }
 /** Consigne de développement autonome : jamais de date d'envoi, de modèle, de quota ni de preuve inventés. */
 export function devPrompt(i:DevPromptInput):string{
@@ -93,21 +87,11 @@ export function devPrompt(i:DevPromptInput):string{
  o.push('');
  if(i.decisions.length){o.push('## Décisions à respecter');for(const d of i.decisions)o.push('- '+d.title+(d.source_ref?' (source : '+d.source_ref+')':''));o.push('');}
  if(i.dependencies.length){o.push('## Dépendances');for(const d of i.dependencies)o.push('- '+d.title+' — '+(STATUS_LABEL[d.status as keyof typeof STATUS_LABEL]||d.status));o.push('');}
- if(i.advice){o.push('## Modèle et effort conseillés','- '+i.advice.line,'- Vérification : '+i.advice.verification,...i.advice.reasons.map(r=>'- '+r),...i.advice.warnings.map(w=>'- Attention : '+w),'');}
- if(t.constraints_text)o.push('## Contraintes à respecter',t.constraints_text,'');
- if(t.files_hint)o.push('## Fichiers et fonctions concernés',t.files_hint,'','Lire seulement ces fichiers et ce qu’ils appellent directement. Ne pas relire tout le dépôt.','');
- if(t.do_not_touch)o.push('## Fichiers à ne surtout pas modifier',t.do_not_touch,'');
- if(t.already_verified)o.push('## Déjà vérifié (ne pas refaire)',t.already_verified,'');
- if(i.previous){o.push('## Travail précédent sur cette tâche ('+i.previous.worked_at.slice(0,10)+', '+({done:'terminé',partial:'partiel',failed:'échec'}[i.previous.outcome]||i.previous.outcome)+')');
-  if(i.previous.results)o.push('Résultats : '+i.previous.results);if(i.previous.tests_run)o.push('Tests déjà exécutés : '+i.previous.tests_run);if(i.previous.files_modified)o.push('Fichiers déjà modifiés : '+i.previous.files_modified);
-  if(i.previous.unresolved)o.push('Non résolu : '+i.previous.unresolved);o.push('Repartir de là ; ne pas refaire ces analyses.','');}
- if(i.checkpoint){o.push('## Point de reprise « '+i.checkpoint.title+' »');if(i.checkpoint.remaining)o.push('Reste à faire : '+i.checkpoint.remaining);if(i.checkpoint.next_action)o.push('Prochaine action exacte : '+i.checkpoint.next_action);o.push('');}
- if(t.difficulties)o.push('## Difficultés connues',t.difficulties,'');
+ if(t.files_hint)o.push('## Fichiers et fonctions concernés',t.files_hint,'');
  o.push('## Critères d’acceptation',t.acceptance||'(à préciser avant transmission)','');
  o.push('## Tests demandés',t.tests||'Tests ciblés du changement, puis la suite existante du dépôt. Indiquer les commandes réellement exécutées et leurs résultats.','');
  if(t.risks)o.push('## Risques',t.risks,'');
  o.push('## Règles','- Vérifier d’abord le dépôt, la branche et le SHA.','- Aucun secret dans le code, les journaux ou la PR.','- Ne jamais dire testé ce qui n’a pas été exécuté ; séparer test simulé, test réel et non vérifié.','- Une branche et une PR ; aucune fusion sans accord explicite de Martin.','');
- o.push('## Économie de ressources','- Tests automatisés avant toute nouvelle analyse.','- Pas de sous-agent ni d’effort maximal sans nécessité expliquée.','- Si le contexte devient long : écrire un point de reprise et s’arrêter, plutôt que de continuer dans une session saturée.','');
- o.push('## Retour attendu','Répondre avec exactement ces titres, pour qu’Atelier puisse classer la réponse :','','## Modifications effectuées','## Fichiers modifiés','## Tests réellement exécutés','## Résultats','## Problèmes non résolus','## Décisions prises','## Prochaines étapes','','Indiquer aussi la branche, le commit et la PR.');
+ o.push('## Retour attendu','Résumé, branche, commit, PR, tests exécutés avec résultats, limites et ce qui reste à faire.');
  return o.join('\n');
 }

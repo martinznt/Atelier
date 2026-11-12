@@ -88,5 +88,3 @@ label.button{display:inline-flex;align-items:center;justify-content:center;curso
  .sidebar nav button:not(.nav-secondary):not(.nav-more){grid-row:2}
 }
 .next-step>*{display:block}.next-step>.eyebrow{margin-bottom:4px}.next-step>small{margin-top:4px}
-.advice ul{margin:6px 0;padding-left:18px}.advice details{margin-top:4px}
-.quota-shot{max-width:100%;height:auto;border:1px solid var(--line);border-radius:8px}

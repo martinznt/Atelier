@@ -20,10 +20,7 @@ const checks:{id:string;table:string;columns:string[]}[]=[
  {id:'0018',table:'conversations',columns:['category','status']},
  {id:'0018',table:'atelier_questions',columns:['dedupe_key']},
  {id:'0018',table:'prompt_versions',columns:['locked','sent_at']},
- {id:'0018',table:'ref_audit_files',columns:['read_status']},
- {id:'0019',table:'plan_tasks',columns:['work_kind','do_not_touch']},
- {id:'0019',table:'quota_readings',columns:['used_percent','source']},
- {id:'0019',table:'checkpoints',columns:['next_action']}
+ {id:'0018',table:'ref_audit_files',columns:['read_status']}
 ];
 let cache:{at:number;value:SchemaStatus}|null=null;
 /** Cache de 60 s par instance : la page de santé est publique, elle ne doit pas solliciter D1 à chaque appel. */

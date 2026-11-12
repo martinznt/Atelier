@@ -2,7 +2,6 @@
 import {useCallback,useEffect,useState} from 'react';
 import {api,post,patch,remove,date,download} from './api';
 import {Button,Field,ErrorBox,Loading} from './ui';
-import {AdviceCard,KIND,COMPLEXITY,IMPORTANCE} from './ClaudePilot';
 export function Fold({title,summary,open,children,onOpen}:{title:string;summary?:string;open?:boolean;children:React.ReactNode;onOpen?:()=>void}){
  return <details className="fold" open={open} onToggle={e=>{if((e.target as HTMLDetailsElement).open)onOpen?.();}}><summary className="fold-summary"><strong>{title}</strong>{summary&&<small className="muted">{summary}</small>}</summary><div className="fold-body">{children}</div></details>;
 }
@@ -114,28 +113,16 @@ export function RefAuditSection({id,repos}:{id:string;repos:any[]}){
 /** Détails de développement d'une tâche, validation réelle par Martin et préparation d'une consigne. */
 export function TaskExtras({task,decisions,onChanged,setNotice,setError}:{task:any;decisions:any[];onChanged:()=>void;setNotice:(s:string)=>void;setError:(e:unknown)=>void}){
  const [context,setContext]=useState(task.context||''),[files,setFiles]=useState(task.files_hint||''),[tests,setTests]=useState(task.tests||''),[risks,setRisks]=useState(task.risks||''),[picked,setPicked]=useState<string[]>([]),[busy,setBusy]=useState(false);
- const [b,setB]=useState({work_kind:task.work_kind||'',complexity:task.complexity||'',importance:task.importance||'',constraints_text:task.constraints_text||'',do_not_touch:task.do_not_touch||'',already_verified:task.already_verified||'',difficulties:task.difficulties||'',failed_attempts:task.failed_attempts||0,failure_analysed:Boolean(task.failure_analysed)}),[advice,setAdvice]=useState<any>(null),[opened,setOpened]=useState(false);
- useEffect(()=>{if(!opened)return;let alive=true;api(`/claude/tasks/${task.id}/advice`).then(a=>{if(alive)setAdvice(a);}).catch(()=>{});return()=>{alive=false;};},[opened,task.id,task.updated_at]);
- const saveBrief=async()=>{const r=await patch(`/claude/tasks/${task.id}/brief`,b);setAdvice(r.advice);};
- const pick=(label:string,key:'work_kind'|'complexity'|'importance',opts:Record<string,string>)=><Field label={label}><select value={b[key]} onChange={e=>setB({...b,[key]:e.target.value})}><option value="">Non précisé</option>{Object.entries(opts).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></Field>;
  const run=async(fn:()=>Promise<any>,ok:string)=>{setBusy(true);setError(null);try{await fn();setNotice(ok);onChanged();}catch(e){setError(e);}finally{setBusy(false);}};
  const valid=decisions.filter(d=>d.status==='validated');
- return <details onToggle={e=>{if((e.target as HTMLDetailsElement).open)setOpened(true);}}><summary>Consigne de développement et validation</summary><div className="stack">
-  <AdviceCard advice={advice}/>
-  {pick('Type de travail','work_kind',KIND)}{pick('Complexité','complexity',COMPLEXITY)}{pick('Importance','importance',IMPORTANCE)}
+ return <details><summary>Consigne de développement et validation</summary><div className="stack">
   <Field label="Contexte utile"><textarea rows={2} value={context} maxLength={4000} onChange={e=>setContext(e.target.value)}/></Field>
   <Field label="Fichiers et fonctions concernés"><textarea rows={2} value={files} maxLength={2000} onChange={e=>setFiles(e.target.value)}/></Field>
   <Field label="Tests demandés"><input value={tests} maxLength={2000} onChange={e=>setTests(e.target.value)}/></Field>
   <Field label="Risques"><input value={risks} maxLength={2000} onChange={e=>setRisks(e.target.value)}/></Field>
-  <Field label="Contraintes à respecter"><textarea rows={2} value={b.constraints_text} maxLength={2000} onChange={e=>setB({...b,constraints_text:e.target.value})}/></Field>
-  <Field label="Fichiers à ne surtout pas modifier"><textarea rows={2} value={b.do_not_touch} maxLength={2000} onChange={e=>setB({...b,do_not_touch:e.target.value})}/></Field>
-  <Field label="Déjà vérifié (à ne pas refaire)"><textarea rows={2} value={b.already_verified} maxLength={2000} onChange={e=>setB({...b,already_verified:e.target.value})}/></Field>
-  <Field label="Difficultés connues"><textarea rows={2} value={b.difficulties} maxLength={2000} onChange={e=>setB({...b,difficulties:e.target.value})}/></Field>
-  <Field label="Tentatives déjà échouées"><input type="number" min={0} max={99} value={b.failed_attempts} onChange={e=>setB({...b,failed_attempts:Math.max(0,Math.min(99,Number(e.target.value)||0))})}/></Field>
-  {b.failed_attempts>0&&<label className="check"><input type="checkbox" checked={b.failure_analysed} onChange={e=>setB({...b,failure_analysed:e.target.checked})}/>L’échec précédent a été analysé</label>}
-  <Button kind="secondary" disabled={busy} onClick={()=>void run(async()=>{await patch(`/workbench/tasks/${task.id}/details`,{context,files_hint:files,tests,risks});await saveBrief();},'Dossier enregistré ; le conseil est mis à jour.')}>Enregistrer ces détails</Button>
+  <Button kind="secondary" disabled={busy} onClick={()=>void run(()=>patch(`/workbench/tasks/${task.id}/details`,{context,files_hint:files,tests,risks}),'Détails enregistrés.')}>Enregistrer ces détails</Button>
   {valid.length>0&&<fieldset><legend>Décisions validées à citer dans la consigne</legend>{valid.map(d=><label className="check" key={d.id}><input type="checkbox" checked={picked.includes(d.id)} onChange={e=>setPicked(p=>e.target.checked?[...p,d.id]:p.filter(x=>x!==d.id))}/>{d.title}</label>)}</fieldset>}
-  <Button disabled={busy} onClick={()=>void run(async()=>{await patch(`/workbench/tasks/${task.id}/details`,{context,files_hint:files,tests,risks});await saveBrief();await post('/prompts/from-task',{task_id:task.id,decision_ids:picked});},'Consigne préparée dans Mémoire → Prompts, en « À préparer ». Relisez-la avant de la donner.')}>Préparer une consigne pour Claude Code</Button>
+  <Button disabled={busy} onClick={()=>void run(async()=>{await patch(`/workbench/tasks/${task.id}/details`,{context,files_hint:files,tests,risks});await post('/prompts/from-task',{task_id:task.id,decision_ids:picked});},'Consigne préparée dans Mémoire → Prompts, en « À préparer ». Relisez-la avant de la donner.')}>Préparer une consigne pour Claude Code</Button>
   {task.status==='done'&&String(task.proof||'').trim()&&<Button kind="secondary" disabled={busy} onClick={()=>void run(()=>post(`/workbench/tasks/${task.id}/validate`,{validated:!task.validated_at}),task.validated_at?'Validation retirée.':'Tâche validée par vous.')}>{task.validated_at?'Retirer ma validation':'Je valide ce résultat (constaté réellement)'}</Button>}
   {task.validated_at&&<p className="muted">Validée par vous le {date(task.validated_at)}.</p>}
  </div></details>;
