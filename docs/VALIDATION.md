@@ -448,3 +448,11 @@ Exécutés en local sur la branche `feat/atelier-poste-de-pilotage` :
 - `tests/e2e/flow.spec.ts` : réussi en Chromium bureau et 360 px (WebKit et Firefox non installés ici : non exécutés).
 
 **Simulé, donc non prouvé en réel :** tous les appels GitHub (référentiel, audit, contrôles, PR). **Non exécuté :** export ChatGPT réel, hors connexion réel, téléphone réel, production.
+
+# Pilotage Claude — contrôles du 12 novembre 2026
+
+Exécutés en local sur `feat/atelier-quotas-claude` : `tsc --noEmit` ; `npm test` 67/67 ; `node --test tests/*.test.mjs` (dont 11 pour `claude-advisor`) ; `npm run test:regressions` ; `npm run test:core` ; `npm run build` ; migration 0019 sur base neuve et `/api/health` local complet 0007→0019 ; navigateur réel (Chromium) à 360 et 390 px sur Accueil, Quel modèle, Quotas, Reprise, Retours, avec ajout d’un relevé sur capture : aucun débordement, aucun contrôle de moins de 30 px, aucune erreur d’API. **Non exécuté :** téléphone réel, WebKit, Firefox, production. **Aucune mesure réelle de quota n’existe dans Atelier.**
+
+# Analyse de l’historique et mode sombre — contrôles du 12 novembre 2026
+
+Exécutés en local sur `feat/atelier-analyse-historique` : `tsc --noEmit` ; `npm test` 72/72 ; `node --test tests/*.test.mjs` ; `npm run test:regressions` ; `npm run test:core` ; `npm run build` ; migration 0020 sur base neuve. Navigateur réel (Chromium, thème sombre du système) à 360 et 390 px : Accueil, À traiter, Claude, Quotas, Export, Pilotage, Discussions, Projets, Fichiers, Activité, Réglages — aucun débordement, aucune erreur d’API, aucun texte de contraste inférieur à 3 (il y en avait sur tous les écrans avant correction). **Simulé :** toutes les réponses de Gemini, Groq et Mistral. **Non exécuté :** appel réel à un fournisseur, téléphone réel, WebKit, Firefox.

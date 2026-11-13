@@ -1,5 +1,6 @@
 /* Inventaire d'un export personnel ChatGPT ou Claude. Le fichier est lu sur cet appareil : Atelier ne reçoit que l'empreinte,
    le manifeste et, si vous le demandez, les messages texte des conversations choisies (via la mémoire du projet). */
+import {HistoryAnalysis} from './HistoryAnalysis';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {unzipSync} from 'fflate';
 import {api,post,patch,remove,date,bytes} from './api';
@@ -58,6 +59,7 @@ function BatchCard({b,projects,source,reload,setError,setNotice}:{b:any;projects
  const [form,setForm]=useState({lot:'',kind:'independent',assistant:'',prompt_ref:'',report:''}),[reason,setReason]=useState('');
  const c=b.coverage;
  const load=useCallback(async(offset=0)=>{try{const d=await api(`/exports/${b.id}/conversations?q=${encodeURIComponent(q)}&lot=${lot}&limit=50&offset=${offset}`);setRows(old=>offset&&old?[...old,...d.items]:d.items);setNext(d.next);}catch(e){setError(e);}},[b.id,q,lot]);
+ const [ai,setAi]=useState(false);
  const loadAnalyses=useCallback(()=>api(`/exports/${b.id}/analyses`).then(d=>setAnalyses(d.items)).catch(setError),[b.id]);
  const run=async(fn:()=>Promise<any>,ok='')=>{setBusy(true);setError(null);try{await fn();if(ok)setNotice(ok);await load();await reload();}catch(e){setError(e);}finally{setBusy(false);setProgress('');}};
  const toggle=(id:string)=>setSel(s=>s.includes(id)?s.filter(x=>x!==id):[...s,id]);
@@ -106,6 +108,7 @@ function BatchCard({b,projects,source,reload,setError,setNotice}:{b:any;projects
     <Field label="Raison d’écarter (obligatoire pour écarter)"><input value={reason} maxLength={300} onChange={e=>setReason(e.target.value)}/></Field>
     <Button kind="text" disabled={busy||!reason.trim()} onClick={()=>void run(async()=>{await patch(`/exports/${b.id}/conversations`,{ids:sel,ignore:true,reason});setReason('');setSel([]);},'Conversations écartées, avec leur raison.')}>Écarter la sélection</Button></div>}
   </div></details>
+  <details className="fold" onToggle={e=>{if((e.target as HTMLDetailsElement).open)setAi(true);}}><summary className="fold-summary"><strong>Analyse par vos IA (Gemini, Groq, Mistral)</strong><small className="muted">pas à pas, avec relais, pause sur limite et reprise</small></summary><div className="fold-body">{ai&&<HistoryAnalysis batchId={b.id} lots={(c.lots?.detail||[]).map((l:any)=>l.lot).filter(Boolean)}/>}</div></details>
   <details className="fold" onToggle={e=>{if((e.target as HTMLDetailsElement).open)void loadAnalyses();}}><summary className="fold-summary"><strong>Analyses par assistant</strong><small className="muted">rapports séparés, collés par vous ; croisement après deux analyses indépendantes</small></summary><div className="fold-body stack">
    <p className="muted">Atelier n’envoie rien à ChatGPT, Claude, Gemini ou Mistral : vous donnez le lot à l’assistant, puis vous collez son rapport ici. Ne montrez pas à un assistant le rapport de l’autre avant sa première analyse.</p>
    {analyses.map(a=><details key={a.id}><summary>{a.lot} · {a.kind==='independent'?'analyse indépendante':a.kind==='cross'?'croisement':'troisième regard'} · {a.assistant} · {date(a.created_at)}</summary><pre className="handoff-preview">{a.report}</pre><Button kind="text danger" onClick={()=>void remove(`/exports/analyses/${a.id}`).then(loadAnalyses).then(reload).catch(setError)}>Supprimer ce rapport</Button></details>)}

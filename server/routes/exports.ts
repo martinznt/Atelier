@@ -5,6 +5,11 @@ import {Hono} from 'hono';import {z} from 'zod';
 import {event,fail,jsonBody,many,now,one,owned,page,run,uid,userId} from '../core.ts';
 import {coverageOf,makeLots} from '../export-inventory.ts';
 import {secretFindings} from '../handoff-core.ts';
+import {analysisStep,prepareUnits,unitMessages} from '../history-run.ts';
+import {AGREEMENT_LABEL,ANALYSIS_PROVIDERS,ITEM_KINDS,KIND_LABEL,analysisStatement} from '../history-analysis.ts';
+import {loadAiConnections} from '../ai-persist.ts';
+import {availabilityOf} from '../ai-availability.ts';
+import {pickReviewModel} from '../review-team.mjs';
 import type {AppEnv,Env,Row} from '../types.ts';
 export const exportsRoute=new Hono<AppEnv>();
 const like=(q:string)=>'%'+q.slice(0,120).replace(/[\\%_]/g,m=>'\\'+m)+'%';
@@ -102,4 +107,63 @@ exportsRoute.delete('/:id',async c=>{
  await run(c.env,'DELETE FROM export_batches WHERE id=? AND user_id=?',b.id,user);
  await event(c.env,user,'export_removed','Inventaire d’export retiré (les messages déjà importés dans la mémoire sont conservés) : '+b.filename);
  return c.json({ok:true});
+});
+
+/* ---------- Analyse de l'historique par les IA déjà connectées (Gemini, Groq, Mistral) ---------- */
+async function analysisOverview(env:Env,user:string,b:Row){
+ const rows=await many<Row>(env,'SELECT status,second_status,truncated,COUNT(*) AS n FROM analysis_units WHERE user_id=? AND batch_id=? GROUP BY status,second_status,truncated',user,b.id);
+ const c={pending:0,analysed:0,failed:0,superseded:0,second_wanted:0,second_done:0,second_failed:0,truncated:0};
+ for(const r of rows){(c as any)[r.status]+=r.n;if(r.status==='superseded')continue;if(r.second_status==='wanted')c.second_wanted+=r.n;if(r.second_status==='done')c.second_done+=r.n;if(r.second_status==='failed')c.second_failed+=r.n;if(r.truncated)c.truncated+=r.n;}
+ const without=(await one<Row>(env,"SELECT COUNT(*) AS n FROM export_conversations e WHERE e.user_id=? AND e.batch_id=? AND e.parse_status!='ignored' AND NOT EXISTS(SELECT 1 FROM analysis_units u WHERE u.conversation_id=e.id AND u.user_id=e.user_id AND u.status!='superseded')",user,b.id))?.n||0;
+ const usage=await many<Row>(env,"SELECT provider,model,COUNT(*) AS calls,SUM(outcome='completed') AS completed,SUM(outcome='refused') AS refused,SUM(outcome='interrupted') AS interrupted,SUM(input_tokens) AS input_tokens,SUM(output_tokens) AS output_tokens FROM ai_usage WHERE user_id=? AND task_kind='export_analysis' AND task_id=? GROUP BY provider,model ORDER BY calls DESC",user,b.id);
+ const at=now(),providers=(await loadAiConnections(env.DB,user)).filter(x=>(ANALYSIS_PROVIDERS as readonly string[]).includes(x.provider)).map(x=>{let list:string[]=[];try{const m=typeof x.models==='string'?JSON.parse(x.models):x.models;if(Array.isArray(m))list=m.map(String);}catch{/* liste illisible */}const model=pickReviewModel({models:list});const a=availabilityOf(x,{model,now:at});return {label:x.label,provider:x.provider,model:model||null,usable:a.usable,reason:a.reason,until:a.until,until_source:a.until_source};});
+ const items=await many<Row>(env,'SELECT review_status,agreement,COUNT(*) AS n FROM analysis_items WHERE user_id=? AND batch_id=? GROUP BY review_status,agreement',user,b.id);
+ return {consent_at:b.ai_consent_at||null,units:c,without_units:without,statement:analysisStatement(c,without),usage,providers,items,
+  notice:'Deux IA d’accord ne sont pas une preuve : chaque élément renvoie aux messages d’origine, et rien ne devient une décision sans votre validation.'};
+}
+exportsRoute.get('/:id/analysis',async c=>{const user=userId(c),b=await batchOf(c.env,user,c.req.param('id'));return c.json(await analysisOverview(c.env,user,b));});
+exportsRoute.post('/:id/analysis/consent',async c=>{
+ const user=userId(c),b=await batchOf(c.env,user,c.req.param('id')),d=z.object({confirm:z.boolean()}).parse(await jsonBody(c));
+ await run(c.env,'UPDATE export_batches SET ai_consent_at=? WHERE id=? AND user_id=?',d.confirm?now():null,b.id,user);
+ await event(c.env,user,'export_analysis_consent',d.confirm?'Accord donné : les messages importés de « '+b.filename+' » peuvent être envoyés à Gemini, Groq ou Mistral pour analyse.':'Accord retiré pour l’analyse de « '+b.filename+' ».');
+ return c.json(await analysisOverview(c.env,user,await batchOf(c.env,user,b.id)));
+});
+exportsRoute.post('/:id/analysis/prepare',async c=>{
+ const user=userId(c),b=await batchOf(c.env,user,c.req.param('id')),d=z.object({lot:z.string().max(40).default(''),after:z.string().max(60).default('')}).parse(await jsonBody(c));
+ return c.json(await prepareUnits(c.env,user,b,d));
+});
+exportsRoute.post('/:id/analysis/step',async c=>{
+ const user=userId(c),b=await batchOf(c.env,user,c.req.param('id')),d=z.object({lot:z.string().max(40).default('')}).parse(await jsonBody(c));
+ const step=await analysisStep(c.env,user,b,d);return c.json({step,overview:await analysisOverview(c.env,user,b)});
+});
+/** Remet en attente les unités en échec : rien n'est effacé, les réponses précédentes restent consultables. */
+exportsRoute.post('/:id/analysis/retry-failed',async c=>{
+ const user=userId(c),b=await batchOf(c.env,user,c.req.param('id')),at=now();
+ const r1=await run(c.env,"UPDATE analysis_units SET status='pending',fail_count=0,updated_at=? WHERE user_id=? AND batch_id=? AND status='failed'",at,user,b.id);
+ const r2=await run(c.env,"UPDATE analysis_units SET second_status='wanted',fail_count=0,updated_at=? WHERE user_id=? AND batch_id=? AND second_status='failed'",at,user,b.id);
+ return c.json({retried:(r1.meta.changes||0)+(r2.meta.changes||0)});
+});
+const itemView=(r:Row)=>({id:r.id,unit_id:r.unit_id,pass:r.pass,kind:r.kind,kind_label:KIND_LABEL[r.kind as keyof typeof KIND_LABEL]||r.kind,text:r.text,source_keys:JSON.parse(r.source_keys),quote:r.quote,quote_verified:Boolean(r.quote_verified),reclassified:Boolean(r.reclassified),
+ project_hint:r.project_hint,important:Boolean(r.important),agreement:r.agreement,agreement_label:AGREEMENT_LABEL[r.agreement],review_status:r.review_status,review_note:r.review_note,provider:r.provider,model:r.model,conversation_title:r.conversation_title,created_at:r.created_at});
+exportsRoute.get('/:id/analysis/items',async c=>{
+ const user=userId(c),b=await batchOf(c.env,user,c.req.param('id')),{limit,offset}=page(c),kind=c.req.query('kind')||'',status=c.req.query('status')||'',agreement=c.req.query('agreement')||'';
+ if(kind&&!(ITEM_KINDS as readonly string[]).includes(kind))fail(400,'Type inconnu.');
+ const rows=await many<Row>(c.env,"SELECT i.*,r.provider,r.model,e.title AS conversation_title FROM analysis_items i JOIN analysis_results r ON r.id=i.result_id JOIN analysis_units u ON u.id=i.unit_id JOIN export_conversations e ON e.id=u.conversation_id WHERE i.user_id=? AND i.batch_id=? AND u.status!='superseded' AND (?='' OR i.kind=?) AND (?='' OR i.review_status=?) AND (?='' OR i.agreement=?) ORDER BY i.important DESC,i.created_at,i.id LIMIT ? OFFSET ?",
+  user,b.id,kind,kind,status,status,agreement,agreement,limit+1,offset);
+ return c.json({items:rows.slice(0,limit).map(itemView),next:rows.length>limit?offset+limit:null});
+});
+/** Un élément avec ses messages d'origine complets : c'est la source qui fait foi, pas la reformulation de l'IA. */
+exportsRoute.get('/analysis/items/:item',async c=>{
+ const user=userId(c),i=await one<Row>(c.env,'SELECT i.*,r.provider,r.model,e.title AS conversation_title FROM analysis_items i JOIN analysis_results r ON r.id=i.result_id JOIN analysis_units u ON u.id=i.unit_id JOIN export_conversations e ON e.id=u.conversation_id WHERE i.id=? AND i.user_id=?',c.req.param('item'),user);
+ if(!i)fail(404,'Élément introuvable.');
+ const unit=await one<Row>(c.env,'SELECT * FROM analysis_units WHERE id=? AND user_id=?',i.unit_id,user),keys:string[]=JSON.parse(i.source_keys);
+ const messages=unit?(await unitMessages(c.env,user,unit)).filter(m=>keys.includes(m.key)):[];
+ const others=await many<Row>(c.env,'SELECT i.id,i.pass,i.kind,i.text,r.provider FROM analysis_items i JOIN analysis_results r ON r.id=i.result_id WHERE i.user_id=? AND i.unit_id=? AND i.id!=? AND i.pass!=?',user,i.unit_id,i.id,i.pass);
+ return c.json({item:itemView(i),sources:messages.map(m=>({key:m.key,role:m.role,date:m.date,content:m.content})),sources_missing:keys.length-messages.length,
+  other_reading:others.filter(o=>true).map(o=>({id:o.id,kind_label:KIND_LABEL[o.kind as keyof typeof KIND_LABEL]||o.kind,text:o.text,provider:o.provider}))});
+});
+exportsRoute.patch('/analysis/items/:item',async c=>{
+ const user=userId(c),d=z.object({review_status:z.enum(['candidate','accepted','rejected']),review_note:z.string().max(500).default('')}).parse(await jsonBody(c));
+ const r=await run(c.env,'UPDATE analysis_items SET review_status=?,review_note=? WHERE id=? AND user_id=?',d.review_status,d.review_note,c.req.param('item'),user);
+ if(!r.meta.changes)fail(404,'Élément introuvable.');return c.json({saved:true});
 });
