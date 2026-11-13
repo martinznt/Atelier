@@ -4186,5 +4186,140 @@
     "statut": "réalisé",
     "preuve": "web/styles.css ; web/App.tsx",
     "limite": "Contrôlé sur Chromium à 360 et 390 px ; pas sur le téléphone réel."
+  },
+  {
+    "id": "FIN-31-001",
+    "section": 31,
+    "source": "Missions finales du 13 novembre 2026 (finalisation, qualité produit)",
+    "exigence": "Une archive d’export est lue sans être chargée en entier : table des matières puis une entrée à la fois, décompression par tranches de 64 Ko, ZIP64 pris en charge.",
+    "statut": "réalisé",
+    "preuve": "web/zip-reader.ts ; web/sha256-stream.ts ; tests/zip-reader.test.mjs",
+    "limite": "Mesuré sur Chromium de bureau (96 Mo : mémoire du processus +80 Mo environ) ; non vérifié sur le Galaxy A05s réel."
+  },
+  {
+    "id": "FIN-31-002",
+    "section": 31,
+    "source": "Missions finales du 13 novembre 2026 (finalisation, qualité produit)",
+    "exigence": "Les exports découpés (conversations-000.json, conversations-001.json…) sont reconnus, inventoriés segment par segment, avec la provenance (fichier) de chaque conversation.",
+    "statut": "réalisé",
+    "preuve": "server/export-inventory.ts ; web/archive-import.ts ; migrations/0021_import_segments.sql ; tests/integration.test.ts (import d’archive par segments)",
+    "limite": null
+  },
+  {
+    "id": "FIN-31-003",
+    "section": 31,
+    "source": "Missions finales du 13 novembre 2026 (finalisation, qualité produit)",
+    "exigence": "Une archive hostile ou malformée est refusée ou signalée sans plantage : taille annoncée fausse, taux de compression suspect, entrée chiffrée, nom dangereux, table tronquée ; rien n’est exécuté ni écrit comme chemin.",
+    "statut": "réalisé",
+    "preuve": "web/zip-reader.ts ; server/export-inventory.ts ; tests/zip-reader.test.mjs ; tests/integration.test.ts (import d’archive par segments)",
+    "limite": null
+  },
+  {
+    "id": "FIN-31-004",
+    "section": 31,
+    "source": "Missions finales du 13 novembre 2026 (finalisation, qualité produit)",
+    "exigence": "Le type réel de chaque fichier de l’archive (y compris sans extension, .dat) est lu dans sa signature binaire ; empreinte SHA-256 par fichier ; aucun renommage.",
+    "statut": "réalisé",
+    "preuve": "server/file-sniff.ts ; web/archive-import.ts ; tests/zip-reader.test.mjs ; tests/integration.test.ts (import d’archive par segments)",
+    "limite": "Signatures courantes seulement ; un type inconnu reste « inconnu »."
+  },
+  {
+    "id": "FIN-31-005",
+    "section": 31,
+    "source": "Missions finales du 13 novembre 2026 (finalisation, qualité produit)",
+    "exigence": "Les pièces jointes citées par les conversations sont rapprochées des fichiers de l’archive par identifiant ; « présente dans l’archive », « ambiguë » et « référencée seulement » sont distinguées ; aucun fichier n’est copié dans Atelier.",
+    "statut": "réalisé",
+    "preuve": "server/export-inventory.ts (matchAttachment) ; server/routes/exports.ts ; tests/zip-reader.test.mjs ; tests/integration.test.ts (import d’archive par segments)",
+    "limite": "Rapprochement par nom de fichier, à vérifier ; les pièces jointes Claude et leur texte extrait ne sont pas importés."
+  },
+  {
+    "id": "FIN-31-006",
+    "section": 31,
+    "source": "Missions finales du 13 novembre 2026 (finalisation, qualité produit)",
+    "exigence": "Un import interrompu ou annulé reprend sans rien refaire ni dupliquer (segments et fichiers déjà traités sautés, empreintes à l’appui) ; deux archives différentes ne se mélangent pas.",
+    "statut": "réalisé",
+    "preuve": "web/archive-import.ts ; server/routes/exports.ts ; tests/integration.test.ts (import d’archive par segments)",
+    "limite": null
+  },
+  {
+    "id": "FIN-31-007",
+    "section": 31,
+    "source": "Missions finales du 13 novembre 2026 (finalisation, qualité produit)",
+    "exigence": "Aperçu obligatoire avant l’import des messages ; bilan chiffré (dates réelles, avant/après une date de coupure, inventaire contre import, recoupement entre exports).",
+    "statut": "réalisé",
+    "preuve": "web/ExportImport.tsx ; web/ArchiveInfo.tsx ; server/routes/exports.ts (/summary) ; tests/integration.test.ts (import d’archive par segments)",
+    "limite": null
+  },
+  {
+    "id": "FIN-31-008",
+    "section": 31,
+    "source": "Missions finales du 13 novembre 2026 (finalisation, qualité produit)",
+    "exigence": "Recherche unifiée : conversations, messages du chat et de l’historique importé, décisions, tâches, prompts, documents, fichiers, pièces jointes, questions, actions, projets ; filtres combinés (projet, fournisseur, dates, statut, rôle, type) ; ouverture au message exact.",
+    "statut": "réalisé",
+    "preuve": "server/routes/workbench.ts (/find) ; server/find-core.ts ; web/Find.tsx ; tests/integration.test.ts (recherche unifiée)",
+    "limite": "Recherche par texte exact (LIKE), sans pertinence ni FTS ; sur D1 en production chaque recherche lit toutes les lignes concernées (coût en lignes lues non vérifié en production)."
+  },
+  {
+    "id": "FIN-31-009",
+    "section": 31,
+    "source": "Missions finales du 13 novembre 2026 (finalisation, qualité produit)",
+    "exigence": "Contexte utile pour une réflexion : sélection locale, sans IA, des décisions, tâches, documents et messages d’un projet liés à un sujet, avec le pourquoi, la fiabilité de chaque source et les alertes (décision remplacée, proposition non confirmée).",
+    "statut": "réalisé",
+    "preuve": "server/context-core.ts ; server/routes/workbench.ts (/context) ; web/ContextPanel.tsx ; tests/workbench-core.test.mjs ; tests/integration.test.ts (contexte utile)",
+    "limite": "Sélection par mots exacts : peut oublier un élément formulé autrement ; ne détecte pas les contradictions."
+  },
+  {
+    "id": "FIN-31-010",
+    "section": 31,
+    "source": "Missions finales du 13 novembre 2026 (finalisation, qualité produit)",
+    "exigence": "Espace de réflexion complet : comparaison de plusieurs propositions, analyses indépendantes d’une idée, conclusions classées (fait, déduction, hypothèse, avis, décision), pistes abandonnées conservées avec leur raison.",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": "Non réalisé : seuls le contexte utile et l’extraction d’un message vers une décision, une tâche ou une question existent."
+  },
+  {
+    "id": "FIN-31-011",
+    "section": 31,
+    "source": "Missions finales du 13 novembre 2026 (finalisation, qualité produit)",
+    "exigence": "Un prompt « Copié » est distingué d’un prompt « Transmis » ; « Remplacé » garde le lien vers son successeur ; « Abandonné » reste consultable.",
+    "statut": "réalisé",
+    "preuve": "server/routes/prompts.ts ; server/prompt-core.ts ; web/Prompts.tsx ; tests/integration.test.ts (prompts : « Copié »)",
+    "limite": null
+  },
+  {
+    "id": "FIN-31-012",
+    "section": 31,
+    "source": "Missions finales du 13 novembre 2026 (finalisation, qualité produit)",
+    "exigence": "Parcours réels dans un navigateur (Chromium) à 360, 390 et 1280 px, thème clair et sombre : navigation, import d’un ZIP segmenté, reprise, recherche jusqu’au message exact, perte de connexion.",
+    "statut": "réalisé",
+    "preuve": "docs/audits/VALIDATION_PARCOURS_2026-11-13.md ; tests/e2e/flow.spec.ts",
+    "limite": "Chromium uniquement : non vérifié sur le téléphone réel, ni WebKit, ni Firefox."
+  },
+  {
+    "id": "FIN-31-013",
+    "section": 31,
+    "source": "Missions finales du 13 novembre 2026 (finalisation, qualité produit)",
+    "exigence": "Analyse de l’historique avec un fournisseur IA réellement configuré (Gemini, Groq, Mistral).",
+    "statut": "bloqué",
+    "preuve": null,
+    "limite": "Aucune clé ni consentement disponibles dans l’environnement de développement ; seules des réponses simulées ont été testées."
+  },
+  {
+    "id": "FIN-31-014",
+    "section": 31,
+    "source": "Missions finales du 13 novembre 2026 (finalisation, qualité produit)",
+    "exigence": "Suivi GitHub validé avec un vrai compte (référentiel mémoire, audit de référence, contrôles).",
+    "statut": "bloqué",
+    "preuve": null,
+    "limite": "Aucun secret GitHub disponible dans l’environnement de développement ; tests avec réponses simulées seulement."
+  },
+  {
+    "id": "FIN-31-015",
+    "section": 31,
+    "source": "Missions finales du 13 novembre 2026 (finalisation, qualité produit)",
+    "exigence": "Vérification de la production après publication (version, migrations 0021, parcours).",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": "La branche n’est pas fusionnée : rien n’est publié."
   }
 ]

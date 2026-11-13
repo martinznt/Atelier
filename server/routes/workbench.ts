@@ -7,6 +7,7 @@ import {nextAction,type Guide} from '../project-guide.ts';
 import {CONVERSATION_CATEGORIES,answerText,progressDetail,questionKey,questionsCsv,resumeText} from '../workbench-core.ts';
 import {secretFindings,sha256Hex} from '../handoff-core.ts';
 import {readingState,triggeredAlerts,type Reading} from '../claude-advisor.ts';
+import {matchedTerms,rank,reliabilityOf,significantTerms,warnings,type CtxHit,type Reliability} from '../context-core.ts';
 import {FIND_LABEL,HAS_PROVIDER,HAS_ROLE,HAS_STATUS,escapeLike,excerptAround,parseKinds,type FindKind,type Hit} from '../find-core.ts';
 import type {AppEnv,Env,Row} from '../types.ts';
 export const workbench=new Hono<AppEnv>();
@@ -400,4 +401,25 @@ workbench.get('/find',async c=>{
  const shown=groups.reduce((n,g)=>n+g.items.length,0);
  return c.json({query:f.q,groups:groups.filter(g=>g.items.length),searched,skipped,shown,next:kinds.length===1&&groups[0]?.more?off+f.per:null,
   notice:'Recherche par texte exact dans le titre et le contenu. Atelier ne classe pas par pertinence : les plus récents d’abord.'});
+});
+
+/* ---------- Contexte utile pour une réflexion ---------- */
+workbench.get('/context',async c=>{
+ const user=userId(c),f=z.object({project:z.string().uuid(),q:z.string().trim().min(3).max(800)}).parse(Object.fromEntries(new URL(c.req.url).searchParams));
+ const project=await owned<Row>(c.env,'projects',f.project,user),terms=significantTerms(f.q,6);
+ if(!terms.length)return c.json({project:{id:project.id,name:project.name},terms:[],hits:[],warnings:['Aucun mot significatif dans ce sujet : précisez-le avec quelques mots clés.'],basis:'local'});
+ const lk=terms.map(escapeLike),or=(cols:string[])=>'('+cols.flatMap(col=>lk.map(()=>col+" LIKE ? ESCAPE '\\'")).join(' OR ')+')',args=(n:number)=>Array.from({length:n},()=>lk).flat();
+ const hits:CtxHit[]=[];
+ const add=(kind:string,rows:Row[],title:(r:Row)=>string,text:(r:Row)=>string,date:(r:Row)=>string|null,rel:(r:Row)=>Reliability,open:(r:Row)=>Record<string,unknown>,status:(r:Row)=>string|null=()=>null)=>{
+  for(const r of rows){const m=matchedTerms(title(r)+' '+text(r),terms);if(!m.length)continue;hits.push({kind,id:r.id,title:title(r).slice(0,200),excerpt:excerptAround(text(r),m[0],70),matched:m,date:date(r),status:status(r),reliability:rel(r),open:open(r)});}
+ };
+ add('decision',await many<Row>(c.env,`SELECT d.*,(SELECT x.title FROM project_decisions x WHERE x.supersedes_id=d.id AND x.user_id=d.user_id LIMIT 1) AS replaced_by FROM project_decisions d WHERE d.user_id=? AND d.project_id=? AND ${or(['d.title','d.reason'])} ORDER BY d.updated_at DESC LIMIT 40`,user,project.id,...args(2)),r=>r.title,r=>r.reason+(r.source_ref?' · source : '+r.source_ref:'')+(r.replaced_by?' · remplacée par : '+r.replaced_by:''),r=>r.decided_at||r.updated_at,r=>reliabilityOf('decision',r),r=>({tab:'pilotage',project_id:project.id,decision_id:r.id}),r=>r.status);
+ add('task',await many<Row>(c.env,`SELECT * FROM plan_tasks WHERE user_id=? AND project_id=? AND ${or(['title','objective','proof'])} ORDER BY updated_at DESC LIMIT 40`,user,project.id,...args(3)),r=>r.title,r=>r.objective||r.proof,r=>r.updated_at,r=>reliabilityOf('task',r),r=>({tab:'pilotage',project_id:project.id,task_id:r.id}),r=>r.status);
+ add('document',await many<Row>(c.env,`SELECT * FROM project_documents WHERE user_id=? AND project_id=? AND ${or(['title','note','origin'])} ORDER BY created_at DESC LIMIT 40`,user,project.id,...args(3)),r=>r.title,r=>r.note||r.origin||r.doc_type,r=>r.created_at,r=>reliabilityOf('document',r),r=>({tab:'pilotage',project_id:project.id,document_id:r.id}));
+ add('memory',await many<Row>(c.env,`SELECT * FROM memory WHERE user_id=? AND project_id=? AND ${or(['title','content'])} ORDER BY updated_at DESC LIMIT 40`,user,project.id,...args(2)),r=>r.title,r=>r.content,r=>r.updated_at,r=>reliabilityOf('memory',r),r=>({tab:'projects',project_id:project.id}));
+ add('chat',await many<Row>(c.env,`SELECT m.*,cv.title AS conv_title FROM messages m JOIN conversations cv ON cv.id=m.conversation_id AND cv.user_id=m.user_id WHERE m.user_id=? AND cv.project_id=? AND ${or(['m.content'])} ORDER BY m.created_at DESC LIMIT 40`,user,project.id,...args(1)),r=>r.conv_title,r=>r.content,r=>r.created_at,r=>reliabilityOf('chat',r),r=>({tab:'chat',project_id:project.id,conversation_id:r.conversation_id,message_id:r.id,seq:r.seq}));
+ add('imported',await many<Row>(c.env,`SELECT m.*,bc.title,bc.provider,bc.id AS conv_id FROM bridge_messages m JOIN bridge_conversations bc ON bc.id=m.conversation_id JOIN bridge_spaces s ON s.id=bc.space_id JOIN bridge_project_spaces bps ON bps.space_id=s.id AND bps.user_id=s.owner_id WHERE s.owner_id=? AND m.owner_id=? AND bps.project_id=? AND ${or(['m.content'])} ORDER BY COALESCE(m.original_date,'') DESC LIMIT 40`,user,user,project.id,...args(1)),r=>r.title+' ('+r.provider+')',r=>r.content,r=>r.original_date,r=>reliabilityOf('imported',r),r=>({tab:'projects',project_id:project.id,bridge_conversation_id:r.conv_id,seq:r.seq,message_id:r.id,source_message:r.source_key,provider:r.provider}));
+ const ranked=rank(hits,5);
+ return c.json({project:{id:project.id,name:project.name},terms,hits:ranked,warnings:warnings(ranked),basis:'local',
+  notice:'Sélection faite par Atelier sans IA, à partir des mots du sujet : elle peut oublier des éléments formulés autrement. Chaque ligne indique sa fiabilité ; seules les décisions confirmées sont des règles.'});
 });

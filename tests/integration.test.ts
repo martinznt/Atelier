@@ -1287,7 +1287,8 @@ describe('import d’archive par segments : reprise, doublons, pièces jointes, 
  it('inventaire d’un ZIP à plusieurs segments : tous reconnus, doublon entre segments compté, rien de manquant',async()=>{
   aliceApi=apiFor();const r=await inventoryArchive(make(files),aliceApi);batch=r.batch;
   expect(r.segments.map(x=>x.name)).toEqual(['conversations-000.json','conversations-001.json']);expect(r.segments.every(x=>x.status==='inventoried')).toBe(true);
-  expect(r.totals.conversations).toBe(3);expect(r.zip_entries).toBe(7);expect(r.other_entries).toBe(5);
+  expect(r.totals.conversations).toBe(3);expect(r.totals.messages).toBe(6);expect(r.zip_entries).toBe(7);                                  // le doublon (1 message) n'est compté nulle part
+  expect(r.other_entries).toBe(5);
   const cov=(await json('/exports/'+batch.id+'/coverage')).body.coverage;
   expect(cov.conversations).toMatchObject({declared:4,inventoried:3,duplicates:1,missing_from_inventory:0});
   const segs=(await json('/exports/'+batch.id+'/segments')).body.items;expect(segs).toHaveLength(2);expect(segs[0].sha256).toMatch(/^[0-9a-f]{64}$/);
@@ -1358,33 +1359,33 @@ describe('recherche unifiée : tous types, filtres combinés, pagination, ouvert
  it('prépare des données de chaque type dans deux projets',async()=>{
   db=await mf.getD1Database('DB');user=(await json('/auth/me')).body.user.id;
   pA=(await json('/projects','POST',{name:'Recherche A'})).body.id;pB=(await json('/projects','POST',{name:'Recherche B'})).body.id;bobP=(await json('/projects','POST',{name:'Recherche Bob'},b)).body.id;
-  const cv=(await json('/conversations','POST',{project_id:pA,title:'Fil du minuteur'})).body.id;await json('/conversations/'+cv+'/notes','POST',{content:'Le minuteur intégré est une mauvaise idée, trop de bruit.'});
-  const cvB=(await json('/conversations','POST',{project_id:pB,title:'Autre fil'})).body.id;await json('/conversations/'+cvB+'/notes','POST',{content:'Minuteur aussi dans le projet B.'});
-  const cvBob=(await json('/conversations','POST',{project_id:bobP,title:'Fil de Bob'},b)).body.id;await json('/conversations/'+cvBob+'/notes','POST',{content:'Minuteur secret de Bob'},b);
-  expect((await json('/spaces/'+pA+'/decisions','POST',{title:'Pas de minuteur',reason:'Décision après discussion',status:'validated'})).status).toBe(201);
-  expect((await json('/spaces/'+pA+'/tasks','POST',{title:'Retirer le minuteur',objective:'Supprimer le minuteur de la liste'})).status).toBe(201);
-  expect((await json('/prompts','POST',{project_id:pA,title:'Mission minuteur',body:'# Mission\n\nRetirer le minuteur.'})).status).toBe(201);
-  expect((await json('/workbench/actions','POST',{project_id:pA,title:'Tester le minuteur sur téléphone'})).status).toBe(201);
-  expect((await json('/workbench/questions','POST',{project_id:pA,question:'Faut-il garder un minuteur optionnel ?',reason:'Dépend du bruit'})).status).toBe(201);
+  const cv=(await json('/conversations','POST',{project_id:pA,title:'Fil du zorglub'})).body.id;await json('/conversations/'+cv+'/notes','POST',{content:'Le zorglub intégré est une mauvaise idée, trop de bruit.'});
+  const cvB=(await json('/conversations','POST',{project_id:pB,title:'Autre fil'})).body.id;await json('/conversations/'+cvB+'/notes','POST',{content:'Zorglub aussi dans le projet B.'});
+  const cvBob=(await json('/conversations','POST',{project_id:bobP,title:'Fil de Bob'},b)).body.id;await json('/conversations/'+cvBob+'/notes','POST',{content:'Zorglub secret de Bob'},b);
+  expect((await json('/spaces/'+pA+'/decisions','POST',{title:'Pas de zorglub',reason:'Décision après discussion',status:'validated'})).status).toBe(201);
+  expect((await json('/spaces/'+pA+'/tasks','POST',{title:'Retirer le zorglub',objective:'Supprimer le zorglub de la liste'})).status).toBe(201);
+  expect((await json('/prompts','POST',{project_id:pA,title:'Mission zorglub',body:'# Mission\n\nRetirer le zorglub.'})).status).toBe(201);
+  expect((await json('/workbench/actions','POST',{project_id:pA,title:'Tester le zorglub sur téléphone'})).status).toBe(201);
+  expect((await json('/workbench/questions','POST',{project_id:pA,question:'Faut-il garder un zorglub optionnel ?',reason:'Dépend du bruit'})).status).toBe(201);
   const at=new Date().toISOString();
   await db.prepare('INSERT INTO bridge_spaces(id,owner_id,name,created_at,updated_at) VALUES(?,?,?,?,?)').bind('sp-find',user,'Mémoire A',at,at).run();
   await db.prepare('INSERT INTO bridge_project_spaces(project_id,space_id,user_id) VALUES(?,?,?)').bind(pA,'sp-find',user).run();
   await db.prepare('INSERT INTO bridge_conversations(id,space_id,source_key,provider,title,imported_at) VALUES(?,?,?,?,?,?)').bind('bc-find','sp-find','ChatGPT:conv-xyz','ChatGPT','Vieille discussion',at).run();
-  const rows=[['k1','user','Je veux un minuteur de cuisine','2026-06-01T10:00:00.000Z'],['k2','assistant','Voici un minuteur à 3 étapes','2026-06-01T10:01:00.000Z'],['k3','user','Finalement le minuteur est inutile (100% sûr)','2026-09-10T09:00:00.000Z'],['k4','user','Rien à voir','2026-09-11T09:00:00.000Z']];
-  for(const [k,role,content,date] of rows)await db.prepare('INSERT INTO bridge_messages(id,owner_id,conversation_id,source_key,role,content,original_date,content_hash) VALUES(?,?,?,?,?,?,?,?)').bind('bm-'+k,user,'bc-find','node-'+k,role,content,date,'h-'+k).run();
+  const rows=[['k1','user','Je veux un zorglub de cuisine','2026-06-01T10:00:00.000Z'],['k2','assistant','Voici un zorglub à 3 étapes','2026-06-01T10:01:00.000Z'],['k3','user','Finalement le zorglub est inutile (77% sûr)','2026-09-10T09:00:00.000Z'],['k4','user','Rien à voir','2026-09-11T09:00:00.000Z']];
+  for(const [k,role,content,date] of rows)await db.prepare('INSERT INTO bridge_messages(id,owner_id,conversation_id,source_key,role,content,original_date,content_hash) VALUES(?,?,?,?,?,?,?,?)').bind('fm-'+k,user,'bc-find','node-'+k,role,content,date,'fh-'+k).run();
   await db.prepare('INSERT INTO bridge_spaces(id,owner_id,name,created_at,updated_at) VALUES(?,?,?,?,?)').bind('sp-bob',(await json('/auth/me','GET',undefined,b)).body.user.id,'Mémoire Bob',at,at).run();
  });
  it('un mot, tous les types : groupes, extrait centré, statut et projet de chaque résultat',async()=>{
-  await json('/projects','POST',{name:'Atelier du minuteur'});const r=await json('/workbench/find?q=minuteur&per=10');expect(r.status).toBe(200);
+  await json('/projects','POST',{name:'Atelier du zorglub'});const r=await json('/workbench/find?q=zorglub&per=10');expect(r.status).toBe(200);
   const kinds=r.body.groups.map((g:any)=>g.kind);for(const k of ['project','chat','imported','decision','task','prompt','action','question'])expect(kinds).toContain(k);
-  const dec=r.body.groups.find((g:any)=>g.kind==='decision').items[0];expect(dec).toMatchObject({title:'Pas de minuteur',status:'validated',project_name:'Recherche A'});
+  const dec=r.body.groups.find((g:any)=>g.kind==='decision').items[0];expect(dec).toMatchObject({title:'Pas de zorglub',status:'validated',project_name:'Recherche A'});
   const imp=r.body.groups.find((g:any)=>g.kind==='imported').items;expect(imp).toHaveLength(3);expect(imp[0].date).toBe('2026-09-10T09:00:00.000Z');                                     // les plus récents d'abord (date d'origine)
-  expect(imp[0].open).toMatchObject({bridge_conversation_id:'bc-find',project_id:pA,source_conversation:'conv-xyz',source_message:'node-k3'});expect(imp[0].excerpt).toContain('minuteur');expect(imp[0].provider).toBe('ChatGPT');
+  expect(imp[0].open).toMatchObject({bridge_conversation_id:'bc-find',project_id:pA,source_conversation:'conv-xyz',source_message:'node-k3'});expect(imp[0].excerpt).toContain('zorglub');expect(imp[0].provider).toBe('ChatGPT');
   expect(JSON.stringify(r.body)).not.toContain('de Bob');expect(r.body.skipped).toEqual([]);
   expect(r.body.groups.find((g:any)=>g.kind==='chat').items.map((i:any)=>i.project_name).sort()).toEqual(['Recherche A','Recherche B']);
  });
  it('filtres combinés : projet, fournisseur, dates, rôle, statut, types',async()=>{
-  const q=async(qs:string)=>(await json('/workbench/find?q=minuteur&per=10&'+qs)).body;
+  const q=async(qs:string)=>(await json('/workbench/find?q=zorglub&per=10&'+qs)).body;
   const onlyA=await q('project='+pA);expect(onlyA.groups.find((g:any)=>g.kind==='chat').items.every((i:any)=>i.project_id===pA)).toBe(true);expect(onlyA.skipped).toEqual([{kind:'attachment',reason:'les pièces jointes ne sont pas rattachées à un projet'}]);expect(onlyA.searched).not.toContain('attachment');
   const gpt=await q('provider=chatgpt');expect(gpt.groups.map((g:any)=>g.kind)).toEqual(['imported']);
   const june=await q('kinds=imported&from=2026-06-01&to=2026-06-30');expect(june.groups[0].items).toHaveLength(2);
@@ -1393,15 +1394,61 @@ describe('recherche unifiée : tous types, filtres combinés, pagination, ouvert
   const validated=await q('status=validated');expect(validated.groups.map((g:any)=>g.kind)).toEqual(['decision']);
   const open=await q('status=open');expect(open.groups.map((g:any)=>g.kind).sort()).toEqual(['action','question']);
   expect((await q('kinds=file,document')).groups).toHaveLength(0);expect((await q('kinds=inconnu')).searched.length).toBeGreaterThan(5);                                                    // type inconnu : ignoré, jamais une erreur
-  expect((await json('/workbench/find?q=a')).status).toBe(400);expect((await json('/workbench/find?q=minuteur&project='+bobP)).status).toBe(404);expect((await json('/workbench/find?q=minuteur&from=hier')).status).toBe(400);
+  expect((await json('/workbench/find?q=a')).status).toBe(400);expect((await json('/workbench/find?q=zorglub&project='+bobP)).status).toBe(404);expect((await json('/workbench/find?q=zorglub&from=hier')).status).toBe(400);
  });
  it('pagination d’un seul type, caractères spéciaux littéraux, cloisonnement entre comptes',async()=>{
-  const p1=(await json('/workbench/find?q=minuteur&kinds=imported&per=2')).body;expect(p1.groups[0].items).toHaveLength(2);expect(p1.next).toBe(2);
-  const p2=(await json('/workbench/find?q=minuteur&kinds=imported&per=2&offset='+p1.next)).body;expect(p2.groups[0].items).toHaveLength(1);expect(p2.next).toBeNull();
+  const p1=(await json('/workbench/find?q=zorglub&kinds=imported&per=2')).body;expect(p1.groups[0].items).toHaveLength(2);expect(p1.next).toBe(2);
+  const p2=(await json('/workbench/find?q=zorglub&kinds=imported&per=2&offset='+p1.next)).body;expect(p2.groups[0].items).toHaveLength(1);expect(p2.next).toBeNull();
   expect(new Set([...p1.groups[0].items,...p2.groups[0].items].map((i:any)=>i.id)).size).toBe(3);
-  const pct=(await json('/workbench/find?q='+encodeURIComponent('100%')+'&kinds=imported')).body;expect(pct.groups[0].items).toHaveLength(1);                                    // « % » n'est pas un joker
+  const pct=(await json('/workbench/find?q='+encodeURIComponent('77%')+'&kinds=imported')).body;expect(pct.groups[0].items).toHaveLength(1);                                    // « % » n'est pas un joker
   expect((await json('/workbench/find?q='+encodeURIComponent('_____')+'&kinds=imported')).body.groups).toHaveLength(0);
-  const bob=(await json('/workbench/find?q=minuteur&per=10','GET',undefined,b)).body;expect(JSON.stringify(bob)).not.toContain('Recherche A');expect(JSON.stringify(bob)).not.toContain('Vieille discussion');expect(bob.groups.map((g:any)=>g.kind)).toEqual(['chat']);
+  const bob=(await json('/workbench/find?q=zorglub&per=10','GET',undefined,b)).body;expect(JSON.stringify(bob)).not.toContain('Recherche A');expect(JSON.stringify(bob)).not.toContain('Vieille discussion');expect(bob.groups.map((g:any)=>g.kind)).toEqual(['chat']);
   const opened=await json('/bridge/conversations/bc-find?after=1');expect([200,404]).toContain(opened.status);
+ });
+});
+
+describe('prompts : « Copié » distinct de « Transmis », « Remplacé » avec son successeur',()=>{
+ it('copier ne change pas le statut réel ; remplacer garde le lien ; cloisonnement',async()=>{
+  const pj=(await json('/projects','POST',{name:'Prompts copie'})).body.id;
+  const p1=(await json('/prompts','POST',{project_id:pj,title:'Premier',body:'Texte un'})).body,p2=(await json('/prompts','POST',{project_id:pj,title:'Second',body:'Texte deux'})).body;
+  expect((await json('/prompts/'+p1.id)).body.status_label).toContain('prêt à copier'.slice(0,0)||'À');
+  await json('/prompts/'+p1.id,'PATCH',{status:'to_give',revision:(await json('/prompts/'+p1.id)).body.revision});
+  expect((await json('/prompts/'+p1.id)).body.status_label).toBe('À donner — prêt à copier');
+  const c1=await json('/prompts/'+p1.id+'/copied','POST',{});expect(c1.status).toBe(200);expect(c1.body.status).toBe('to_give');expect(c1.body.copied_count).toBe(1);expect(c1.body.status_label).toBe('Copié — transmission non confirmée');
+  expect((await json('/prompts/'+p1.id+'/copied','POST',{})).body.copied_count).toBe(2);
+  const listed=(await json('/prompts?project='+pj)).body.items.find((x:any)=>x.id===p1.id);expect(listed.status_label).toBe('Copié — transmission non confirmée');expect(listed.copied_count).toBe(2);   // la liste affiche la même étiquette que la fiche
+  expect((await json('/prompts/'+p1.id+'/copied','POST',{},b)).status).toBe(404);
+  expect((await json('/prompts/'+p1.id+'/supersede','POST',{by:p1.id})).status).toBe(400);
+  expect((await json('/prompts/'+p1.id+'/supersede','POST',{by:p2.id},b)).status).toBe(404);
+  const sup=await json('/prompts/'+p1.id+'/supersede','POST',{by:p2.id});expect(sup.status).toBe(200);expect(sup.body.status).toBe('obsolete');expect(sup.body.superseded_by).toBe(p2.id);expect(sup.body.status_label).toBe('Remplacé');
+  expect((await json('/prompts/'+p2.id+'/supersede','POST',{by:p1.id})).status).toBe(409);                       // pas de boucle
+  const old=await json('/prompts/'+p1.id);expect(old.body.versions).toHaveLength(1);expect(old.body.versions[0].body).toBe('Texte un');   // rien n'est perdu
+  const ab=(await json('/prompts','POST',{project_id:pj,title:'Abandonné',body:'x'})).body;await json('/prompts/'+ab.id,'PATCH',{status:'obsolete',revision:1});expect((await json('/prompts/'+ab.id)).body.status_label).toBe('Abandonné');
+ });
+});
+
+describe('contexte utile pour une réflexion : sélection locale, fiabilité, alertes, cloisonnement',()=>{
+ it('retrouve décisions, tâches, documents et messages du projet, avec le pourquoi et sans mélanger les projets ni les comptes',async()=>{
+  const pj=(await json('/projects','POST',{name:'Contexte A'})).body.id,po=(await json('/projects','POST',{name:'Contexte autre'})).body.id,bobP=(await json('/projects','POST',{name:'Contexte Bob'},b)).body.id;
+  const d1=(await json('/spaces/'+pj+'/decisions','POST',{title:'Pas de minuteur intégré',reason:'Le minuteur fait trop de bruit en salle',status:'validated',source_kind:'conversation',source_ref:'Fil du 12 novembre'})).body;
+  const dOld=(await json('/spaces/'+pj+'/decisions','POST',{title:'Minuteur en trois étapes',reason:'Ancienne idée de minuteur',status:'validated'})).body;
+  const dNew=(await json('/spaces/'+pj+'/decisions','POST',{title:'Minuteur supprimé',reason:'Remplace l’idée de minuteur en trois étapes',status:'validated',supersedes_id:dOld.id}));expect(dNew.status).toBe(201);
+  await json('/spaces/'+pj+'/decisions','POST',{title:'Minuteur optionnel ?',reason:'Piste proposée par une IA sur le minuteur',status:'proposed'});
+  await json('/spaces/'+pj+'/tasks','POST',{title:'Retirer le minuteur',objective:'Supprimer le minuteur de l’écran'});
+  const cv=(await json('/conversations','POST',{project_id:pj,title:'Fil minuteur'})).body.id;await json('/conversations/'+cv+'/notes','POST',{content:'Le minuteur sonne trop fort pour les voisins.'});
+  await json('/decisions-placeholder','GET');
+  await json('/spaces/'+po+'/decisions','POST',{title:'Minuteur du projet voisin',reason:'Autre projet, ne doit pas apparaître',status:'validated'});
+  const r=await json('/workbench/context?project='+pj+'&q='+encodeURIComponent('Faut-il garder le minuteur dans la salle ?'));expect(r.status).toBe(200);
+  expect(r.body.terms).toContain('minuteur');expect(r.body.basis).toBe('local');
+  const kinds=[...new Set(r.body.hits.map((h:any)=>h.kind))];for(const k of ['decision','task','chat'])expect(kinds).toContain(k);
+  expect(JSON.stringify(r.body)).not.toContain('projet voisin');
+  const conf=r.body.hits.find((h:any)=>h.id===d1.id);expect(conf.reliability).toMatchObject({level:'confirmed',usable:true});expect(conf.matched).toContain('minuteur');expect(conf.excerpt).toContain('source : Fil du 12 novembre');
+  const old=r.body.hits.find((h:any)=>h.id===dOld.id);expect(old.reliability).toMatchObject({level:'obsolete',usable:false});expect(old.excerpt).toContain('remplacée par : Minuteur supprimé');
+  expect(r.body.hits.find((h:any)=>h.title==='Minuteur optionnel ?').reliability.level).toBe('proposed');
+  expect(r.body.hits.find((h:any)=>h.kind==='chat').reliability.usable).toBe('source');
+  expect(r.body.warnings.join(' ')).toContain('remplacée');expect(r.body.warnings.join(' ')).toContain('proposition non confirmée'.slice(0,0)+'Une proposition');
+  expect((await json('/workbench/context?project='+pj+'&q=de+la+et')).body.warnings[0]).toContain('Aucun mot significatif');
+  expect((await json('/workbench/context?project='+pj+'&q=zzzxyzabc')).body.warnings[0]).toContain('Aucun élément trouvé');
+  expect((await json('/workbench/context?project='+bobP+'&q=minuteur')).status).toBe(404);expect((await json('/workbench/context?project='+pj+'&q=minuteur','GET',undefined,b)).status).toBe(404);expect((await json('/workbench/context?project='+pj+'&q=ab')).status).toBe(400);
  });
 });

@@ -1,6 +1,18 @@
-# 12 novembre 2026 — Analyse de l’historique par Gemini, Groq et Mistral ; mode sombre corrigé (branche empilée, non fusionnée)
+# 13 novembre 2026 — Finalisation : import d'archives, recherche, contexte, preuves (branche `feat/atelier-finalisation`)
 
-Branche `feat/atelier-analyse-historique`, au-dessus de `feat/atelier-quotas-claude`. Migration additive `0020_history_analysis.sql`. Rien en ligne.
+**État Git vérifié le 13 novembre :** `main` = `aa05aca` (PR 38 fusionnée) ; production `aa05aca`, migrations 0007 à 0020 appliquées (lu sur `/api/health`). La PR 36 est fusionnée ; la PR 37 l'a été dans la branche de la PR 36 et son contenu est arrivé dans `main` par la PR 38. Cette branche (migration **0021**, additive) n'est **pas fusionnée** : rien de ce qui suit n'est en ligne.
+
+**Réalisé et testé localement :** import d'archive ZIP par segments sans la charger en entier (exports découpés `conversations-000.json`…), protections contre les archives hostiles, index des fichiers (type réel par signature, SHA-256), pièces jointes rapprochées par identifiant, reprise et annulation, aperçu avant import, bilan chiffré (dates réelles) ; recherche unifiée tous types avec filtres combinés et ouverture au message exact (y compris l'historique importé, que l'ancienne recherche ne voyait pas) ; contexte utile local pour une réflexion ; prompts « Copié » et « Remplacé » ; audit mécanique des preuves d'exigences. Détail : `docs/IMPORT_HISTORIQUE.md`.
+
+**Preuves :** `docs/audits/VALIDATION_PARCOURS_2026-11-13.md` (38 parcours : 26 VALIDÉ, 9 PARTIEL, 2 ÉCHEC, 1 BLOQUÉ), `docs/audits/MATRICE_EXIGENCES_2026-11-13.md`, `docs/audits/RAPPORT_FINAL_2026-11-13.md`.
+
+**Non fait, bloqué ou non vérifié :** espace de réflexion complet (comparaison de propositions, conclusions classées) ; registre d'exigences par projet ; fournisseurs IA et GitHub jamais essayés en réel ; téléphone réel, WebKit, Firefox ; coût de la recherche sur D1 en production ; pièces jointes Claude (texte extrait non importé).
+
+---
+
+# 12 novembre 2026 — Analyse de l’historique par Gemini, Groq et Mistral ; mode sombre corrigé — HISTORIQUE : fusionné dans `main` par la PR 38 (aa05aca) le 13 novembre
+
+Branche `feat/atelier-analyse-historique`, au-dessus de `feat/atelier-quotas-claude`. Migration additive `0020_history_analysis.sql` (appliquée en production ; `/api/health` du 13 novembre : migrations 0007 à 0020).
 
 **Réalisé :** découpage local, analyse pas à pas avec relais, cache par empreinte, pause sur limite, réponses brutes conservées, seconde lecture par un autre fournisseur, éléments reliés aux messages d’origine, validation par Martin (`docs/ANALYSE_HISTORIQUE.md`). Mode sombre : le fond et la couleur de base étaient fixés en clair, ce qui rendait des titres illisibles ; corrigé, et le thème suit le réglage de l’appareil à la première visite.
 
@@ -10,9 +22,9 @@ Branche `feat/atelier-analyse-historique`, au-dessus de `feat/atelier-quotas-cla
 
 ---
 
-# 12 novembre 2026 — Pilotage du travail avec Claude (branche empilée, non fusionnée)
+# 12 novembre 2026 — Pilotage du travail avec Claude — HISTORIQUE : la PR 37 a été fusionnée dans la branche de la PR 36, pas dans `main` ; son contenu est arrivé dans `main` par la PR 38 (aa05aca) le 13 novembre
 
-Branche `feat/atelier-quotas-claude`, au-dessus de `feat/atelier-poste-de-pilotage` (PR 36). Migration additive `0019_claude_work.sql`. Rien en ligne.
+Branche `feat/atelier-quotas-claude`, au-dessus de `feat/atelier-poste-de-pilotage` (PR 36). Migration additive `0019_claude_work.sql` (appliquée en production depuis la PR 38).
 
 **Réalisé :** conseil de modèle par règles (`server/claude-advisor.ts`), dossier de travail complet dans la consigne, relevés de quota saisis avec source et péremption, alertes, retours de travail classés, points de reprise, écran « Claude ». Détail et limites : `docs/QUOTAS_CLAUDE.md`.
 
@@ -22,9 +34,9 @@ Branche `feat/atelier-quotas-claude`, au-dessus de `feat/atelier-poste-de-pilota
 
 ---
 
-# 12 novembre 2026 — Poste de pilotage (mission PROMPT-CLAUDECODE-0002, branche non fusionnée)
+# 12 novembre 2026 — Poste de pilotage (mission PROMPT-CLAUDECODE-0002) — HISTORIQUE : fusionné dans `main` par la PR 36 (a44a2e8) le 12 novembre
 
-**État actuel de ce lot.** Branche `feat/atelier-poste-de-pilotage`, partie de `main` `9219114`. Rien n’est en ligne : la migration 0018 n’est pas appliquée en production tant que la PR n’est pas fusionnée par Martin.
+**État actuel de ce lot.** Branche `feat/atelier-poste-de-pilotage`, partie de `main` `9219114`. (Écrit avant la fusion ; depuis, la PR 36 est fusionnée et la migration 0018 est appliquée en production.)
 
 ## Réalisé (code et tests locaux)
 

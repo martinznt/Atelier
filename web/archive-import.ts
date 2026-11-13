@@ -29,7 +29,9 @@ async function openSource(file:File):Promise<{segments:Seg[];others:ZipEntry[];e
 /** Passe 1 : l'inventaire des conversations. Reprenable : un segment déjà inventorié (même empreinte) est sauté. */
 export async function inventoryArchive(file:File,api:Api,ctl:Ctl={}):Promise<InventoryResult>{
  ctl.onProgress?.({phase:'hash',label:'Calcul de l’empreinte SHA-256 de l’archive (sur cet appareil)',done:0,total:file.size});
- const digest=await sha256Blob(file,{signal:ctl.signal,onProgress:n=>ctl.onProgress?.({phase:'hash',label:'Calcul de l’empreinte SHA-256 de l’archive (sur cet appareil)',done:n,total:file.size})});
+ let digest:string;
+ try{digest=await sha256Blob(file,{signal:ctl.signal,onProgress:n=>ctl.onProgress?.({phase:'hash',label:'Calcul de l’empreinte SHA-256 de l’archive (sur cet appareil)',done:n,total:file.size})});}
+ catch(e){if(ctl.signal?.aborted)throw new Cancelled();throw e;}
  check(ctl);
  const src=await openSource(file);
  if(!src.segments.length)throw new Error(src.isZip?'Cette archive ne contient aucun fichier conversations.json ni conversations-000.json… Rien n’a été enregistré.':'Fichier non reconnu.');
@@ -68,15 +70,15 @@ export async function inventoryArchive(file:File,api:Api,ctl:Ctl={}):Promise<Inv
    if(done.get(seg.name)===segSha){reports.push({name:seg.name,status:'inventoried',conversations:inv.rows.length,note:'déjà inventorié (empreinte identique) : repris sans rien refaire',skipped:true});continue;}
    if(inv.provider!==first.inv.provider&&inv.provider!=='inconnu'&&inv.rows.length){await api.post(`/exports/${batch.id}/segments`,{name:seg.name,size:seg.size,sha256:segSha,conversation_count:0,duplicates:0,status:'unreadable',note:'Format '+inv.provider+' différent du premier segment ('+first.inv.provider+') : segment non inventorié'});
     reports.push({name:seg.name,status:'unreadable',conversations:0,note:'format différent du premier segment'});continue;}
-   let alreadyPresent=0;
-   for(let i=0;i<inv.rows.length;i+=200){check(ctl);const r=await api.post(`/exports/${batch.id}/conversations`,{rows:inv.rows.slice(i,i+200).map(x=>({...x,segment:seg.name}))});alreadyPresent+=Number(r.already_present||0);
+   let alreadyPresent=0;const ignoredIds=new Set<string>();
+   for(let i=0;i<inv.rows.length;i+=200){check(ctl);const r=await api.post(`/exports/${batch.id}/conversations`,{rows:inv.rows.slice(i,i+200).map(x=>({...x,segment:seg.name}))});alreadyPresent+=Number(r.already_present||0);for(const id of r.ignored||[])ignoredIds.add(String(id));
     ctl.onProgress?.({phase:'rows',label:'Enregistrement du manifeste — '+seg.name,done:Math.min(i+200,inv.rows.length),total:inv.rows.length});}
    // Références de pièces jointes (identifiants seulement), pour rapprochement ultérieur avec les fichiers de l'archive.
    const items=(Array.isArray(value)?value:Array.isArray(value?.conversations)?value.conversations:[value]).map((c:any)=>{const id=String(c?.id||c?.conversation_id||c?.uuid||'');return {source_id:id,refs:attachmentRefs(c)};}).filter((x:any)=>x.source_id&&x.refs.length);
    for(let i=0;i<items.length;i+=40){check(ctl);await api.post(`/exports/${batch.id}/attachments`,{items:items.slice(i,i+40)});}
    await api.post(`/exports/${batch.id}/segments`,{name:seg.name,size:seg.size,sha256:segSha,conversation_count:inv.rows.length+inv.duplicates.length,duplicates:inv.duplicates.length+alreadyPresent,status:'inventoried',note:inv.unrecognized?inv.unrecognized+' entrée(s) non reconnue(s)':''});
    reports.push({name:seg.name,status:'inventoried',conversations:inv.rows.length-alreadyPresent,note:(alreadyPresent?alreadyPresent+' déjà présente(s) dans un autre segment. ':'')+(inv.unrecognized?inv.unrecognized+' entrée(s) non reconnue(s)':'')});
-   totals.conversations+=inv.rows.length-alreadyPresent;totals.messages+=inv.totals.messages;totals.branches+=inv.totals.branches;totals.attachment_refs+=inv.totals.attachment_refs;unrec+=inv.unrecognized;
+   const kept=inv.rows.filter(x=>!ignoredIds.has(x.source_id));totals.conversations+=kept.length;totals.messages+=kept.reduce((n,x)=>n+x.message_count,0);totals.branches+=kept.reduce((n,x)=>n+x.branch_count,0);totals.attachment_refs+=kept.reduce((n,x)=>n+x.attachment_refs,0);unrec+=inv.unrecognized;
    // Libération explicite : aucune donnée du segment ne reste en mémoire après son inventaire.
    value=null;
    if(first.seg===seg){first={...first,bytes:new Uint8Array(0),value:null as any};}

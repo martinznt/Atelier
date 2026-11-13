@@ -1,6 +1,14 @@
 /* Bibliothèque de prompts : statuts, versions verrouillées, lecture d'une fiche Markdown avec en-tête, exports MD/TXT. */
 export const PROMPT_STATUSES=['to_prepare','to_give','given','awaiting','response_received','processed','obsolete'] as const;
 export type PromptStatus=typeof PROMPT_STATUSES[number];
+/** Libellé d'affichage : « Copié » et « Remplacé » sont dérivés, ils ne changent jamais l'état réel du prompt. */
+export function displayLabel(r:{status:string;copied_at?:string|null;superseded_by?:string|null}):string{
+ if(r.status==='obsolete')return r.superseded_by?'Remplacé':'Abandonné';
+ if(r.status==='processed')return 'Terminé';
+ if(r.status==='to_give')return r.copied_at?'Copié — transmission non confirmée':'À donner — prêt à copier';
+ if(r.status==='given')return 'Transmis';
+ return PROMPT_LABEL[r.status as PromptStatus]||r.status;
+}
 export const PROMPT_LABEL:Record<PromptStatus,string>={to_prepare:'À préparer',to_give:'À donner',given:'Déjà donné',awaiting:'En attente de retour',response_received:'Réponse reçue',processed:'Traité',obsolete:'Obsolète / abandonné'};
 /** « Déjà donné » n'est atteint que par la confirmation de transmission ; « Réponse reçue » que par l'ajout d'une réponse. */
 const manual:Record<PromptStatus,PromptStatus[]>={

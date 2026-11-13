@@ -2,7 +2,7 @@
    avec la date réelle. Atelier ne prétend jamais avoir envoyé un prompt lui-même. */
 import {Hono} from 'hono';import {z} from 'zod';
 import {event,fail,jsonBody,many,now,one,owned,run,uid,userId} from '../core.ts';
-import {PROMPT_LABEL,canSetStatus,cleanCommands,nextCode,parsePromptDocument,promptMarkdown,promptText,statusFromMeta,type PromptStatus} from '../prompt-core.ts';
+import {PROMPT_LABEL,displayLabel,canSetStatus,cleanCommands,nextCode,parsePromptDocument,promptMarkdown,promptText,statusFromMeta,type PromptStatus} from '../prompt-core.ts';
 import {secretFindings,sha256Hex} from '../handoff-core.ts';
 import {devPrompt} from '../workbench-core.ts';
 import {VERIFICATION_LABEL,adviceLine,recommend} from '../claude-advisor.ts';
@@ -16,7 +16,7 @@ const metaInput=z.object({project_id:z.string().uuid().nullable(),title:z.string
 const bodyInput=z.object({body:z.string().min(1).max(120000),commands:z.array(z.object({label:t(120).default(''),command:t(500),where_when:t(300).default('')})).max(10).default([])});
 const like=(q:string)=>'%'+q.slice(0,120).replace(/[\\%_]/g,m=>'\\'+m)+'%';
 async function mine(env:Env,user:string,id:string){const r=await one<Row>(env,'SELECT p.*,pr.name AS project_name FROM prompts p LEFT JOIN projects pr ON pr.id=p.project_id AND pr.user_id=p.user_id WHERE p.id=? AND p.user_id=?',id,user);if(!r)fail(404,'Ce prompt est introuvable ou ne vous appartient pas.');return r;}
-const view=(r:Row)=>({...r,status_label:PROMPT_LABEL[r.status as PromptStatus]||r.status});
+const view=(r:Row)=>({...r,status_label:displayLabel(r as any)});
 const versionView=(v:Row)=>{let commands:any[]=[];try{commands=JSON.parse(v.commands);}catch{/* commandes illisibles */}return {id:v.id,version:v.version,body:v.body,commands,content_hash:v.content_hash,locked:Boolean(v.locked),sent_at:v.sent_at,sent_recipient:v.sent_recipient,sent_note:v.sent_note,created_at:v.created_at};};
 function noSecret(text:string){const f=secretFindings(text);if(f.length)fail(400,'Le texte contient ce qui ressemble à un secret ('+f.join(', ')+') : retirez-le avant de l’enregistrer.');}
 async function checkRefs(env:Env,user:string,d:Partial<z.infer<typeof metaInput>>,project:string|null){
@@ -40,7 +40,7 @@ async function createPrompt(env:Env,user:string,d:Partial<z.infer<typeof metaInp
 prompts.get('/',async c=>{
  const user=userId(c),project=c.req.query('project')||'',status=c.req.query('status')||'',q=(c.req.query('q')||'').trim();
  if(project)await owned(c.env,'projects',project,user);
- const rows=await many<Row>(c.env,"SELECT p.id,p.code,p.title,p.subject,p.kind,p.recipient,p.provider,p.product,p.model,p.effort,p.status,p.planned_send,p.current_version,p.project_id,p.task_id,p.memory_doc_id,p.updated_at,p.created_at,pr.name AS project_name,v.sent_at,v.locked,v.content_hash,length(v.body) AS body_length,(SELECT COUNT(*) FROM prompt_responses r WHERE r.prompt_id=p.id AND r.user_id=p.user_id) AS responses FROM prompts p JOIN prompt_versions v ON v.prompt_id=p.id AND v.version=p.current_version LEFT JOIN projects pr ON pr.id=p.project_id AND pr.user_id=p.user_id WHERE p.user_id=? AND (?='' OR p.project_id=?) AND (?='' OR p.status=?) AND (?='' OR p.code LIKE ? ESCAPE '\\' OR p.title LIKE ? ESCAPE '\\' OR p.recipient LIKE ? ESCAPE '\\' OR v.body LIKE ? ESCAPE '\\') ORDER BY p.status IN ('to_give','to_prepare') DESC,p.updated_at DESC LIMIT 200",
+ const rows=await many<Row>(c.env,"SELECT p.id,p.code,p.title,p.subject,p.kind,p.recipient,p.provider,p.product,p.model,p.effort,p.status,p.planned_send,p.current_version,p.project_id,p.task_id,p.memory_doc_id,p.updated_at,p.created_at,p.copied_at,p.copied_count,p.superseded_by,pr.name AS project_name,v.sent_at,v.locked,v.content_hash,length(v.body) AS body_length,(SELECT COUNT(*) FROM prompt_responses r WHERE r.prompt_id=p.id AND r.user_id=p.user_id) AS responses FROM prompts p JOIN prompt_versions v ON v.prompt_id=p.id AND v.version=p.current_version LEFT JOIN projects pr ON pr.id=p.project_id AND pr.user_id=p.user_id WHERE p.user_id=? AND (?='' OR p.project_id=?) AND (?='' OR p.status=?) AND (?='' OR p.code LIKE ? ESCAPE '\\' OR p.title LIKE ? ESCAPE '\\' OR p.recipient LIKE ? ESCAPE '\\' OR v.body LIKE ? ESCAPE '\\') ORDER BY p.status IN ('to_give','to_prepare') DESC,p.updated_at DESC LIMIT 200",
   user,project,project,status,status,q,like(q),like(q),like(q),like(q));
  return c.json({items:rows.map(view),labels:PROMPT_LABEL});
 });
@@ -85,6 +85,22 @@ prompts.put('/:id/body',async c=>{
  ]);
  await event(c.env,user,'prompt_version','Prompt '+p.code+' : version '+version+' créée (la version '+p.current_version+' transmise reste intacte)',p.project_id);
  return c.json({version,new_version:true,content_hash:hash},201);
+});
+/** « Copié » : trace d'une copie locale. Ne change pas le statut : copier n'est pas transmettre. */
+prompts.post('/:id/copied',async c=>{
+ const user=userId(c),p=await mine(c.env,user,c.req.param('id'));
+ await run(c.env,'UPDATE prompts SET copied_at=?,copied_count=copied_count+1 WHERE id=? AND user_id=?',now(),p.id,user);
+ return c.json(view(await mine(c.env,user,p.id)));
+});
+/** « Remplacé » : un prompt devient obsolète en pointant vers son successeur (même compte). L'historique des deux est conservé. */
+prompts.post('/:id/supersede',async c=>{
+ const user=userId(c),p=await mine(c.env,user,c.req.param('id')),d=z.object({by:z.string().uuid()}).parse(await jsonBody(c));
+ if(d.by===p.id)fail(400,'Un prompt ne peut pas se remplacer lui-même.');
+ const next=await mine(c.env,user,d.by);
+ if(next.superseded_by===p.id)fail(409,'Ce prompt est déjà le successeur de l’autre : le lien ferait une boucle.');
+ await run(c.env,"UPDATE prompts SET status='obsolete',superseded_by=?,revision=revision+1,updated_at=? WHERE id=? AND user_id=?",next.id,now(),p.id,user);
+ await event(c.env,user,'prompt_status','Prompt '+p.code+' remplacé par '+next.code,p.project_id);
+ return c.json(view(await mine(c.env,user,p.id)));
 });
 /** Confirmation de transmission par Martin : date réelle obligatoire, jamais dans le futur ; la version devient immuable. */
 prompts.post('/:id/sent',async c=>{

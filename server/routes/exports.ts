@@ -47,11 +47,11 @@ exportsRoute.post('/:id/conversations',async c=>{
  const user=userId(c),b=await batchOf(c.env,user,c.req.param('id')),d=z.object({rows:z.array(rowInput).min(1).max(300)}).parse(await jsonBody(c));
  const st=d.rows.map(r=>c.env.DB.prepare('INSERT INTO export_conversations(id,user_id,batch_id,source_id,title,created_time,updated_time,message_count,node_count,branch_count,attachment_refs,non_text_parts,parse_status,parse_note,segment) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(batch_id,source_id) DO NOTHING')
   .bind(uid(),user,b.id,r.source_id,r.title||'Sans titre',r.created_time,r.updated_time,r.message_count,r.node_count,r.branch_count,r.attachment_refs,r.non_text_parts,r.parse_status,r.parse_note,r.segment));
- let inserted=0;
- for(let i=0;i<st.length;i+=60){const res=await c.env.DB.batch(st.slice(i,i+60));for(const x of res)inserted+=Number(x.meta?.changes||0);}
+ let inserted=0;const ignored:string[]=[];
+ for(let i=0;i<st.length;i+=60){const res=await c.env.DB.batch(st.slice(i,i+60));res.forEach((x,k)=>{const n=Number(x.meta?.changes||0);inserted+=n;if(!n)ignored.push(d.rows[i+k].source_id);});}
  const n=(await one<Row>(c.env,'SELECT COUNT(*) AS n FROM export_conversations WHERE user_id=? AND batch_id=?',user,b.id))?.n||0;
  await run(c.env,"UPDATE export_batches SET conversation_count=?,status=CASE WHEN status='inventory' AND ?>=declared_total THEN 'inventoried' ELSE status END WHERE id=? AND user_id=?",n,n,b.id,user);
- return c.json({inventoried:n,declared:b.declared_total,inserted,already_present:d.rows.length-inserted});
+ return c.json({inventoried:n,declared:b.declared_total,inserted,already_present:d.rows.length-inserted,ignored});
 });
 exportsRoute.get('/:id/conversations',async c=>{
  const user=userId(c),b=await batchOf(c.env,user,c.req.param('id')),{limit,offset}=page(c),q=(c.req.query('q')||'').trim(),lot=c.req.query('lot')||'',project=c.req.query('project')||'',status=c.req.query('status')||'';

@@ -95,3 +95,16 @@ test('audit de référence : jamais « intégral » sans lecture complète du co
  const g=prGraph([{number:1,title:'a',head:'f/a',base:'main',draft:false},{number:2,title:'b',head:'f/b',base:'f/a',draft:false},{number:3,title:'c',head:'f/c',base:'ancienne',draft:true}],'main');
  assert.equal(g[1].depends_on,1);assert.equal(g[0].on_default,true);assert.match(g[2].note,/aucune PR ouverte/);
 });
+
+import {significantTerms,matchedTerms,reliabilityOf,rank,warnings,contextText} from '../server/context-core.ts';
+test('contexte : mots significatifs sans mots vides, fiabilité par nature, alertes, texte avec sources',()=>{
+ assert.deepEqual(significantTerms('Faut-il garder le minuteur intégré dans la recette ? Le minuteur gêne.',3),['minuteur','intégré','recette']);
+ assert.deepEqual(significantTerms('de la et le',5),[]);assert.deepEqual(matchedTerms('Le Minuteur est gênant',['minuteur','recette']),['minuteur']);
+ assert.equal(reliabilityOf('decision',{status:'validated'}).usable,true);assert.equal(reliabilityOf('decision',{status:'proposed'}).usable,false);assert.equal(reliabilityOf('decision',{status:'superseded'}).level,'obsolete');
+ assert.equal(reliabilityOf('task',{status:'done',proof:''}).level,'unverified');assert.equal(reliabilityOf('task',{status:'done',proof:'ok'}).level,'verified');assert.equal(reliabilityOf('imported',{}).usable,'source');
+ const mk=(kind,id,status,matched,date='2026-01-01')=>({kind,id,title:'t'+id,excerpt:'e',matched,date,status,reliability:reliabilityOf(kind,{status}),open:{}});
+ const hits=[mk('decision','d1','validated',['minuteur','recette']),mk('decision','d2','validated',['minuteur','recette']),mk('decision','d3','superseded',['minuteur']),mk('decision','d4','proposed',['minuteur']),mk('task','t1','done',['minuteur'])];
+ const w=warnings(hits);assert.equal(w.length,4);assert.ok(w.some(x=>/remplacée/.test(x)));assert.ok(w.some(x=>/ne se contredisent/.test(x)));assert.ok(w.some(x=>/n’ont pas de preuve/.test(x)));assert.match(warnings([])[0],/Aucun élément/);
+ const r=rank([mk('chat','a','',['x'],'2026-01-01'),mk('chat','b','',['x','y'],'2025-01-01'),mk('chat','c','',['x'],'2026-06-01')],2);assert.deepEqual(r.map(h=>h.id),['b','c']);
+ const t=contextText('Minuteur ?','Sport',hits.slice(0,2));assert.match(t,/Décision · Décision confirmée/);assert.match(t,/Seules les « décisions confirmées » sont des règles/);assert.match(t,/source Atelier : decision d1/);
+});

@@ -284,3 +284,11 @@ Interface : `web/Home.tsx`, `Inbox.tsx`, `MemoryHub.tsx`, `Prompts.tsx`, `Export
 ## Analyse de l’historique (12 novembre 2026)
 
 `migrations/0020_history_analysis.sql` : `analysis_units`, `analysis_results`, `analysis_items`, colonne `export_batches.ai_consent_at`. Règles pures : `server/history-analysis.ts`. Moteur : `server/history-run.ts` (réutilise `ai-relay`, `ai-availability`, `ai-persist`, `connectors/ai`). Routes sous `/api/exports/:id/analysis` (`/consent`, `/prepare`, `/step`, `/retry-failed`, `/items`) et `/api/exports/analysis/items/:item`. Interface : `web/HistoryAnalysis.tsx`.
+
+## Import d'archives, recherche et contexte (13 novembre 2026)
+
+`migrations/0021_import_segments.sql` (additive) : `export_segments`, `export_files`, `export_attachment_refs`, colonnes `export_conversations.segment`, `export_batches.duplicate_count`, `prompts.copied_at / copied_count / superseded_by`.
+Client (aucune archive n'est envoyée au serveur) : `web/zip-reader.ts` (ZIP à accès aléatoire par tranches de Blob, ZIP64, limites), `web/sha256-stream.ts` (SHA-256 incrémental), `web/archive-import.ts` (inventaire par segments, index des fichiers, relecture ciblée), `web/ArchiveInfo.tsx`.
+Pur (partagé) : `server/file-sniff.ts` (type réel par signature), `server/export-inventory.ts` (segments, références de pièces jointes, rapprochement), `server/find-core.ts`, `server/context-core.ts`.
+Routes : `/api/exports/:id/{segments,files,attachments,link-attachments,summary}` ; `/api/workbench/find` (recherche unifiée) ; `/api/workbench/context` ; `/api/prompts/:id/{copied,supersede}`.
+Interface : `web/Find.tsx` (la loupe de l'en-tête), `web/ContextPanel.tsx` (page Discussions).

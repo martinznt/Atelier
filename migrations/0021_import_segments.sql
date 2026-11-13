@@ -45,3 +45,8 @@ CREATE TABLE export_attachment_refs (
  UNIQUE(batch_id,conversation_id,ref_key)
 );
 CREATE INDEX export_attachment_refs_batch ON export_attachment_refs(user_id,batch_id,link_status);
+
+-- Prompts : « Copié » est une information distincte de « Transmis » (copier n'est pas donner), et « Remplacé » garde le lien vers son successeur.
+ALTER TABLE prompts ADD COLUMN copied_at TEXT;
+ALTER TABLE prompts ADD COLUMN copied_count INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE prompts ADD COLUMN superseded_by TEXT REFERENCES prompts(id) ON DELETE SET NULL;

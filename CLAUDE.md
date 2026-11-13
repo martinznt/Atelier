@@ -53,7 +53,7 @@ publiés. Ne pas pousser le root-commit local en remplaçant l’historique du d
 Reprise du 5 novembre 2026 : l'état actuel est la section « Mise en service » de docs/AVANCEMENT.md et docs/REVUE_IA.md (relais, modes, reprise, rapport, `/api/health`
 avec migrations). Les constats plus anciens de ces fichiers sont historiques. Ne jamais déclarer testé ce qui ne l'a pas été avec de vraies connexions.
 
-Reprise du 12 novembre 2026 : poste de pilotage sur `feat/atelier-poste-de-pilotage` (migration 0018, non fusionnée sans accord de Martin). Lire le haut de docs/AVANCEMENT.md et docs/audits/RAPPORT_MISSION_0002.md. Lancer aussi `node --test tests/workbench-core.test.mjs`. Les appels GitHub du référentiel et de l'audit ne sont testés qu'en simulation : ne pas les déclarer validés. Exigences nouvelles : préfixe PIL-28 ; ne pas renuméroter les 465 historiques.
+Reprise du 13 novembre 2026 : l'état actuel est le haut de docs/AVANCEMENT.md et docs/audits/RAPPORT_FINAL_2026-11-13.md. `main` = `aa05aca` (PR 36 et 38 fusionnées ; la PR 37 l'a été dans la branche de la PR 36 seulement), production sur `aa05aca`, migrations 0007 à 0020. La branche `feat/atelier-finalisation` (migration 0021) n'est pas fusionnée sans accord explicite de Martin. Les anciens constats « non fusionné » des rapports du 12 novembre sont historiques. Lancer aussi `node --test tests/workbench-core.test.mjs`. Les appels GitHub du référentiel et de l'audit ne sont testés qu'en simulation : ne pas les déclarer validés. Exigences nouvelles : préfixe PIL-28 ; ne pas renuméroter les 465 historiques.
 
 ## Économie des quotas (demande de Martin du 12 novembre 2026)
 
@@ -65,3 +65,5 @@ Reprise du 12 novembre 2026 : poste de pilotage sur `feat/atelier-poste-de-pilot
 - Ne jamais inventer un état de quota. Détail : docs/QUOTAS_CLAUDE.md. Lancer aussi `node --test tests/claude-advisor.test.mjs`.
 
 Analyse de l'historique (12 novembre 2026) : docs/ANALYSE_HISTORIQUE.md. Elle n'utilise que Gemini, Groq et Mistral ; ne pas y ajouter Claude. Les capacités réelles des fournisseurs n'ont pas été vérifiées : ne pas supposer un mode JSON natif, un grand contexte ou une interface de lots. Lancer aussi `node --test tests/history-analysis.test.mjs`.
+
+Finalisation (13 novembre 2026) : lire docs/IMPORT_HISTORIQUE.md avant de toucher à l'import ou à la recherche. Lancer aussi `node --test tests/zip-reader.test.mjs tests/requirements-audit.test.mjs` et `node scripts/requirements-audit.mjs` (relie chaque exigence à ses preuves : « VALIDÉ » exige un test cité et aucune limite de simulation). Aucun appel réel à Gemini, Groq, Mistral ou GitHub n'a été fait : ne rien déclarer vérifié en réel. Exigences nouvelles : préfixe FIN-31.
