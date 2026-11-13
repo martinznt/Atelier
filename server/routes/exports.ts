@@ -125,7 +125,7 @@ exportsRoute.delete('/:id',async c=>{
 });
 
 /* ---------- Segments, fichiers de l'archive, pièces jointes, bilan chiffré ---------- */
-exportsRoute.get('/:id/segments',async c=>{const user=userId(c),b=await batchOf(c.env,user,c.req.param('id'));return c.json({items:await many<Row>(c.env,'SELECT name,size,sha256,conversation_count,duplicate_count,status,note,created_at FROM export_segments WHERE user_id=? AND batch_id=? ORDER BY name',user,b.id)});});
+exportsRoute.get('/:id/segments',async c=>{const user=userId(c),b=await batchOf(c.env,user,c.req.param('id'));return c.json({items:await many<Row>(c.env,'SELECT name,size,sha256,conversation_count,duplicate_count,rows_stored,nodes_stored,reason_code,status,note,created_at FROM export_segments WHERE user_id=? AND batch_id=? ORDER BY name',user,b.id)});});
 /** Enregistre la fin de l'inventaire d'un segment. Idempotent : même nom et même empreinte = déjà fait ; même nom mais autre empreinte = autre export, refusé. */
 const MAX_NODES_PER_BATCH=1_000_000,MAX_ANNEX_CHARS=1_000_000,MAX_ANNEXES=12;
 /** Enregistre la fin de l'inventaire d'un segment. Le serveur RECOMPTE ce qu'il a réellement enregistré avant de déclarer le segment terminé :
@@ -208,7 +208,8 @@ const normPath=(p:string)=>p.replace(/^\.\//,'').replace(/^\/+/,'');
     Recalculé à chaque appel : le résultat ne dépend que des données enregistrées. */
 exportsRoute.post('/:id/link-attachments',async c=>{
  const user=userId(c),b=await batchOf(c.env,user,c.req.param('id'));
- const files=(await many<Row>(c.env,'SELECT id,entry_name FROM export_files WHERE user_id=? AND batch_id=?',user,b.id)).map(r=>({id:String(r.id),entry_name:String(r.entry_name)}));
+ // Un fichier au nom dangereux (« .. », chemin absolu…) n'est jamais une cible de lien : il reste indexé et signalé, mais ne peut être désigné par aucune référence.
+ const files=(await many<Row>(c.env,"SELECT id,entry_name FROM export_files WHERE user_id=? AND batch_id=? AND status!='unsafe_name'",user,b.id)).map(r=>({id:String(r.id),entry_name:String(r.entry_name)}));
  const links=await many<Row>(c.env,'SELECT id,ref_key,declared_path FROM export_links WHERE user_id=? AND batch_id=?',user,b.id);
  const byName=new Map(files.map(f=>[f.entry_name,f.id]));const linkState=new Map<string,{status:'present'|'path_missing';file_id:string|null}>();let st:any[]=[];
  for(const l of links){
