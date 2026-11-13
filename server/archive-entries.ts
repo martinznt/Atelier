@@ -16,6 +16,16 @@ export function entryNameProblem(name:string):string|null{
  if(name.split('/').some(p=>p==='..'))return 'remontée de dossier (..)';
  return null;
 }
+/** Chemin DÉCLARÉ par une annexe (correspondance) : seul un chemin relatif sûr est retourné, sinon null. « ./ » initial toléré ; rien n'est « réparé » :
+    un chemin absolu (Unix, Windows, UNC), une remontée « .. », un séparateur « \\ », un segment vide ou « . » interne, un dossier (« / » final) est refusé tel quel. */
+export function safeArchivePath(raw:unknown):string|null{
+ if(typeof raw!=='string')return null;
+ const p=raw.startsWith('./')?raw.slice(2):raw;
+ if(!p||p.length>500||p.endsWith('/')||p.includes('//')||/[:*?"<>|]/.test(p)||/%(2e|2f|5c)/i.test(p))return null;
+ if(entryNameProblem(p))return null;
+ if(p.split('/').some(x=>x===''||x==='.'||x==='..'||x!==x.trim()))return null;
+ return p;
+}
 export interface Classified{kind:EntryKind;group:ArchiveGroup;base:string;depth:number}
 /** Une archive peut avoir un dossier racine (« export/… ») : au plus un niveau est toléré pour les fichiers de tête. Un fichier placé dans sites/, pieces_jointes/ ou bibliotheque_non_rattachee/ est TOUJOURS une ressource, même s'il s'appelle conversations.json. */
 export function classifyEntry(name:string):Classified{
@@ -137,26 +147,26 @@ export function jsonShape(v:unknown):Shape{return Array.isArray(v)?{type:'array'
 const ID_FIELDS=['id','file_id','fichier_id','id_fichier','reference','ref','asset_pointer','file-id'],PATH_FIELDS=['chemin','path','fichier','file','nom_archive','archive_path','chemin_archive','destination'];
 const stripScheme=(s:string)=>s.replace(/^[a-z-]+:\/\//i,'').trim();
 const pathLike=(s:string)=>/[\/.]/.test(s)&&s.length<=500&&!/\s{2,}/.test(s);
-export interface Correspondance{shape:'map'|'records'|'inconnue';pairs:{ref:string;path:string}[];skipped:number;reason:string|null}
+export interface Correspondance{shape:'map'|'records'|'inconnue';pairs:{ref:string;path:string}[];skipped:number;unsafe:number;reason:string|null}
 /** Lecture tolérante de correspondance_fichiers.json : {id: chemin} ou [{id…, chemin…}], éventuellement sous une clé unique. Toute autre forme est signalée, jamais devinée. */
 export function readCorrespondance(value:unknown):Correspondance{
  let v:any=value;
  if(isObj(v)&&Object.keys(v).length===1&&(Array.isArray(Object.values(v)[0])||isObj(Object.values(v)[0])))v=Object.values(v)[0];
- const pairs:{ref:string;path:string}[]=[];let skipped=0;
+ const pairs:{ref:string;path:string}[]=[];let skipped=0,unsafe=0;
  if(isObj(v)){
   const entries=Object.entries(v);
   if(entries.length&&entries.every(([,x])=>typeof x==='string')){
-   for(const [k,x] of entries){const ref=stripScheme(k),path=String(x).replace(/^\.\//,'');if(ref&&pathLike(path))pairs.push({ref,path});else skipped++;}
-   return {shape:'map',pairs,skipped,reason:pairs.length?null:'Aucun couple identifiant → chemin exploitable.'};
+   for(const [k,x] of entries){const ref=stripScheme(k);if(!ref||!pathLike(String(x))){skipped++;continue;}const path=safeArchivePath(x);if(path)pairs.push({ref,path});else{skipped++;unsafe++;}}
+   return {shape:'map',pairs,skipped,unsafe,reason:pairs.length?null:'Aucun couple identifiant → chemin exploitable.'};
   }
  }else if(Array.isArray(v)&&v.every(isObj)){
   for(const r of v){
    const idKey=ID_FIELDS.find(k=>typeof r[k]==='string'&&r[k]),pathKey=PATH_FIELDS.find(k=>typeof r[k]==='string'&&r[k]&&pathLike(r[k]));
-   if(idKey&&pathKey)pairs.push({ref:stripScheme(r[idKey]),path:String(r[pathKey]).replace(/^\.\//,'')});else skipped++;
+   if(idKey&&pathKey){const path=safeArchivePath(r[pathKey]);if(path)pairs.push({ref:stripScheme(r[idKey]),path});else{skipped++;unsafe++;}}else skipped++;
   }
-  return {shape:'records',pairs,skipped,reason:pairs.length?null:'Aucun enregistrement avec un identifiant et un chemin reconnus.'};
+  return {shape:'records',pairs,skipped,unsafe,reason:pairs.length?null:'Aucun enregistrement avec un identifiant et un chemin reconnus.'};
  }
- return {shape:'inconnue',pairs:[],skipped:0,reason:'Forme non reconnue : ni {identifiant: chemin} ni liste d’enregistrements. Aucun lien créé.'};
+ return {shape:'inconnue',pairs:[],skipped:0,unsafe:0,reason:'Forme non reconnue : ni {identifiant: chemin} ni liste d’enregistrements. Aucun lien créé.'};
 }
 const fold=(s:string)=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
 export interface Claim{key:string;value:number;category:'conversations'|'messages'|'nodes'}

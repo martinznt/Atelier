@@ -189,8 +189,13 @@ export async function readConversations(file:File,batchId:string,api:Api,wanted:
   if(!seg)throw new Error('Le fichier « '+name+' » est introuvable dans l’archive choisie : choisissez la même archive que lors de l’inventaire.');
   const bytes=await seg.read(),sha=await hexOf(bytes),expected=shas.get(name);
   if(expected&&expected!==sha&&expected!=='0'.repeat(64))throw new Error('Le fichier « '+name+' » n’a pas la même empreinte que lors de l’inventaire : ce n’est pas la même archive. Aucun message n’a été importé.');
-  const value=JSON.parse(new TextDecoder().decode(bytes));
-  for(const c of (Array.isArray(value)?value:Array.isArray(value?.conversations)?value.conversations:[value])){const id=String(c?.id||c?.conversation_id||c?.uuid||'');if(ids.has(id))out.push(c);}
+  // Même règle que l'inventaire (validateConversationJson) : un format accepté à l'inventaire reste lisible ici, une enveloppe ambiguë n'est jamais devinée.
+  const val=validateConversationJson(JSON.parse(new TextDecoder().decode(bytes)));
+  if(!val.ok)throw new Error('Le fichier « '+name+' » n’a plus une structure de conversations lisible ('+(val.reason||'structure inconnue')+') : aucun message n’a été importé.');
+  const found=new Set<string>();
+  for(const c of val.items){const id=conversationId(c);if(id&&ids.has(id)&&!found.has(id)){found.add(id);out.push(c);}}
+  const missing=[...ids].filter(id=>!found.has(id));
+  if(missing.length)throw new Error('Conversation(s) demandée(s) introuvable(s) dans « '+name+' » : '+missing.slice(0,5).join(', ')+(missing.length>5?'…':'')+'. Aucun message n’a été importé : choisissez la même archive que lors de l’inventaire.');
  }
  return out;
 }

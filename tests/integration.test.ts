@@ -1617,9 +1617,65 @@ describe('import P0 : archive filtrée (conversations_filtrees.json + annexes), 
   expect(ex.body.export_conversations.some((c:any)=>c.segment==='conversations_filtrees.json'&&c.source_index!==undefined)).toBe(true);expect(ex.body.export_links.length).toBeGreaterThanOrEqual(3);
   const health=await (await mf.dispatchFetch(origin+'/api/health')).json() as any;expect(health.schema.applied).toContain('0022');expect(health.schema.missing).toEqual([]);
  });
+ it('F. correspondance : un chemin absolu, Windows ou avec « .. » ne crée jamais de lien ; seuls les chemins relatifs sûrs vers un fichier présent le font',async()=>{
+  const refs=['file-PA1','file-PA2','file-PA3','file-PA4','file-PA5','file-PA6','file-PA7','file-PA8'];
+  const mapping={'file-PA1':'/pieces_jointes/fichier.pdf','file-PA2':'C:/pieces_jointes/fichier.pdf','file-PA3':'../pieces_jointes/fichier.pdf','file-PA4':'dossier/../../fichier.pdf','file-PA5':'./pieces_jointes/fichier.pdf','file-PA6':'pieces_jointes/fichier.pdf','file-PA7':'pieces_jointes/absent.pdf','file-PA8':'pieces_jointes\\fichier.pdf'};
+  const f={'conversations_filtrees.json':enc(JSON.stringify([conv(0,{refs})])),'correspondance_fichiers.json':enc(JSON.stringify(mapping)),'pieces_jointes/fichier.pdf':enc('%PDF-1.4 vrai'),'fichier.pdf':enc('%PDF-1.4 racine')};
+  const r=await inventoryArchive(file(f,'chemins.zip'),A);await indexArchiveFiles(file(f,'chemins.zip'),r.batch,A);
+  const atts=(await json('/exports/'+r.batch.id+'/attachments')).body.items,by=(k:string)=>atts.find((a:any)=>a.ref_key===k);
+  for(const k of ['file-PA1','file-PA2','file-PA3','file-PA4','file-PA8']){expect(by(k).link_status,k).toBe('referenced_only');expect(by(k).file_id||null,k).toBeNull();}   // chemins rejetés : jamais de lien, y compris vers « fichier.pdf » à la racine
+  expect(by('file-PA5')).toMatchObject({link_status:'in_archive',entry_name:'pieces_jointes/fichier.pdf'});expect(by('file-PA6')).toMatchObject({link_status:'in_archive',entry_name:'pieces_jointes/fichier.pdf'});
+  expect(by('file-PA7').link_status).toBe('referenced_only');                                                                                                         // chemin sûr mais fichier absent
+  const i=await integ(r.batch.id);expect(i.correspondance).toEqual({declared:3,present:2,path_missing:1});
+  const ann=(await json('/exports/'+r.batch.id+'/annexes')).body.items.find((a:any)=>a.kind==='correspondance');expect(ann.shape.correspondance).toMatchObject({form:'map',pairs:3,skipped:5,unsafe:5});
+  const links=await db2().prepare('SELECT declared_path FROM export_links WHERE batch_id=? ORDER BY declared_path').bind(r.batch.id).all<any>();expect(links.results.map((x:any)=>x.declared_path)).toEqual(['pieces_jointes/absent.pdf','pieces_jointes/fichier.pdf','pieces_jointes/fichier.pdf']);   // aucune ligne stockée pour un chemin dangereux
+  // une ligne ancienne ou forgée contenant un chemin dangereux ne produit pas non plus de lien
+  await db2().prepare("INSERT INTO export_links(id,user_id,batch_id,ref_key,declared_path,status) SELECT 'forge-1',user_id,id,'file-PA1','/pieces_jointes/fichier.pdf','present' FROM export_batches WHERE id=?").bind(r.batch.id).run();
+  await json('/exports/'+r.batch.id+'/link-attachments','POST',{});expect((await db2().prepare("SELECT status,file_id FROM export_links WHERE id='forge-1'").first<any>())).toMatchObject({status:'path_missing',file_id:null});
+  expect((await json('/exports/'+r.batch.id+'/attachments')).body.items.find((a:any)=>a.ref_key==='file-PA1').link_status).toBe('referenced_only');
+ });
  it('D. D1 : un lot d’écriture est atomique (une erreur dans le lot n’en laisse aucune trace)',async()=>{
   const d=await mf.getD1Database('DB');const before=(await d.prepare('SELECT COUNT(*) AS n FROM export_annexes').first<any>()).n;
   await expect(d.batch([d.prepare("INSERT INTO export_links(id,user_id,batch_id,ref_key,declared_path,status) VALUES('zz-1','u','b','r','p','path_missing')"),d.prepare('INSERT INTO table_inexistante VALUES(1)')])).rejects.toThrow();
   expect((await d.prepare("SELECT COUNT(*) AS n FROM export_links WHERE id='zz-1'").first<any>()).n).toBe(0);expect((await d.prepare('SELECT COUNT(*) AS n FROM export_annexes').first<any>()).n).toBe(before);
+ });
+});
+
+describe('readConversations : mêmes formats qu’à l’inventaire (validateConversationJson), rien de deviné',()=>{
+ const enc=(x:string)=>new TextEncoder().encode(x);
+ const hex=async(b:Uint8Array)=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',b as BufferSource))).map(x=>x.toString(16).padStart(2,'0')).join('');
+ const gptc=(id:string,title='T')=>({id,title,create_time:1788000000,mapping:{n1:{id:'n1',parent:null,children:[],message:{id:'n1',author:{role:'user'},create_time:1788000001,content:{content_type:'text',parts:['bonjour '+id]}}}}});
+ const claudec=(id:string)=>({uuid:id,name:'Claude '+id,created_at:'2026-09-02T10:00:00Z',chat_messages:[{uuid:'m-'+id,sender:'human',text:'salut',created_at:'2026-09-02T10:00:01Z'}]});
+ /** API simulée : le serveur « connaît » l'empreinte du fichier inventorié (le test cible la lecture, pas l'inventaire). */
+ const withFile=async(value:unknown,name='conversations_filtrees.json',tamper?:string)=>{const bytes=enc(typeof value==='string'?value:JSON.stringify(value));const sha=await hex(bytes);
+  const api={get:async()=>({items:[{name,sha256:tamper||sha}]}),post:async()=>({})};return {file:new File([bytes],name),api};};
+ const ids=async(value:unknown,wanted:string[],name='conversations_filtrees.json',tamper?:string)=>{const {file,api}=await withFile(value,name,tamper);return (await readConversations(file,'b',api as any,wanted.map(source_id=>({source_id,segment:name})))).map((c:any)=>c.id||c.uuid);};
+ it('tableau direct, clé « conversations », clé personnalisée unique, conversation seule, formats ChatGPT et Claude',async()=>{
+  expect(await ids([gptc('a'),gptc('b'),gptc('c')],['c','a'])).toEqual(['a','c']);
+  expect(await ids({conversations:[gptc('a'),gptc('b')]},['b'])).toEqual(['b']);
+  expect(await ids({conversations_conservees:[gptc('a'),gptc('b')],total:2,meta:{x:[1,2]}},['a','b'])).toEqual(['a','b']);   // enveloppe personnalisée acceptée par l'inventaire
+  expect(await ids(gptc('solo'),['solo'])).toEqual(['solo']);
+  expect(await ids([claudec('u1'),claudec('u2')],['u2'])).toEqual(['u2']);
+  expect(await ids({conversations:[claudec('u1')]},['u1'],'conversations.json')).toEqual(['u1']);
+ });
+ it('accord avec l’inventaire : tout ce que validateConversationJson accepte est relu, à l’identique',async()=>{
+  const {validateConversationJson,conversationId}=await import('../server/archive-entries.ts');
+  for(const v of [[gptc('a'),gptc('b')],{conversations:[gptc('a')]},{conversations_conservees:[gptc('a'),gptc('b')]},gptc('solo'),[claudec('u1')]]){
+   const val=validateConversationJson(v);expect(val.ok).toBe(true);const want=val.items.map(conversationId);expect(await ids(v,want)).toEqual(want);}
+ });
+ it('plusieurs listes → ambiguïté refusée, rien n’est choisi ; structure illisible refusée avec un motif',async()=>{
+  const two={conversations_a:[gptc('a')],conversations_b:[gptc('b')]};
+  await expect(ids(two,['a'])).rejects.toThrow(/Plusieurs listes de conversations|ambig/);await expect(ids(two,['b'])).rejects.toThrow(/aucun message n’a été importé/);
+  await expect(ids({autre:'chose'},['a'])).rejects.toThrow(/structure de conversations lisible/);await expect(ids('[{"mapping":',['a'])).rejects.toThrow();
+ });
+ it('conversation demandée absente ou identifiant incorrect : erreur explicite listant les identifiants, aucun résultat partiel',async()=>{
+  await expect(ids([gptc('a'),gptc('b')],['a','zzz'])).rejects.toThrow(/introuvable.*zzz/);
+  await expect(ids([gptc('a')],['A'])).rejects.toThrow(/introuvable/);                       // casse différente : autre identifiant
+  await expect(ids([gptc('a')],[''])).rejects.toThrow(/introuvable/);
+  await expect(ids({conversations_conservees:[gptc('a')]},['conversations_conservees'])).rejects.toThrow(/introuvable/);   // une clé n'est pas un identifiant
+ });
+ it('empreinte du segment : un fichier modifié depuis l’inventaire est refusé avant toute lecture',async()=>{
+  await expect(ids([gptc('a')],['a'],'conversations_filtrees.json','f'.repeat(64))).rejects.toThrow(/même empreinte|pas la même archive/);
+  expect(await ids([gptc('a')],['a'],'conversations_filtrees.json','0'.repeat(64))).toEqual(['a']);   // segment enregistré sans empreinte (ancien inventaire) : toléré comme avant
  });
 });

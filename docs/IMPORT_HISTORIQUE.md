@@ -28,6 +28,8 @@ Un fichier est un segment de conversations seulement si **trois conditions** son
 
 Un fichier qui porte le bon nom mais dont la structure est invalide **n'est pas ignoré** : il est enregistré avec un motif (`invalid_structure`, JSON illisible, trop volumineux, imbrication JSON trop profonde — limite 100 niveaux). Une conversation individuelle invalide est comptée dans « invalides » et reste dans votre archive. Si aucune conversation valide n'est trouvée, rien n'est enregistré et le message l'explique.
 
+La relecture des messages (étape 2) applique **la même règle de structure** que l'inventaire : tableau direct, clé `conversations`, ou une unique liste sous une clé personnalisée (signalée « enveloppe non vérifiée »). Si le fichier contient plusieurs listes, rien n'est choisi et l'import est refusé ; si une conversation demandée est introuvable dans le fichier, **tout l'import est refusé** avec les identifiants manquants (aucun résultat partiel), et l'empreinte du fichier doit être identique à celle de l'inventaire.
+
 Le premier segment valide fixe le fournisseur (ChatGPT ou Claude) ; un segment d'un autre format est signalé, pas importé.
 
 ## Ce que l'inventaire conserve d'une conversation
@@ -60,7 +62,7 @@ Fichiers reconnus (à la racine ou dans un seul dossier, comme les segments) : `
 
 - Le texte est conservé s'il fait **1 Mo ou moins** et est du texte valide ; au-delà, seuls le nom, la taille et l'empreinte sont gardés (statut « trop volumineuse »). Le serveur vérifie que l'empreinte correspond au texte reçu.
 - Lecture **tolérante** : aucun schéma n'a été inventé, car les vrais formats n'ont pas été vus. Une annexe JSON illisible est conservée comme telle ; une forme non reconnue est signalée « forme non reconnue » et ne produit **aucun lien**.
-- `correspondance_fichiers.json` : deux formes sont comprises (dictionnaire identifiant → chemin, ou liste d'enregistrements avec un identifiant et un chemin). Un lien n'est créé que si le fichier cible **existe** dans l'archive indexée ; sinon la ligne reste « chemin déclaré mais absent ».
+- `correspondance_fichiers.json` : deux formes sont comprises (dictionnaire identifiant → chemin, ou liste d'enregistrements avec un identifiant et un chemin). Un lien n'est créé que si le fichier cible **existe** dans l'archive indexée ; sinon la ligne reste « chemin déclaré mais absent ». Un chemin déclaré n'est accepté que s'il est **relatif et sûr** (`./` initial toléré) : les chemins absolus Unix ou Windows (`/…`, `C:/…`), les segments `..`, les séparateurs `\\` ou les caractères de contrôle sont **rejetés tels quels**, comptés (« chemins dangereux ») et ne produisent aucun lien ; ils ne sont jamais « réparés » en chemin relatif.
 - `verification.json` / `inventaire_complet.json` : on en tire des chiffres « annoncés » (conversations, messages, nœuds) par **heuristique sur les noms de clés**, comparés aux chiffres enregistrés. Résultat « concordant », « écart » ou « non annoncé » : c'est un indice **à vérifier**, pas une preuve.
 - Les annexes ne sont pas exécutées ni interprétées au-delà de cela. Leur texte n'est pas inclus dans l'export du compte.
 
@@ -92,7 +94,7 @@ Archive malformée, tronquée, chiffrée, à taille annoncée fausse ou à taux 
 
 ## Migration 0022 (obligatoire)
 
-`migrations/0022_import_integrity.sql` est **additive** : colonnes ajoutées aux tables d'export existantes, et nouvelles tables `export_nodes`, `export_annexes`, `export_links`. Elle est **créée mais non appliquée en production**. Tant qu'elle ne l'est pas, `/api/health` signale `0022` manquante, et le nouvel inventaire (nœuds, annexes, rapport d'intégrité) ne peut pas fonctionner. Elle ne supprime ni ne renomme rien.
+`migrations/0022_import_integrity.sql` est **additive** : colonnes ajoutées aux tables d'export existantes, et nouvelles tables `export_nodes`, `export_annexes`, `export_links`. Elle est **créée mais non appliquée en production**. Tant qu'elle ne l'est pas, `/api/health` signale `0022` manquante (la vérification contrôle **toutes** les tables créées — `export_nodes`, `export_annexes`, `export_links` — et **toutes** les colonnes ajoutées ; un état partiellement migré est donc déclaré manquant, jamais appliqué), et le nouvel inventaire (nœuds, annexes, rapport d'intégrité) ne peut pas fonctionner. Elle ne supprime ni ne renomme rien.
 
 ## Limites de l'export du compte
 

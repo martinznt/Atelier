@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {classifyEntry,isConversationFile,maxJsonDepth,validateConversationJson,indexConversation,structureOf,readCorrespondance,jsonShape,claimedCounts,compareClaims,entryNameProblem} from '../server/archive-entries.ts';
+import {classifyEntry,isConversationFile,maxJsonDepth,validateConversationJson,indexConversation,structureOf,readCorrespondance,jsonShape,claimedCounts,compareClaims,entryNameProblem,safeArchivePath} from '../server/archive-entries.ts';
 import {inventoryExport} from '../server/export-inventory.ts';
 
 test('A. détection : tous les noms de segments attendus sont reconnus, et seulement eux',()=>{
@@ -65,4 +65,18 @@ test('E. chiffres annoncés : seuls les chiffres de ce qui est conservé compten
  assert.deepEqual(cmp,{conversations:'concordant',messages:'ecart',nodes:'concordant'});
  assert.equal(compareClaims([],{conversations:1,messages:1,nodes:1})[0].status,'non_annonce');
  assert.deepEqual(claimedCounts([1,2,3]),[]);assert.deepEqual(claimedCounts('x'),[]);
+});
+
+test('chemins déclarés par une correspondance : seuls les chemins relatifs sûrs sont acceptés, aucun n’est « réparé »',()=>{
+ const ok={'./pieces_jointes/fichier.pdf':'pieces_jointes/fichier.pdf','pieces_jointes/fichier.pdf':'pieces_jointes/fichier.pdf','sites/siteA/index.html':'sites/siteA/index.html','bibliotheque_non_rattachee/50% offert.pdf':'bibliotheque_non_rattachee/50% offert.pdf'};
+ for(const [raw,want] of Object.entries(ok))assert.equal(safeArchivePath(raw),want,raw);
+ for(const bad of ['/pieces_jointes/fichier.pdf','//serveur/partage/f.pdf','C:/pieces_jointes/fichier.pdf','c:\\pieces_jointes\\fichier.pdf','\\\\srv\\x','../pieces_jointes/fichier.pdf','dossier/../../fichier.pdf','a/../b.pdf','./../x.pdf','pieces_jointes\\fichier.pdf','pieces_jointes//fichier.pdf','pieces_jointes/./fichier.pdf','pieces_jointes/','','.','..','%2e%2e/secret','pieces_jointes/%2E%2E/x','a%2fb','x\u0000.pdf','x\n.pdf','a|b.pdf',' pieces_jointes/x.pdf',null,undefined,42,'x'.repeat(501)])
+  assert.equal(safeArchivePath(bad),null,JSON.stringify(bad));
+});
+test('correspondance : un chemin rejeté ne produit aucun couple (forme dictionnaire et forme enregistrements), il est compté',()=>{
+ const m=readCorrespondance({'file-1':'/pieces_jointes/f.pdf','file-2':'C:/pieces_jointes/f.pdf','file-3':'../pieces_jointes/f.pdf','file-4':'dossier/../../f.pdf','file-5':'./pieces_jointes/f.pdf','file-6':'pieces_jointes/f.pdf'});
+ assert.deepEqual(m.pairs,[{ref:'file-5',path:'pieces_jointes/f.pdf'},{ref:'file-6',path:'pieces_jointes/f.pdf'}]);assert.equal(m.unsafe,4);assert.equal(m.skipped,4);
+ const r=readCorrespondance([{id:'file-1',chemin:'/etc/passwd'},{id:'file-2',chemin:'..\\x'},{id:'file-3',chemin:'pieces_jointes/f.pdf'}]);
+ assert.deepEqual(r.pairs,[{ref:'file-3',path:'pieces_jointes/f.pdf'}]);assert.equal(r.unsafe,2);
+ const none=readCorrespondance({'file-1':'/a/b.pdf'});assert.deepEqual(none.pairs,[]);assert.ok(none.reason);
 });

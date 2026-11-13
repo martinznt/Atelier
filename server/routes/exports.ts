@@ -4,7 +4,7 @@
 import {Hono} from 'hono';import {z} from 'zod';
 import {event,fail,jsonBody,many,now,one,owned,page,run,uid,userId} from '../core.ts';
 import {coverageOf,makeLots,matchAttachment} from '../export-inventory.ts';
-import {classifyEntry,entryNameProblem,claimedCounts,compareClaims,jsonShape,readCorrespondance,GROUP_LABEL} from '../archive-entries.ts';
+import {classifyEntry,entryNameProblem,claimedCounts,compareClaims,jsonShape,readCorrespondance,safeArchivePath,GROUP_LABEL} from '../archive-entries.ts';
 import {secretFindings} from '../handoff-core.ts';
 import {analysisStep,prepareUnits,unitMessages} from '../history-run.ts';
 import {AGREEMENT_LABEL,ANALYSIS_PROVIDERS,ITEM_KINDS,KIND_LABEL,analysisStatement} from '../history-analysis.ts';
@@ -202,7 +202,6 @@ exportsRoute.post('/:id/attachments',async c=>{
  for(let i=0;i<st.length;i+=60)await c.env.DB.batch(st.slice(i,i+60));
  return c.json({saved});
 });
-const normPath=(p:string)=>p.replace(/^\.\//,'').replace(/^\/+/,'');
 /** Rapproche chaque référence des fichiers de l'archive. Deux sources, jamais mêlées : l'identifiant cité dans la conversation, puis les couples
     identifiant → chemin déclarés par correspondance_fichiers.json. Un lien n'est créé que si le fichier visé EXISTE dans l'archive indexée.
     Recalculé à chaque appel : le résultat ne dépend que des données enregistrées. */
@@ -213,8 +212,9 @@ exportsRoute.post('/:id/link-attachments',async c=>{
  const links=await many<Row>(c.env,'SELECT id,ref_key,declared_path FROM export_links WHERE user_id=? AND batch_id=?',user,b.id);
  const byName=new Map(files.map(f=>[f.entry_name,f.id]));const linkState=new Map<string,{status:'present'|'path_missing';file_id:string|null}>();let st:any[]=[];
  for(const l of links){
-  const want=normPath(String(l.declared_path));let id=byName.get(want)||null;
-  if(!id){const tail=files.filter(f=>f.entry_name.endsWith('/'+want));if(tail.length===1)id=tail[0].id;}
+  // Un chemin déclaré dangereux (absolu, « .. », séparateur étranger…) n'est jamais « réparé » : il ne désigne aucun fichier, même si une ligne plus ancienne l'a stocké.
+  const want=safeArchivePath(String(l.declared_path));let id=want?byName.get(want)||null:null;
+  if(want&&!id){const tail=files.filter(f=>f.entry_name.endsWith('/'+want));if(tail.length===1)id=tail[0].id;}
   const state={status:id?'present' as const:'path_missing' as const,file_id:id};linkState.set(l.ref_key+'\n'+l.declared_path,state);
   st.push(c.env.DB.prepare('UPDATE export_links SET status=?,file_id=? WHERE id=? AND user_id=?').bind(state.status,state.file_id,l.id,user));
  }
@@ -291,7 +291,7 @@ exportsRoute.post('/:id/annexes',async c=>{
   let value:unknown;try{value=JSON.parse(d.content);}catch{status='invalid_json';note=note||'JSON illisible : le texte est conservé tel quel, rien n’est interprété.';}
   if(status==='stored'){
    shape={...jsonShape(value)};
-   if(kind==='correspondance'){const r=readCorrespondance(value);shape.correspondance={form:r.shape,pairs:r.pairs.length,skipped:r.skipped};pairs=r.pairs.slice(0,50000);if(!r.pairs.length){status='unrecognized_shape';note=r.reason||'Forme non reconnue.';}}
+   if(kind==='correspondance'){const r=readCorrespondance(value);shape.correspondance={form:r.shape,pairs:r.pairs.length,skipped:r.skipped,unsafe:r.unsafe};pairs=r.pairs.slice(0,50000);if(!r.pairs.length){status='unrecognized_shape';note=r.reason||'Forme non reconnue.';}}
    else if(kind==='verification'||kind==='inventaire'){shape.claims=claimedCounts(value).slice(0,60);}
   }
  }else if(d.content===null)note=note||'Taille supérieure à 1 Mo ou texte non lisible : seuls le nom, la taille et l’empreinte sont conservés.';
