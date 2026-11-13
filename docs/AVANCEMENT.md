@@ -4,6 +4,8 @@
 
 **Réalisé et testé localement :** import d'archive ZIP par segments sans la charger en entier (exports découpés `conversations-000.json`…), protections contre les archives hostiles, index des fichiers (type réel par signature, SHA-256), pièces jointes rapprochées par identifiant, reprise et annulation, aperçu avant import, bilan chiffré (dates réelles) ; recherche unifiée tous types avec filtres combinés et ouverture au message exact (y compris l'historique importé, que l'ancienne recherche ne voyait pas) ; contexte utile local pour une réflexion ; prompts « Copié » et « Remplacé » ; audit mécanique des preuves d'exigences. Détail : `docs/IMPORT_HISTORIQUE.md`.
 
+**Apparence (demande de Martin du 13 novembre) :** plus aucune teinte verte. Mode clair : blanc pur, texte et boutons noirs. Mode sombre : noir profond, texte et boutons blancs. Coins arrondis (cartes 16-18 px, boutons et champs 14 px). Icône de l'application et couleur de la barre d'état passées en noir et blanc. Contrôle de contraste sur 12 écrans à 360 et 390 px, clair et sombre : aucun texte sous 3:1 (hors symbole décoratif corrigé).
+
 **Preuves :** `docs/audits/VALIDATION_PARCOURS_2026-11-13.md` (38 parcours : 26 VALIDÉ, 9 PARTIEL, 2 ÉCHEC, 1 BLOQUÉ), `docs/audits/MATRICE_EXIGENCES_2026-11-13.md`, `docs/audits/RAPPORT_FINAL_2026-11-13.md`.
 
 **Non fait, bloqué ou non vérifié :** espace de réflexion complet (comparaison de propositions, conclusions classées) ; registre d'exigences par projet ; fournisseurs IA et GitHub jamais essayés en réel ; téléphone réel, WebKit, Firefox ; coût de la recherche sur D1 en production ; pièces jointes Claude (texte extrait non importé).
