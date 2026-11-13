@@ -86,16 +86,8 @@ export function coverageOf(rows:CoverageRow[],analyses:{lot:string;kind:string}[
 }
 
 /* ---------- Segments, pièces jointes et rapprochement avec l'archive ---------- */
-/** Fichiers de conversations d'une archive : conversations.json, ou segments conversations-000.json, conversations-001.json… */
-export const isConversationFile=(name:string)=>/(^|\/)conversations(-\d{1,6})?\.json$/i.test(name);
-/** Nom d'entrée sans danger pour un simple affichage et un stockage : jamais utilisé comme chemin d'écriture. */
-export function entryNameProblem(name:string):string|null{
- if(!name||name.length>500)return 'nom vide ou trop long';
- if(/[\u0000-\u001f]/.test(name))return 'caractère de contrôle';
- if(name.startsWith('/')||/^[A-Za-z]:[\\/]/.test(name)||name.includes('\\'))return 'chemin absolu ou séparateur inhabituel';
- if(name.split('/').some(p=>p==='..'))return 'remontée de dossier (..)';
- return null;
-}
+/** Détection des fichiers de conversations et noms dangereux : voir archive-entries.ts (nom ET structure). Ré-exportés ici pour ne pas casser les imports existants. */
+export {isConversationFile,entryNameProblem} from './archive-entries.ts';
 export interface AttachmentRef{ref_key:string;name:string;mime:string;size:number|null;message_key:string}
 /** Références de pièces jointes d'une conversation : identifiants de fichiers cités, jamais le contenu. */
 export function attachmentRefs(c:any):AttachmentRef[]{
