@@ -27,7 +27,10 @@ const checks:{id:string;table:string;columns:string[]}[]=[
  {id:'0020',table:'export_batches',columns:['ai_consent_at']},
  {id:'0020',table:'analysis_items',columns:['quote_verified','agreement']},
  {id:'0021',table:'export_files',columns:['sniff_kind','sha256']},
- {id:'0021',table:'export_conversations',columns:['segment']}
+ {id:'0021',table:'export_conversations',columns:['segment']},
+ {id:'0022',table:'export_nodes',columns:['node_id','children']},
+ {id:'0022',table:'export_segments',columns:['rows_stored','nodes_stored']},
+ {id:'0022',table:'export_annexes',columns:['kind','shape']}
 ];
 let cache:{at:number;value:SchemaStatus}|null=null;
 /** Cache de 60 s par instance : la page de santé est publique, elle ne doit pas solliciter D1 à chaque appel. */

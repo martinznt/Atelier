@@ -5,7 +5,8 @@
    - Les messages ne sont envoyés au serveur que par l'import explicite de conversations choisies. */
 import {openZip,readEntry,streamEntry,ZipError,DEFAULT_LIMITS,type ZipEntry} from './zip-reader.ts';
 import {Sha256,sha256Blob} from './sha256-stream.ts';
-import {inventoryExport,isConversationFile,entryNameProblem,attachmentRefs} from '../server/export-inventory.ts';
+import {inventoryExport,attachmentRefs} from '../server/export-inventory.ts';
+import {classifyEntry,entryNameProblem,isConversationFile,maxJsonDepth,validateConversationJson,indexConversation,conversationId} from '../server/archive-entries.ts';
 import {sniffBytes} from '../server/file-sniff.ts';
 export interface Api{post:(path:string,body:unknown)=>Promise<any>;get:(path:string)=>Promise<any>}
 export interface Progress{phase:string;label:string;done:number;total:number}
@@ -14,77 +15,133 @@ export class Cancelled extends Error{constructor(){super('Opération annulée : 
 const check=(c:Ctl)=>{if(c.signal?.aborted)throw new Cancelled();};
 const hexOf=async(u:Uint8Array)=>sha256Blob(new Blob([u as BlobPart]));
 const MAX_SEGMENT_BYTES=DEFAULT_LIMITS.maxEntryBytes;
-export interface SegmentReport{name:string;status:string;conversations:number;note:string;skipped?:boolean}
-export interface InventoryResult{batch:any;segments:SegmentReport[];totals:{conversations:number;messages:number;branches:number;attachment_refs:number};zip_entries:number;other_entries:number;unrecognized:number;cancelled:boolean}
+export interface SegmentReport{name:string;status:string;conversations:number;note:string;skipped?:boolean;reason_code?:string}
+export interface AnnexReport{name:string;kind:string;status:string;note:string}
+export interface InventoryResult{batch:any;segments:SegmentReport[];annexes:AnnexReport[];totals:{conversations:number;messages:number;branches:number;attachment_refs:number;nodes:number};zip_entries:number;other_entries:number;unrecognized:number;invalid_conversations:number;cancelled:boolean}
 const extOf=(n:string)=>(/\.([a-z0-9]{1,8})$/i.exec(n)?.[1]||'sans').toLowerCase();
+const MAX_ANNEX_BYTES=1_000_000,MAX_JSON_DEPTH=100,NODE_BATCH=500;
 type Seg={name:string;read:()=>Promise<Uint8Array>;size:number};
-
-async function openSource(file:File):Promise<{segments:Seg[];others:ZipEntry[];entries:number;byExt:Record<string,number>;isZip:boolean}>{
- if(!/\.zip$/i.test(file.name)){return {segments:[{name:file.name.slice(0,200),size:file.size,read:async()=>{if(file.size>MAX_SEGMENT_BYTES)throw new ZipError('Ce fichier JSON fait '+Math.round(file.size/1048576)+' Mo : trop grand pour être lu ici.','zip_limit');return new Uint8Array(await file.arrayBuffer());}}],others:[],entries:1,byExt:{json:1},isZip:false};}
- const {entries}=await openZip(file);const byExt:Record<string,number>={};
- for(const e of entries)if(!e.isDir)byExt[extOf(e.name)]=(byExt[extOf(e.name)]||0)+1;
- const segments=entries.filter(e=>!e.isDir&&isConversationFile(e.name)).sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true})).map(e=>({name:e.name.slice(0,200),size:e.size,read:()=>readEntry(file,e)}));
- return {segments,others:entries.filter(e=>!e.isDir&&!isConversationFile(e.name)),entries:entries.length,byExt,isZip:true};
+type Annex={name:string;entry:ZipEntry};
+async function openSource(file:File):Promise<{segments:Seg[];annexes:Annex[];others:ZipEntry[];entries:number;byExt:Record<string,number>;byGroup:Record<string,number>;isZip:boolean}>{
+ if(!/\.zip$/i.test(file.name)){return {segments:[{name:file.name.slice(0,200),size:file.size,read:async()=>{if(file.size>MAX_SEGMENT_BYTES)throw new ZipError('Ce fichier JSON fait '+Math.round(file.size/1048576)+' Mo : trop grand pour être lu ici.','zip_limit');return new Uint8Array(await file.arrayBuffer());}}],annexes:[],others:[],entries:1,byExt:{json:1},byGroup:{autre:1},isZip:false};}
+ const {entries}=await openZip(file);const byExt:Record<string,number>={},byGroup:Record<string,number>={};
+ const segments:Seg[]=[],annexes:Annex[]=[],others:ZipEntry[]=[];
+ for(const e of entries){
+  if(e.isDir)continue;
+  byExt[extOf(e.name)]=(byExt[extOf(e.name)]||0)+1;const cls=classifyEntry(e.name);byGroup[cls.group]=(byGroup[cls.group]||0)+1;
+  if(cls.kind==='conversations')segments.push({name:e.name.slice(0,200),size:e.size,read:()=>readEntry(file,e)});
+  else{others.push(e);if(['correspondance','inventaire','verification','exclusions','lisez_moi'].includes(cls.kind))annexes.push({name:e.name,entry:e});}
+ }
+ segments.sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true}));
+ return {segments,annexes,others,entries:entries.length,byExt,byGroup,isZip:true};
 }
-/** Passe 1 : l'inventaire des conversations. Reprenable : un segment déjà inventorié (même empreinte) est sauté. */
+interface Parsed{value?:any;validation?:ReturnType<typeof validateConversationJson>;bytes?:Uint8Array;fail?:{status:string;reason_code:string;note:string;sha?:string}}
+/** Lecture d'un segment : taille, profondeur, JSON, STRUCTURE. Un fichier au bon nom mais à la mauvaise structure est refusé avec son motif. */
+async function readSegment(seg:Seg):Promise<Parsed>{
+ let bytes:Uint8Array;
+ try{bytes=await seg.read();}catch(e){const code=e instanceof ZipError?e.code:'';return {fail:{status:code==='zip_limit'?'too_large':'unreadable',reason_code:code==='zip_limit'?'too_large':'unreadable',note:(e as Error).message.slice(0,400)}};}
+ const sha=await hexOf(bytes);let text=new TextDecoder().decode(bytes);
+ if(maxJsonDepth(text,MAX_JSON_DEPTH)>MAX_JSON_DEPTH)return {fail:{status:'unreadable',reason_code:'depth',note:'Imbrication JSON de plus de '+MAX_JSON_DEPTH+' niveaux : fichier refusé par prudence.',sha}};
+ let value:any;try{value=JSON.parse(text);}catch{return {fail:{status:'invalid_json',reason_code:'invalid_json',note:'JSON illisible : segment incomplet ou corrompu',sha}};}
+ text='';const validation=validateConversationJson(value);
+ if(!validation.ok)return {fail:{status:'unreadable',reason_code:'invalid_structure',note:validation.reason||'Structure non reconnue.',sha}};
+ return {value,validation,bytes};
+}
+/** Passe 1 : l'inventaire des conversations. Reprenable : un segment déjà inventorié (même empreinte) est sauté. Aucun segment n'est déclaré terminé avant que le serveur ait recompté ce qu'il a enregistré. */
 export async function inventoryArchive(file:File,api:Api,ctl:Ctl={}):Promise<InventoryResult>{
- ctl.onProgress?.({phase:'hash',label:'Calcul de l’empreinte SHA-256 de l’archive (sur cet appareil)',done:0,total:file.size});
+ const label='Calcul de l’empreinte SHA-256 de l’archive (sur cet appareil)';
+ ctl.onProgress?.({phase:'hash',label,done:0,total:file.size});
  let digest:string;
- try{digest=await sha256Blob(file,{signal:ctl.signal,onProgress:n=>ctl.onProgress?.({phase:'hash',label:'Calcul de l’empreinte SHA-256 de l’archive (sur cet appareil)',done:n,total:file.size})});}
+ try{digest=await sha256Blob(file,{signal:ctl.signal,onProgress:n=>ctl.onProgress?.({phase:'hash',label,done:n,total:file.size})});}
  catch(e){if(ctl.signal?.aborted)throw new Cancelled();throw e;}
  check(ctl);
  const src=await openSource(file);
- if(!src.segments.length)throw new Error(src.isZip?'Cette archive ne contient aucun fichier conversations.json ni conversations-000.json… Rien n’a été enregistré.':'Fichier non reconnu.');
- // Le fournisseur se lit dans le premier segment exploitable ; il fixe le type de l'export.
- let first:{seg:Seg;bytes:Uint8Array;value:any;inv:ReturnType<typeof inventoryExport>}|null=null;const early:SegmentReport[]=[];
+ if(!src.segments.length)throw new Error(src.isZip?'Cette archive ne contient aucun fichier de conversations reconnu (conversations.json, conversations_1.json, conversations-000.json, conversations_filtrees.json…). Rien n’a été enregistré.':'Fichier non reconnu.');
+ // Le fournisseur se lit dans le premier segment valide ; les segments invalides sont enregistrés avec leur motif, jamais ignorés en silence.
+ const early=new Map<string,SegmentReport>(),parsedFirst=new Map<string,Parsed>();let first:{seg:Seg;parsed:Parsed;provider:string}|null=null;
  for(const seg of src.segments){
-  check(ctl);
-  try{const bytes=await seg.read(),value=JSON.parse(new TextDecoder().decode(bytes)),inv=inventoryExport(value);if(inv.rows.length){first={seg,bytes,value,inv};break;}early.push({name:seg.name,status:'inventoried',conversations:0,note:'aucune conversation reconnue ('+inv.unrecognized+' entrée(s) non reconnue(s))'});}
-  catch(e){early.push({name:seg.name,status:e instanceof SyntaxError?'invalid_json':(e instanceof ZipError&&e.code==='zip_limit'?'too_large':'unreadable'),conversations:0,note:(e as Error).message.slice(0,300)});}
+  check(ctl);const p=await readSegment(seg);
+  if(p.fail){early.set(seg.name,{name:seg.name,status:p.fail.status,conversations:0,note:p.fail.note,reason_code:p.fail.reason_code});parsedFirst.set(seg.name,p);continue;}
+  first={seg,parsed:p,provider:p.validation!.provider};break;
  }
- if(!first)throw new Error('Aucune conversation reconnue dans les '+src.segments.length+' fichier(s) de conversations de cette archive. Rien n’a été enregistré.');
- const stats={unrecognized:0,duplicates:0,zip_entries:src.entries,zip_by_extension:Object.fromEntries(Object.entries(src.byExt).slice(0,40)),inner_file:src.isZip?src.segments.map(s=>s.name).join(', ').slice(0,200):'',inner_sha256:''};
- const batch=await api.post('/exports',{provider:first.inv.provider,filename:file.name.slice(0,200),size:file.size,sha256:digest,declared_total:0,stats});
+ if(!first){
+  const why=[...early.values()].slice(0,3).map(r=>r.name+' : '+r.note).join(' ; ');
+  throw new Error('Aucune conversation valide dans les '+src.segments.length+' fichier(s) de conversations de cette archive ('+why+'). Rien n’a été enregistré.');
+ }
+ const stats={unrecognized:0,duplicates:0,zip_entries:src.entries,zip_by_extension:Object.fromEntries(Object.entries(src.byExt).slice(0,40)),inner_file:src.isZip?src.segments.map(s=>s.name).join(', ').slice(0,200):'',inner_sha256:'',segments_detected:src.segments.length,annexes_detected:src.annexes.length,entries_by_group:src.byGroup};
+ const batch=await api.post('/exports',{provider:first.provider==='inconnu'?'inconnu':first.provider,filename:file.name.slice(0,200),size:file.size,sha256:digest,declared_total:0,stats});
  const done=new Map<string,string>((await api.get(`/exports/${batch.id}/segments`)).items.filter((s:any)=>s.status==='inventoried').map((s:any)=>[s.name,s.sha256]));
- const reports:SegmentReport[]=[];let totals={conversations:0,messages:0,branches:0,attachment_refs:0},unrec=0,idx=0,cancelled=false;
+ const reports:SegmentReport[]=[];const totals={conversations:0,messages:0,branches:0,attachment_refs:0,nodes:0};let unrec=0,invalidTotal=0,idx=0,cancelled=false;
  for(const seg of src.segments){
   idx++;
   try{
    check(ctl);
    ctl.onProgress?.({phase:'segments',label:'Segment « '+seg.name+' » ('+idx+'/'+src.segments.length+')',done:idx-1,total:src.segments.length});
-   let bytes:Uint8Array,value:any,inv:ReturnType<typeof inventoryExport>;
-   const pre=early.find(e=>e.name===seg.name);
-   if(pre){const bad=pre.status!=='inventoried';
-    await api.post(`/exports/${batch.id}/segments`,{name:seg.name,size:seg.size,sha256:'0'.repeat(64),conversation_count:0,duplicates:0,status:bad?pre.status:'inventoried',note:pre.note});
-    reports.push(pre);continue;}
-   if(first.seg===seg){bytes=first.bytes;value=first.value;inv=first.inv;}
-   else{
-    try{bytes=await seg.read();}catch(e){const code=e instanceof ZipError?e.code:'';const status=code==='zip_limit'?'too_large':'unreadable';
-     await api.post(`/exports/${batch.id}/segments`,{name:seg.name,size:seg.size,sha256:'0'.repeat(64),conversation_count:0,duplicates:0,status,note:(e as Error).message.slice(0,400)});
-     reports.push({name:seg.name,status,conversations:0,note:(e as Error).message});continue;}
-    try{value=JSON.parse(new TextDecoder().decode(bytes));}catch{await api.post(`/exports/${batch.id}/segments`,{name:seg.name,size:seg.size,sha256:await hexOf(bytes),conversation_count:0,duplicates:0,status:'invalid_json',note:'JSON illisible : segment incomplet ou corrompu'});
-     reports.push({name:seg.name,status:'invalid_json',conversations:0,note:'JSON illisible'});continue;}
-    inv=inventoryExport(value);
+   const pre=early.get(seg.name);
+   if(pre){
+    const sha=parsedFirst.get(seg.name)?.fail?.sha||'0'.repeat(64);
+    await api.post(`/exports/${batch.id}/segments`,{name:seg.name,size:seg.size,sha256:sha,conversation_count:0,duplicates:0,status:pre.status==='too_large'?'too_large':pre.status==='invalid_json'?'invalid_json':'unreadable',note:pre.note,reason_code:pre.reason_code||''});
+    reports.push(pre);continue;
    }
-   const segSha=await hexOf(bytes);
+   const p=first.seg===seg?first.parsed:await readSegment(seg);
+   if(p.fail){await api.post(`/exports/${batch.id}/segments`,{name:seg.name,size:seg.size,sha256:p.fail.sha||'0'.repeat(64),conversation_count:0,duplicates:0,status:p.fail.status==='invalid_json'?'invalid_json':p.fail.status==='too_large'?'too_large':'unreadable',note:p.fail.note,reason_code:p.fail.reason_code});
+    reports.push({name:seg.name,status:p.fail.status,conversations:0,note:p.fail.note,reason_code:p.fail.reason_code});continue;}
+   const val=p.validation!,segSha=await hexOf(p.bytes!);
+   if(val.provider!==first.provider&&val.provider!=='inconnu'){await api.post(`/exports/${batch.id}/segments`,{name:seg.name,size:seg.size,sha256:segSha,conversation_count:0,duplicates:0,status:'unreadable',note:'Format '+val.provider+' différent du premier segment ('+first.provider+') : segment non inventorié',reason_code:'mixed_format'});
+    reports.push({name:seg.name,status:'unreadable',conversations:0,note:'format différent du premier segment',reason_code:'mixed_format'});continue;}
+   const inv=inventoryExport(val.items);
    if(done.get(seg.name)===segSha){reports.push({name:seg.name,status:'inventoried',conversations:inv.rows.length,note:'déjà inventorié (empreinte identique) : repris sans rien refaire',skipped:true});continue;}
-   if(inv.provider!==first.inv.provider&&inv.provider!=='inconnu'&&inv.rows.length){await api.post(`/exports/${batch.id}/segments`,{name:seg.name,size:seg.size,sha256:segSha,conversation_count:0,duplicates:0,status:'unreadable',note:'Format '+inv.provider+' différent du premier segment ('+first.inv.provider+') : segment non inventorié'});
-    reports.push({name:seg.name,status:'unreadable',conversations:0,note:'format différent du premier segment'});continue;}
-   let alreadyPresent=0;const ignoredIds=new Set<string>();
-   for(let i=0;i<inv.rows.length;i+=200){check(ctl);const r=await api.post(`/exports/${batch.id}/conversations`,{rows:inv.rows.slice(i,i+200).map(x=>({...x,segment:seg.name}))});alreadyPresent+=Number(r.already_present||0);for(const id of r.ignored||[])ignoredIds.add(String(id));
-    ctl.onProgress?.({phase:'rows',label:'Enregistrement du manifeste — '+seg.name,done:Math.min(i+200,inv.rows.length),total:inv.rows.length});}
-   // Références de pièces jointes (identifiants seulement), pour rapprochement ultérieur avec les fichiers de l'archive.
-   const items=(Array.isArray(value)?value:Array.isArray(value?.conversations)?value.conversations:[value]).map((c:any)=>{const id=String(c?.id||c?.conversation_id||c?.uuid||'');return {source_id:id,refs:attachmentRefs(c)};}).filter((x:any)=>x.source_id&&x.refs.length);
+   // Index des conversations de ce segment : structure, métadonnées, nœuds. Construit conversation par conversation pour limiter la mémoire.
+   const byId=new Map<string,{item:any;pos:number}>();val.items.forEach((c:any,i:number)=>{const id=conversationId(c)||'sans-id-'+i;if(!byId.has(id))byId.set(id,{item:c,pos:i});});
+   const dropped:Record<string,number>={};const rowPayload=inv.rows.map(x=>{const src2=byId.get(x.source_id);const ix=src2?indexConversation(src2.item):null;
+    if(ix)for(const [k,v] of Object.entries(ix.dropped))dropped[k]=(dropped[k]||0)+v;
+    return {...x,segment:seg.name,source_index:src2?.pos??null,meta:ix?{scalars:ix.meta.scalars,unstored_keys:ix.meta.unstored_keys,structure:ix.structure}:{scalars:{},unstored_keys:[],structure:{}}};});
+   const ignored=new Set<string>();
+   for(let i=0;i<rowPayload.length;i+=200){check(ctl);const r=await api.post(`/exports/${batch.id}/conversations`,{rows:rowPayload.slice(i,i+200)});for(const id of r.ignored||[])ignored.add(String(id));
+    ctl.onProgress?.({phase:'rows',label:'Enregistrement du manifeste — '+seg.name,done:Math.min(i+200,rowPayload.length),total:rowPayload.length});}
+   const kept=inv.rows.filter(x=>!ignored.has(x.source_id));
+   // Références de pièces jointes (identifiants seulement).
+   const items=kept.map(x=>({source_id:x.source_id,refs:attachmentRefs(byId.get(x.source_id)?.item)})).filter(x=>x.refs.length);
    for(let i=0;i<items.length;i+=40){check(ctl);await api.post(`/exports/${batch.id}/attachments`,{items:items.slice(i,i+40)});}
-   await api.post(`/exports/${batch.id}/segments`,{name:seg.name,size:seg.size,sha256:segSha,conversation_count:inv.rows.length+inv.duplicates.length,duplicates:inv.duplicates.length+alreadyPresent,status:'inventoried',note:inv.unrecognized?inv.unrecognized+' entrée(s) non reconnue(s)':''});
-   reports.push({name:seg.name,status:'inventoried',conversations:inv.rows.length-alreadyPresent,note:(alreadyPresent?alreadyPresent+' déjà présente(s) dans un autre segment. ':'')+(inv.unrecognized?inv.unrecognized+' entrée(s) non reconnue(s)':'')});
-   const kept=inv.rows.filter(x=>!ignoredIds.has(x.source_id));totals.conversations+=kept.length;totals.messages+=kept.reduce((n,x)=>n+x.message_count,0);totals.branches+=kept.reduce((n,x)=>n+x.branch_count,0);totals.attachment_refs+=kept.reduce((n,x)=>n+x.attachment_refs,0);unrec+=inv.unrecognized;
-   // Libération explicite : aucune donnée du segment ne reste en mémoire après son inventaire.
-   value=null;
-   if(first.seg===seg){first={...first,bytes:new Uint8Array(0),value:null as any};}
+   // Nœuds : lots de 500 au plus, idempotents ; le segment n'est déclaré terminé qu'après recomptage par le serveur.
+   let nodesExpected=0,pending:{source_id:string;nodes:any[]}[]=[],pendingCount=0,sent=0;
+   const flush=async()=>{if(!pending.length)return;await api.post(`/exports/${batch.id}/nodes`,{items:pending});pending=[];pendingCount=0;};
+   for(const x of kept){
+    const ix=indexConversation(byId.get(x.source_id)!.item);nodesExpected+=ix.nodes.length;
+    for(let i=0;i<ix.nodes.length;i+=NODE_BATCH){check(ctl);const part=ix.nodes.slice(i,i+NODE_BATCH);
+     if(pendingCount+part.length>600)await flush();pending.push({source_id:x.source_id,nodes:part});pendingCount+=part.length;sent+=part.length;}
+    if(pendingCount>=500){await flush();ctl.onProgress?.({phase:'nodes',label:'Enregistrement de la structure — '+seg.name,done:sent,total:Math.max(sent,1)});}
+   }
+   await flush();
+   await api.post(`/exports/${batch.id}/segments`,{name:seg.name,size:seg.size,sha256:segSha,conversation_count:inv.rows.length+inv.duplicates.length,duplicates:inv.duplicates.length+ignored.size,status:'inventoried',note:(val.wrapper_unverified?'Les conversations étaient sous la clé « '+val.wrapper+' » (non vérifiée). ':'')+(inv.unrecognized?inv.unrecognized+' entrée(s) non reconnue(s)':''),
+    rows_expected:kept.length,nodes_expected:nodesExpected,dropped_fields:Object.fromEntries(Object.entries(dropped).sort((a2,b2)=>b2[1]-a2[1]).slice(0,40)),issues:val.issues,wrapper:val.wrapper||''});
+   reports.push({name:seg.name,status:'inventoried',conversations:kept.length,note:(ignored.size?ignored.size+' déjà présente(s) dans un autre segment. ':'')+(val.invalid?val.invalid+' conversation(s) invalide(s). ':'')+(inv.unrecognized?inv.unrecognized+' entrée(s) non reconnue(s)':'')});
+   totals.conversations+=kept.length;totals.messages+=kept.reduce((n,x)=>n+x.message_count,0);totals.branches+=kept.reduce((n,x)=>n+x.branch_count,0);totals.attachment_refs+=kept.reduce((n,x)=>n+x.attachment_refs,0);totals.nodes+=nodesExpected;unrec+=inv.unrecognized;invalidTotal+=val.invalid;
+   // Libération explicite : plus rien de ce segment ne reste référencé après son inventaire.
+   (p as any).value=null;(p as any).bytes=null;(p.validation as any).items=[];
+   if(first.seg===seg)first={...first,parsed:{}};
   }catch(e){if(e instanceof Cancelled){cancelled=true;break;}throw e;}
  }
- return {batch,segments:[...reports],totals,zip_entries:src.entries,other_entries:src.others.length,unrecognized:unrec,cancelled};
+ const annexes=cancelled||!src.isZip?[]:await importAnnexes(file,batch.id,src.annexes,api,ctl);
+ return {batch,segments:[...reports],annexes,totals,zip_entries:src.entries,other_entries:src.others.length,unrecognized:unrec,invalid_conversations:invalidTotal,cancelled};
+}
+/** Annexes (correspondance, vérification, inventaire, exclusions, LISEZMOI) : texte conservé tel quel jusqu'à 1 Mo, sinon empreinte seule. */
+async function importAnnexes(file:File,batchId:string,annexes:Annex[],api:Api,ctl:Ctl):Promise<AnnexReport[]>{
+ const out:AnnexReport[]=[];
+ for(const a of annexes.slice(0,12)){
+  check(ctl);
+  ctl.onProgress?.({phase:'annexes',label:'Annexe « '+a.name.slice(-60)+' »',done:out.length,total:Math.min(annexes.length,12)});
+  try{
+   let content:string|null=null,sha:string,note='';
+   if(a.entry.size<=MAX_ANNEX_BYTES&&!a.entry.encrypted){
+    const bytes=await readEntry(file,a.entry,DEFAULT_LIMITS,MAX_ANNEX_BYTES);sha=await hexOf(bytes);
+    try{content=new TextDecoder('utf-8',{fatal:true}).decode(bytes);}catch{content=null;note='Texte non UTF-8 : seuls le nom, la taille et l’empreinte sont conservés.';}
+   }else{const h=new Sha256();await streamEntry(file,a.entry,c=>h.update(c),{signal:ctl.signal});sha=h.digestHex();}
+   const r=await api.post(`/exports/${batchId}/annexes`,{name:a.name,size:a.entry.size,sha256:sha,content,note});
+   out.push({name:a.name,kind:r.kind,status:r.status,note:r.note||''});
+  }catch(e){if(e instanceof Cancelled||ctl.signal?.aborted)throw e;out.push({name:a.name,kind:'?',status:'erreur',note:(e as Error).message.slice(0,200)});}
+ }
+ return out;
 }
 export interface IndexResult{total:number;hashed:number;skipped:number;problems:number;cancelled:boolean}
 /** Passe 2 (facultative, plus longue) : empreinte et type réel de chaque fichier de l'archive, un par un, mémoire bornée. Reprenable. */

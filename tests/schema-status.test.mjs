@@ -5,7 +5,7 @@ const tables={
  users:['id','email'],review_runs:['head_sha','report','stage','diagnostic','resume_at','resume_state'],
  review_configs:['daily_limit','post_comment','review_mode','relay','relay_max_attempts','auto_scope','no_daily_cap','auto_mark'],ai_usage:['connection_id','outcome'],
  handoff_packages:['content_hash','status'],plan_tasks:['depends_on','proof','work_kind','do_not_touch'],repositories:['verified_at'],
- conversations:['category','status'],export_conversations:['segment'],atelier_questions:['dedupe_key'],prompt_versions:['locked','sent_at'],ref_audit_files:['read_status'],quota_readings:['used_percent','source'],checkpoints:['next_action'],export_batches:['ai_consent_at'],analysis_items:['quote_verified','agreement'],export_files:['sniff_kind','sha256']
+ conversations:['category','status'],export_conversations:['segment'],export_nodes:['node_id','children'],export_segments:['rows_stored','nodes_stored'],export_annexes:['kind','shape'],atelier_questions:['dedupe_key'],prompt_versions:['locked','sent_at'],ref_audit_files:['read_status'],quota_readings:['used_percent','source'],checkpoints:['next_action'],export_batches:['ai_consent_at'],analysis_items:['quote_verified','agreement'],export_files:['sniff_kind','sha256']
 };
 const fake=(t)=>({prepare:sql=>({all:async()=>{const m=/table_info\((\w+)\)/.exec(sql);return {results:(t[m[1]]||[]).map(name=>({name}))};}})});
 test('toutes les migrations présentes : complet, liste appliquée, rien de manquant',async()=>{
