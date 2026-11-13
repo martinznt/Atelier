@@ -105,3 +105,7 @@ Aucun identifiant, cookie ou session Claude n’est lu ni demandé. Les relevés
 ## Analyse de l’historique (12 novembre 2026)
 
 Les messages importés ne sont envoyés à Gemini, Groq ou Mistral qu’après un accord enregistré pour l’export concerné, révocable. Le texte des conversations est présenté au modèle comme une donnée ; la réponse est une donnée non fiable, validée contre les messages réels. Aucune clé n’atteint le navigateur. Claude n’est pas appelé.
+
+## Archives importées (13 novembre 2026)
+
+Une archive est une donnée non fiable : lue sur l'appareil, jamais exécutée ni écrite comme chemin. Protections testées (`tests/zip-reader.test.mjs`, tests d'intégration) : table de matières tronquée ou corrompue, taille annoncée fausse (trop petite ou trop grande), taux de compression suspect (> 250:1 au-delà de 8 Mo), entrée chiffrée, méthode inconnue, noms dangereux (`..`, chemin absolu, `\`, caractères de contrôle — signalés, jamais utilisés), limites de 200 000 entrées, 96 Mo de table des matières et 160 Mo par entrée lue en mémoire. Décompression par tranches de 64 Ko. Le serveur recontrôle les noms de fichiers reçus. Toutes les routes d'import et de recherche filtrent par compte (404 pour un autre compte, vérifié). La recherche traite `%` et `_` comme des caractères ordinaires.

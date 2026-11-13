@@ -456,3 +456,7 @@ Exécutés en local sur `feat/atelier-quotas-claude` : `tsc --noEmit` ; `npm tes
 # Analyse de l’historique et mode sombre — contrôles du 12 novembre 2026
 
 Exécutés en local sur `feat/atelier-analyse-historique` : `tsc --noEmit` ; `npm test` 72/72 ; `node --test tests/*.test.mjs` ; `npm run test:regressions` ; `npm run test:core` ; `npm run build` ; migration 0020 sur base neuve. Navigateur réel (Chromium, thème sombre du système) à 360 et 390 px : Accueil, À traiter, Claude, Quotas, Export, Pilotage, Discussions, Projets, Fichiers, Activité, Réglages — aucun débordement, aucune erreur d’API, aucun texte de contraste inférieur à 3 (il y en avait sur tous les écrans avant correction). **Simulé :** toutes les réponses de Gemini, Groq et Mistral. **Non exécuté :** appel réel à un fournisseur, téléphone réel, WebKit, Firefox.
+
+# Finalisation — contrôles du 13 novembre 2026
+
+Exécutés en local sur `feat/atelier-finalisation` : `tsc --noEmit` ; `npm test` (84 scénarios) ; `node --test tests/*.test.mjs` (314) ; `npm run test:regressions` ; `npm run test:core` ; `npm run test:bridge` ; `npm run test:storage` ; `npm run test:identity` ; `npm run build` ; `git diff --check`. Navigateur réel : voir `docs/audits/VALIDATION_PARCOURS_2026-11-13.md` (26 VALIDÉ, 9 PARTIEL, 2 ÉCHEC, 1 BLOQUÉ sur 38 parcours). Matrice des exigences : `docs/audits/MATRICE_EXIGENCES_2026-11-13.md`. **Jamais exécuté en réel :** Gemini, Groq, Mistral, GitHub ; production après cette branche.

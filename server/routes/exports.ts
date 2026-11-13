@@ -3,7 +3,7 @@
    Les messages eux-mêmes passent par l'import de mémoire existant (passerelle), jamais par cette route. */
 import {Hono} from 'hono';import {z} from 'zod';
 import {event,fail,jsonBody,many,now,one,owned,page,run,uid,userId} from '../core.ts';
-import {coverageOf,makeLots} from '../export-inventory.ts';
+import {coverageOf,makeLots,matchAttachment,entryNameProblem} from '../export-inventory.ts';
 import {secretFindings} from '../handoff-core.ts';
 import {analysisStep,prepareUnits,unitMessages} from '../history-run.ts';
 import {AGREEMENT_LABEL,ANALYSIS_PROVIDERS,ITEM_KINDS,KIND_LABEL,analysisStatement} from '../history-analysis.ts';
@@ -16,12 +16,16 @@ const like=(q:string)=>'%'+q.slice(0,120).replace(/[\\%_]/g,m=>'\\'+m)+'%';
 async function batchOf(env:Env,user:string,id:string){return owned<Row>(env,'export_batches',id,user);}
 const isoOrNull=z.string().max(40).nullable();
 const rowInput=z.object({source_id:z.string().min(1).max(200),title:z.string().max(200),created_time:isoOrNull,updated_time:isoOrNull,message_count:z.number().int().min(0).max(1000000),node_count:z.number().int().min(0).max(1000000),branch_count:z.number().int().min(0).max(1000000),
- attachment_refs:z.number().int().min(0).max(1000000),non_text_parts:z.number().int().min(0).max(1000000),parse_status:z.enum(['complete','partial','error']),parse_note:z.string().max(500)});
+ attachment_refs:z.number().int().min(0).max(1000000),non_text_parts:z.number().int().min(0).max(1000000),parse_status:z.enum(['complete','partial','error']),parse_note:z.string().max(500),segment:z.string().max(200).default('')});
 const batchView=(b:Row)=>{let stats:any={};try{stats=JSON.parse(b.stats);}catch{/* statistiques illisibles */}return {...b,stats};};
 async function coverage(env:Env,user:string,b:Row){
  const rows=await many<Row>(env,'SELECT parse_status,import_status,project_id,project_confirmed,lot,message_count,imported_messages,attachment_refs FROM export_conversations WHERE user_id=? AND batch_id=?',user,b.id);
  const analyses=await many<Row>(env,'SELECT lot,kind FROM export_analyses WHERE user_id=? AND batch_id=?',user,b.id);
- return coverageOf(rows as any[],analyses as any[],b.declared_total);
+ const refs=await many<Row>(env,'SELECT link_status,COUNT(*) AS n FROM export_attachment_refs WHERE user_id=? AND batch_id=? GROUP BY link_status',user,b.id);
+ const files=await one<Row>(env,"SELECT COUNT(*) AS n,SUM(status='hashed') AS hashed FROM export_files WHERE user_id=? AND batch_id=?",user,b.id);
+ const by=(k:string)=>Number(refs.find(r=>r.link_status===k)?.n||0),total=refs.reduce((s2,r)=>s2+Number(r.n),0);
+ const attachments=total||files?.n?{referenced:total,in_archive:by('in_archive'),ambiguous:by('ambiguous'),referenced_only:by('referenced_only')+by('unlinked'),files_indexed:Number(files?.n||0),files_hashed:Number(files?.hashed||0)}:undefined;
+ return coverageOf(rows as any[],analyses as any[],b.declared_total,{duplicates:Number(b.duplicate_count||0),attachments});
 }
 exportsRoute.get('/',async c=>{
  const user=userId(c),batches=await many<Row>(c.env,'SELECT * FROM export_batches WHERE user_id=? ORDER BY created_at DESC LIMIT 20',user),out=[];
@@ -41,12 +45,13 @@ exportsRoute.post('/',async c=>{
 });
 exportsRoute.post('/:id/conversations',async c=>{
  const user=userId(c),b=await batchOf(c.env,user,c.req.param('id')),d=z.object({rows:z.array(rowInput).min(1).max(300)}).parse(await jsonBody(c));
- const st=d.rows.map(r=>c.env.DB.prepare('INSERT INTO export_conversations(id,user_id,batch_id,source_id,title,created_time,updated_time,message_count,node_count,branch_count,attachment_refs,non_text_parts,parse_status,parse_note) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(batch_id,source_id) DO NOTHING')
-  .bind(uid(),user,b.id,r.source_id,r.title||'Sans titre',r.created_time,r.updated_time,r.message_count,r.node_count,r.branch_count,r.attachment_refs,r.non_text_parts,r.parse_status,r.parse_note));
- for(let i=0;i<st.length;i+=60)await c.env.DB.batch(st.slice(i,i+60));
+ const st=d.rows.map(r=>c.env.DB.prepare('INSERT INTO export_conversations(id,user_id,batch_id,source_id,title,created_time,updated_time,message_count,node_count,branch_count,attachment_refs,non_text_parts,parse_status,parse_note,segment) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(batch_id,source_id) DO NOTHING')
+  .bind(uid(),user,b.id,r.source_id,r.title||'Sans titre',r.created_time,r.updated_time,r.message_count,r.node_count,r.branch_count,r.attachment_refs,r.non_text_parts,r.parse_status,r.parse_note,r.segment));
+ let inserted=0;const ignored:string[]=[];
+ for(let i=0;i<st.length;i+=60){const res=await c.env.DB.batch(st.slice(i,i+60));res.forEach((x,k)=>{const n=Number(x.meta?.changes||0);inserted+=n;if(!n)ignored.push(d.rows[i+k].source_id);});}
  const n=(await one<Row>(c.env,'SELECT COUNT(*) AS n FROM export_conversations WHERE user_id=? AND batch_id=?',user,b.id))?.n||0;
  await run(c.env,"UPDATE export_batches SET conversation_count=?,status=CASE WHEN status='inventory' AND ?>=declared_total THEN 'inventoried' ELSE status END WHERE id=? AND user_id=?",n,n,b.id,user);
- return c.json({inventoried:n,declared:b.declared_total});
+ return c.json({inventoried:n,declared:b.declared_total,inserted,already_present:d.rows.length-inserted,ignored});
 });
 exportsRoute.get('/:id/conversations',async c=>{
  const user=userId(c),b=await batchOf(c.env,user,c.req.param('id')),{limit,offset}=page(c),q=(c.req.query('q')||'').trim(),lot=c.req.query('lot')||'',project=c.req.query('project')||'',status=c.req.query('status')||'';
@@ -107,6 +112,85 @@ exportsRoute.delete('/:id',async c=>{
  await run(c.env,'DELETE FROM export_batches WHERE id=? AND user_id=?',b.id,user);
  await event(c.env,user,'export_removed','Inventaire d’export retiré (les messages déjà importés dans la mémoire sont conservés) : '+b.filename);
  return c.json({ok:true});
+});
+
+/* ---------- Segments, fichiers de l'archive, pièces jointes, bilan chiffré ---------- */
+exportsRoute.get('/:id/segments',async c=>{const user=userId(c),b=await batchOf(c.env,user,c.req.param('id'));return c.json({items:await many<Row>(c.env,'SELECT name,size,sha256,conversation_count,duplicate_count,status,note,created_at FROM export_segments WHERE user_id=? AND batch_id=? ORDER BY name',user,b.id)});});
+/** Enregistre la fin de l'inventaire d'un segment. Idempotent : même nom et même empreinte = déjà fait ; même nom mais autre empreinte = autre export, refusé. */
+exportsRoute.post('/:id/segments',async c=>{
+ const user=userId(c),b=await batchOf(c.env,user,c.req.param('id')),d=z.object({name:z.string().min(1).max(200),size:z.number().int().min(0),sha256:z.string().regex(/^[0-9a-f]{64}$/),conversation_count:z.number().int().min(0).max(200000),duplicates:z.number().int().min(0).max(200000).default(0),
+  status:z.enum(['inventoried','too_large','unreadable','invalid_json']),note:z.string().max(500).default('')}).parse(await jsonBody(c));
+ const cur=await one<Row>(c.env,'SELECT * FROM export_segments WHERE batch_id=? AND name=? AND user_id=?',b.id,d.name,user);
+ if(cur){
+  if(cur.sha256!==d.sha256)fail(409,'Le segment « '+d.name+' » existe déjà avec un contenu différent : ce n’est pas le même export. Importez-le comme un nouvel export.');
+  if(cur.status==='inventoried'||d.status!=='inventoried')return c.json({resumed:true,status:cur.status});
+  // Un segment resté illisible ou trop gros peut être repris plus tard : on le met à jour une seule fois.
+  await run(c.env,'UPDATE export_segments SET status=?,conversation_count=?,duplicate_count=?,note=?,size=? WHERE id=? AND user_id=?',d.status,d.conversation_count,d.duplicates,d.note,d.size,cur.id,user);
+  await run(c.env,'UPDATE export_batches SET declared_total=declared_total+?,duplicate_count=duplicate_count+? WHERE id=? AND user_id=?',d.conversation_count,d.duplicates,b.id,user);
+  return c.json({resumed:false,updated:true});
+ }
+ await run(c.env,'INSERT INTO export_segments(id,user_id,batch_id,name,size,sha256,conversation_count,duplicate_count,status,note,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)',uid(),user,b.id,d.name,d.size,d.sha256,d.conversation_count,d.duplicates,d.status,d.note,now());
+ if(d.status==='inventoried')await run(c.env,'UPDATE export_batches SET declared_total=declared_total+?,duplicate_count=duplicate_count+? WHERE id=? AND user_id=?',d.conversation_count,d.duplicates,b.id,user);
+ return c.json({resumed:false},201);
+});
+const fileInput=z.object({entry_name:z.string().min(1).max(500),size:z.number().int().min(0),compressed_size:z.number().int().min(0),sniff_kind:z.string().max(30).default(''),sniff_mime:z.string().max(80).default(''),sha256:z.string().regex(/^[0-9a-f]{64}$/).nullable().default(null),
+ status:z.enum(['hashed','indexed','unsafe_name','encrypted','unsupported','suspicious','failed']),note:z.string().max(300).default('')});
+exportsRoute.post('/:id/files',async c=>{
+ const user=userId(c),b=await batchOf(c.env,user,c.req.param('id')),d=z.object({rows:z.array(fileInput).min(1).max(300)}).parse(await jsonBody(c));
+ const st=d.rows.map(r=>{
+  // Le serveur recontrôle le nom : un nom dangereux n'est jamais présenté comme sûr, quoi que dise le client.
+  const bad=entryNameProblem(r.entry_name),status=bad&&r.status==='hashed'?'unsafe_name':r.status;
+  return c.env.DB.prepare('INSERT INTO export_files(id,user_id,batch_id,entry_name,size,compressed_size,sniff_kind,sniff_mime,sha256,status,note,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(batch_id,entry_name) DO UPDATE SET sha256=COALESCE(excluded.sha256,export_files.sha256),sniff_kind=CASE WHEN excluded.sniff_kind!=\'\' THEN excluded.sniff_kind ELSE export_files.sniff_kind END,sniff_mime=CASE WHEN excluded.sniff_mime!=\'\' THEN excluded.sniff_mime ELSE export_files.sniff_mime END,status=CASE WHEN excluded.status=\'hashed\' OR export_files.status!=\'hashed\' THEN excluded.status ELSE export_files.status END,note=excluded.note')
+   .bind(uid(),user,b.id,r.entry_name,r.size,r.compressed_size,r.sniff_kind,r.sniff_mime,r.sha256,status,bad?('Nom inhabituel : '+bad).slice(0,300):r.note,now());});
+ for(let i=0;i<st.length;i+=60)await c.env.DB.batch(st.slice(i,i+60));
+ return c.json({saved:d.rows.length});
+});
+exportsRoute.get('/:id/files',async c=>{
+ const user=userId(c),b=await batchOf(c.env,user,c.req.param('id')),{limit,offset}=page(c),status=c.req.query('status')||'',kind=c.req.query('kind')||'',q=(c.req.query('q')||'').trim();
+ const rows=await many<Row>(c.env,"SELECT f.id,f.entry_name,f.size,f.compressed_size,f.sniff_kind,f.sniff_mime,f.sha256,f.status,f.note,(SELECT COUNT(*) FROM export_attachment_refs r WHERE r.file_id=f.id AND r.user_id=f.user_id) AS linked_refs FROM export_files f WHERE f.user_id=? AND f.batch_id=? AND (?='' OR f.status=?) AND (?='' OR f.sniff_kind=?) AND (?='' OR f.entry_name LIKE ? ESCAPE '\\') ORDER BY f.entry_name LIMIT ? OFFSET ?",user,b.id,status,status,kind,kind,q,like(q),limit+1,offset);
+ const kinds=await many<Row>(c.env,'SELECT sniff_kind,COUNT(*) AS n FROM export_files WHERE user_id=? AND batch_id=? GROUP BY sniff_kind ORDER BY n DESC',user,b.id);
+ return c.json({items:rows.slice(0,limit),next:rows.length>limit?offset+limit:null,kinds});
+});
+exportsRoute.post('/:id/attachments',async c=>{
+ const user=userId(c),b=await batchOf(c.env,user,c.req.param('id')),d=z.object({items:z.array(z.object({source_id:z.string().min(1).max(200),refs:z.array(z.object({ref_key:z.string().min(1).max(200),name:z.string().max(200).default(''),mime:z.string().max(100).default(''),size:z.number().int().min(0).nullable().default(null),message_key:z.string().max(200).default('')})).max(200)})).min(1).max(100)}).parse(await jsonBody(c));
+ let saved=0;const st:any[]=[];
+ for(const it of d.items){
+  const conv=await one<Row>(c.env,'SELECT id FROM export_conversations WHERE user_id=? AND batch_id=? AND source_id=?',user,b.id,it.source_id);if(!conv)continue;
+  for(const r of it.refs){st.push(c.env.DB.prepare('INSERT INTO export_attachment_refs(id,user_id,batch_id,conversation_id,ref_key,name,mime,size,message_key) VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT(batch_id,conversation_id,ref_key) DO NOTHING').bind(uid(),user,b.id,conv.id,r.ref_key,r.name,r.mime,r.size,r.message_key));saved++;}
+ }
+ for(let i=0;i<st.length;i+=60)await c.env.DB.batch(st.slice(i,i+60));
+ return c.json({saved});
+});
+/** Rapproche chaque référence des fichiers de l'archive. Recalculé à chaque appel : le résultat ne dépend que des données enregistrées. */
+exportsRoute.post('/:id/link-attachments',async c=>{
+ const user=userId(c),b=await batchOf(c.env,user,c.req.param('id'));
+ const files=(await many<Row>(c.env,'SELECT id,entry_name FROM export_files WHERE user_id=? AND batch_id=?',user,b.id)).map(r=>({id:String(r.id),entry_name:String(r.entry_name)}));
+ const refs=await many<Row>(c.env,'SELECT id,ref_key FROM export_attachment_refs WHERE user_id=? AND batch_id=?',user,b.id);
+ const counts={in_archive:0,ambiguous:0,referenced_only:0};const st:any[]=[];
+ for(const r of refs){const m=files.length?matchAttachment(r.ref_key,files):{status:'referenced_only' as const,file_id:null};(counts as any)[m.status]++;
+  st.push(c.env.DB.prepare('UPDATE export_attachment_refs SET link_status=?,file_id=? WHERE id=? AND user_id=?').bind(files.length?m.status:'unlinked',m.file_id,r.id,user));}
+ for(let i=0;i<st.length;i+=60)await c.env.DB.batch(st.slice(i,i+60));
+ return c.json({refs:refs.length,files:files.length,...counts,notice:files.length?'Rapprochement par nom de fichier : à vérifier. Rien n’est copié dans Atelier.':'Aucun fichier de l’archive indexé : tout reste « non rapproché ».'});
+});
+exportsRoute.get('/:id/attachments',async c=>{
+ const user=userId(c),b=await batchOf(c.env,user,c.req.param('id')),{limit,offset}=page(c),status=c.req.query('status')||'';
+ const rows=await many<Row>(c.env,"SELECT r.id,r.ref_key,r.name,r.mime,r.size,r.message_key,r.link_status,e.title AS conversation_title,e.source_id,f.entry_name,f.sha256,f.sniff_kind FROM export_attachment_refs r JOIN export_conversations e ON e.id=r.conversation_id LEFT JOIN export_files f ON f.id=r.file_id WHERE r.user_id=? AND r.batch_id=? AND (?='' OR r.link_status=?) ORDER BY e.created_time,r.ref_key LIMIT ? OFFSET ?",user,b.id,status,status,limit+1,offset);
+ return c.json({items:rows.slice(0,limit),next:rows.length>limit?offset+limit:null});
+});
+/** Bilan chiffré : périodes, comparaison inventaire / import, recoupements avec d'autres exports. Rien n'est calculé à partir de suppositions. */
+exportsRoute.get('/:id/summary',async c=>{
+ const user=userId(c),b=await batchOf(c.env,user,c.req.param('id')),since=/^\d{4}-\d{2}-\d{2}/.test(c.req.query('since')||'')?String(c.req.query('since')).slice(0,10)+'T00:00:00.000Z':'2026-09-01T00:00:00.000Z';
+ const inv=await one<Row>(c.env,'SELECT COUNT(*) AS conversations,COALESCE(SUM(message_count),0) AS messages,MIN(created_time) AS first_created,MAX(created_time) AS last_created,MAX(updated_time) AS last_activity,SUM(created_time IS NULL) AS undated,SUM(created_time<?) AS before_since,SUM(created_time>=?) AS since_or_after,COALESCE(SUM(branch_count),0) AS branches FROM export_conversations WHERE user_id=? AND batch_id=?',since,since,user,b.id);
+ const months=await many<Row>(c.env,"SELECT substr(created_time,1,7) AS month,COUNT(*) AS conversations,SUM(message_count) AS messages FROM export_conversations WHERE user_id=? AND batch_id=? AND created_time IS NOT NULL GROUP BY month ORDER BY month DESC LIMIT 36",user,b.id);
+ const imp=await one<Row>(c.env,"SELECT COUNT(DISTINCT bc.id) AS conversations,COUNT(m.id) AS messages,MIN(m.original_date) AS first_date,MAX(m.original_date) AS last_date FROM bridge_conversations bc JOIN bridge_spaces s ON s.id=bc.space_id JOIN bridge_messages m ON m.conversation_id=bc.id WHERE s.owner_id=? AND bc.provider=? AND bc.source_key IN (SELECT ?||':'||source_id FROM export_conversations WHERE user_id=? AND batch_id=?)",user,b.provider,b.provider,user,b.id);
+ const overlap=await one<Row>(c.env,"SELECT COUNT(*) AS n FROM export_conversations a WHERE a.user_id=? AND a.batch_id=? AND EXISTS(SELECT 1 FROM export_conversations x JOIN export_batches xb ON xb.id=x.batch_id WHERE x.user_id=a.user_id AND x.batch_id!=a.batch_id AND x.source_id=a.source_id AND xb.provider=?)",user,b.id,b.provider);
+ const segs=await many<Row>(c.env,'SELECT status,COUNT(*) AS n FROM export_segments WHERE user_id=? AND batch_id=? GROUP BY status',user,b.id);
+ const notes:string[]=[];
+ if(Number(inv?.undated||0))notes.push(inv!.undated+' conversation(s) sans date : non comptées dans les périodes.');
+ if(Number(imp?.messages||0)>Number(inv?.messages||0))notes.push('Plus de messages importés que d’inventoriés : l’import compte aussi des messages qui n’avaient pas de texte à l’inventaire ; comparez conversation par conversation.');
+ return c.json({since,inventory:{...inv,undated:Number(inv?.undated||0),before_since:Number(inv?.before_since||0),since_or_after:Number(inv?.since_or_after||0)},months,imported:{conversations:Number(imp?.conversations||0),messages:Number(imp?.messages||0),first_date:imp?.first_date||null,last_date:imp?.last_date||null},
+  other_exports_overlap:Number(overlap?.n||0),segments:segs,duplicates_in_file:Number(b.duplicate_count||0),notes,
+  warning:'La période est lue dans le contenu réel de l’export. Atelier ne filtre rien : si l’export a été demandé « depuis le 1er septembre », la répartition ci-dessus le confirme ou non.'});
 });
 
 /* ---------- Analyse de l'historique par les IA déjà connectées (Gemini, Groq, Mistral) ---------- */

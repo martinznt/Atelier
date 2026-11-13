@@ -12,3 +12,9 @@
 7. **Audit de référence** (dans Pilotage) : liste tous les fichiers du dépôt à un commit précis. « Intégral » n’apparaît que si tout le code est marqué lu intégralement.
 
 Ce qu’Atelier ne fait pas : écrire du code, fusionner, décider à votre place, envoyer un prompt tout seul.
+
+## Retrouver, importer, réfléchir (13 novembre 2026)
+
+- **Retrouver** : la loupe de l'en-tête cherche partout (chat, historique importé, décisions, tâches, prompts, documents, fichiers, pièces jointes, questions). Les filtres sont repliés sous « Filtres ». Un message de l'historique importé s'ouvre dans son contexte.
+- **Importer un export ChatGPT** : Mémoire → Export ChatGPT → choisir le ZIP (même découpé en plusieurs fichiers). Gardez l'écran ouvert ; vous pouvez annuler et reprendre. Puis « Bilan chiffré » pour vérifier les dates, « Archive » pour indexer les pièces jointes, « Conversations et lots » pour choisir le projet, voir l'aperçu et importer. Détail : `docs/IMPORT_HISTORIQUE.md`.
+- **Réfléchir** : Discussions → « Contexte utile pour réfléchir ». Décrivez le sujet : Atelier liste ce que le projet sait déjà (décisions confirmées, propositions, anciennes discussions) avec la fiabilité de chaque ligne ; vous copiez ce que vous voulez avec ses sources. Aucune IA n'est consultée.
