@@ -95,3 +95,6 @@ html{color:var(--ink);background:var(--bg)}
 body{color:var(--ink);background:var(--bg)}
 [data-theme=dark] .progress-line{background:#35463b}
 [data-theme=dark] .message-focus{outline-color:#a4bd99}
+.search-group{margin:14px 0}.search-group h4{margin:0 0 6px;font-size:14px}
+.search-results button{display:flex;flex-direction:column;gap:2px;text-align:left;width:100%;min-height:48px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;background:var(--surface);min-width:0}
+.search-results button strong,.search-results button span,.search-results button small{overflow-wrap:anywhere}.search-results button span{font-size:12px;color:var(--muted);line-height:1.5}

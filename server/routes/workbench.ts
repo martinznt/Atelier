@@ -7,6 +7,7 @@ import {nextAction,type Guide} from '../project-guide.ts';
 import {CONVERSATION_CATEGORIES,answerText,progressDetail,questionKey,questionsCsv,resumeText} from '../workbench-core.ts';
 import {secretFindings,sha256Hex} from '../handoff-core.ts';
 import {readingState,triggeredAlerts,type Reading} from '../claude-advisor.ts';
+import {FIND_LABEL,HAS_PROVIDER,HAS_ROLE,HAS_STATUS,escapeLike,excerptAround,parseKinds,type FindKind,type Hit} from '../find-core.ts';
 import type {AppEnv,Env,Row} from '../types.ts';
 export const workbench=new Hono<AppEnv>();
 const like=(q:string)=>'%'+q.slice(0,120).replace(/[\\%_]/g,m=>'\\'+m)+'%';
@@ -338,4 +339,65 @@ workbench.get('/resume',async c=>{
   decisions:decisions as any[],questions:questions as any[],actions:actions.map(a=>({id:a.id,title:a.title,blocking:Boolean(a.blocking)})),
   tasks:g.rows.map(t=>({id:t.id,title:t.title,status:t.status,owner:t.owner,next_action:t.next_action,blocking_question:t.blocking_question})),nextAction:{title:step.title,do:step.do},documents:documents as any[]});
  return c.json({text,content_hash:await sha256Hex(text)});
+});
+
+/* ---------- Recherche unifiée ---------- */
+const findInput=z.object({q:z.string().trim().min(2).max(120),project:z.string().uuid().optional(),kinds:z.string().max(200).optional(),provider:z.string().max(40).optional(),role:z.string().max(20).optional(),status:z.string().max(30).optional(),
+ from:z.string().regex(/^\d{4}-\d{2}-\d{2}/).optional(),to:z.string().regex(/^\d{4}-\d{2}-\d{2}/).optional(),per:z.coerce.number().int().min(1).max(30).default(8),offset:z.coerce.number().int().min(0).max(100000).default(0)});
+workbench.get('/find',async c=>{
+ const user=userId(c),f=findInput.parse(Object.fromEntries(new URL(c.req.url).searchParams));
+ const project=f.project?(await owned<Row>(c.env,'projects',f.project,user)):null;
+ const kinds=parseKinds(f.kinds),like2=escapeLike(f.q),from=f.from?f.from.slice(0,10)+'T00:00:00.000Z':'',to=f.to?f.to.slice(0,10)+'T23:59:59.999Z':'',prov=(f.provider||'').toLowerCase(),role=f.role||'',status=f.status||'';
+ const lim=f.per+1,off=kinds.length===1?f.offset:0;
+ const pj=project?.id||'';
+ const groups:{kind:FindKind;label:string;items:Hit[];more:boolean}[]=[];
+ const push=(kind:FindKind,rows:Row[],map:(r:Row)=>Hit)=>groups.push({kind,label:FIND_LABEL[kind],items:rows.slice(0,f.per).map(map),more:rows.length>f.per});
+ const searched:FindKind[]=[],skipped:{kind:FindKind;reason:string}[]=[];
+ for(const kind of kinds){
+  if(status&&!HAS_STATUS.has(kind)){skipped.push({kind,reason:'ce type n’a pas de statut'});continue;}
+  if(role&&!HAS_ROLE.has(kind)){skipped.push({kind,reason:'ce type n’a pas de rôle'});continue;}
+  if(prov&&!HAS_PROVIDER.has(kind)){skipped.push({kind,reason:'ce type n’a pas de fournisseur'});continue;}
+  if(pj&&kind==='attachment'){skipped.push({kind,reason:'les pièces jointes ne sont pas rattachées à un projet'});continue;}
+  searched.push(kind);
+  if(kind==='project'){
+   const rows=await many<Row>(c.env,"SELECT p.id,p.name,p.description,p.updated_at FROM projects p WHERE p.user_id=? AND (?='' OR p.id=?) AND (p.name LIKE ? ESCAPE '\\' OR p.description LIKE ? ESCAPE '\\') AND (?='' OR p.updated_at>=?) AND (?='' OR p.updated_at<=?) ORDER BY p.updated_at DESC LIMIT ? OFFSET ?",user,pj,pj,like2,like2,from,from,to,to,lim,off);
+   push(kind,rows,r=>({kind,id:r.id,title:r.name,excerpt:excerptAround(r.description||r.name,f.q),project_id:r.id,project_name:r.name,date:r.updated_at,provider:null,status:null,role:null,open:{tab:'projects',project_id:r.id}}));
+  }else if(kind==='memory'){
+   const rows=await many<Row>(c.env,"SELECT m.id,m.title,m.content,m.updated_at,m.project_id,p.name AS project_name FROM memory m LEFT JOIN projects p ON p.id=m.project_id AND p.user_id=m.user_id WHERE m.user_id=? AND (?='' OR m.project_id=?) AND (m.title LIKE ? ESCAPE '\\' OR m.content LIKE ? ESCAPE '\\') AND (?='' OR m.updated_at>=?) AND (?='' OR m.updated_at<=?) ORDER BY m.updated_at DESC LIMIT ? OFFSET ?",user,pj,pj,like2,like2,from,from,to,to,lim,off);
+   push(kind,rows,r=>({kind,id:r.id,title:r.title,excerpt:excerptAround(r.content||r.title,f.q),project_id:r.project_id,project_name:r.project_name,date:r.updated_at,provider:null,status:null,role:null,open:{tab:'projects',project_id:r.project_id}}));
+  }else if(kind==='chat'){
+   const rows=await many<Row>(c.env,"SELECT m.id,m.seq,m.role,m.provider,m.created_at,m.content,m.conversation_id,cv.title AS conv_title,cv.project_id,p.name AS project_name FROM messages m JOIN conversations cv ON cv.id=m.conversation_id AND cv.user_id=m.user_id JOIN projects p ON p.id=cv.project_id AND p.user_id=m.user_id WHERE m.user_id=? AND (?='' OR cv.project_id=?) AND m.content LIKE ? ESCAPE '\\' AND (?='' OR m.role=?) AND (?='' OR LOWER(COALESCE(m.provider,''))=?) AND (?='' OR m.created_at>=?) AND (?='' OR m.created_at<=?) ORDER BY m.created_at DESC LIMIT ? OFFSET ?",user,pj,pj,like2,role,role,prov,prov,from,from,to,to,lim,off);
+   push(kind,rows,r=>({kind,id:r.id,title:r.conv_title,excerpt:excerptAround(r.content,f.q),project_id:r.project_id,project_name:r.project_name,date:r.created_at,provider:r.provider,status:null,role:r.role,open:{tab:'chat',project_id:r.project_id,conversation_id:r.conversation_id,message_id:r.id,seq:r.seq}}));
+  }else if(kind==='imported'){
+   const rows=await many<Row>(c.env,"SELECT m.id,m.seq,m.role,m.original_date,m.source_key AS message_key,m.content,bc.id AS conv_id,bc.title,bc.provider,bc.source_key AS conv_key,s.id AS space_id,bps.project_id,p.name AS project_name FROM bridge_messages m JOIN bridge_conversations bc ON bc.id=m.conversation_id JOIN bridge_spaces s ON s.id=bc.space_id LEFT JOIN bridge_project_spaces bps ON bps.space_id=s.id AND bps.user_id=s.owner_id LEFT JOIN projects p ON p.id=bps.project_id AND p.user_id=s.owner_id WHERE s.owner_id=? AND m.owner_id=? AND (?='' OR bps.project_id=?) AND m.content LIKE ? ESCAPE '\\' AND (?='' OR m.role=?) AND (?='' OR LOWER(bc.provider)=?) AND (?='' OR m.original_date>=?) AND (?='' OR m.original_date<=?) ORDER BY COALESCE(m.original_date,'') DESC,m.seq DESC LIMIT ? OFFSET ?",user,user,pj,pj,like2,role,role,prov,prov,from,from,to,to,lim,off);
+   push(kind,rows,r=>({kind,id:r.id,title:r.title,excerpt:excerptAround(r.content,f.q),project_id:r.project_id,project_name:r.project_name,date:r.original_date,provider:r.provider,status:null,role:r.role,open:{tab:'projects',project_id:r.project_id,bridge_conversation_id:r.conv_id,seq:r.seq,message_id:r.id,source_conversation:String(r.conv_key||'').replace(/^[^:]*:/,''),source_message:r.message_key}}));
+  }else if(kind==='decision'){
+   const rows=await many<Row>(c.env,"SELECT d.id,d.title,d.reason,d.status,d.decided_at,d.updated_at,d.source_ref,d.supersedes_id,d.project_id,p.name AS project_name FROM project_decisions d JOIN projects p ON p.id=d.project_id AND p.user_id=d.user_id WHERE d.user_id=? AND (?='' OR d.project_id=?) AND (d.title LIKE ? ESCAPE '\\' OR d.reason LIKE ? ESCAPE '\\') AND (?='' OR d.status=?) AND (?='' OR COALESCE(d.decided_at,d.updated_at)>=?) AND (?='' OR COALESCE(d.decided_at,d.updated_at)<=?) ORDER BY d.updated_at DESC LIMIT ? OFFSET ?",user,pj,pj,like2,like2,status,status,from,from,to,to,lim,off);
+   push(kind,rows,r=>({kind,id:r.id,title:r.title,excerpt:excerptAround(r.reason||r.title,f.q)+(r.source_ref?' · source : '+r.source_ref:''),project_id:r.project_id,project_name:r.project_name,date:r.decided_at||r.updated_at,provider:null,status:r.status,role:null,open:{tab:'pilotage',project_id:r.project_id,decision_id:r.id}}));
+  }else if(kind==='task'){
+   const rows=await many<Row>(c.env,"SELECT t.id,t.title,t.objective,t.proof,t.status,t.updated_at,t.project_id,p.name AS project_name FROM plan_tasks t JOIN projects p ON p.id=t.project_id AND p.user_id=t.user_id WHERE t.user_id=? AND (?='' OR t.project_id=?) AND (t.title LIKE ? ESCAPE '\\' OR t.objective LIKE ? ESCAPE '\\' OR t.proof LIKE ? ESCAPE '\\') AND (?='' OR t.status=?) AND (?='' OR t.updated_at>=?) AND (?='' OR t.updated_at<=?) ORDER BY t.updated_at DESC LIMIT ? OFFSET ?",user,pj,pj,like2,like2,like2,status,status,from,from,to,to,lim,off);
+   push(kind,rows,r=>({kind,id:r.id,title:r.title,excerpt:excerptAround(r.objective||r.proof||r.title,f.q),project_id:r.project_id,project_name:r.project_name,date:r.updated_at,provider:null,status:r.status,role:null,open:{tab:'pilotage',project_id:r.project_id,task_id:r.id}}));
+  }else if(kind==='prompt'){
+   const rows=await many<Row>(c.env,"SELECT pr.id,pr.code,pr.title,pr.objective,pr.status,pr.provider,pr.created_at,pr.project_id,p.name AS project_name FROM prompts pr LEFT JOIN projects p ON p.id=pr.project_id AND p.user_id=pr.user_id WHERE pr.user_id=? AND (?='' OR pr.project_id=?) AND (pr.title LIKE ? ESCAPE '\\' OR pr.code LIKE ? ESCAPE '\\' OR pr.objective LIKE ? ESCAPE '\\' OR EXISTS(SELECT 1 FROM prompt_versions v WHERE v.prompt_id=pr.id AND v.user_id=pr.user_id AND v.body LIKE ? ESCAPE '\\')) AND (?='' OR pr.status=?) AND (?='' OR LOWER(pr.provider)=?) AND (?='' OR pr.created_at>=?) AND (?='' OR pr.created_at<=?) ORDER BY pr.updated_at DESC LIMIT ? OFFSET ?",user,pj,pj,like2,like2,like2,like2,status,status,prov,prov,from,from,to,to,lim,off);
+   push(kind,rows,r=>({kind,id:r.id,title:r.code+' — '+r.title,excerpt:excerptAround(r.objective||r.title,f.q),project_id:r.project_id,project_name:r.project_name,date:r.created_at,provider:r.provider||null,status:r.status,role:null,open:{tab:'memory',prompt_id:r.id}}));
+  }else if(kind==='document'){
+   const rows=await many<Row>(c.env,"SELECT d.id,d.title,d.note,d.doc_type,d.reliability,d.created_at,d.project_id,p.name AS project_name FROM project_documents d JOIN projects p ON p.id=d.project_id AND p.user_id=d.user_id WHERE d.user_id=? AND (?='' OR d.project_id=?) AND (d.title LIKE ? ESCAPE '\\' OR d.note LIKE ? ESCAPE '\\' OR d.origin LIKE ? ESCAPE '\\') AND (?='' OR d.created_at>=?) AND (?='' OR d.created_at<=?) ORDER BY d.created_at DESC LIMIT ? OFFSET ?",user,pj,pj,like2,like2,like2,from,from,to,to,lim,off);
+   push(kind,rows,r=>({kind,id:r.id,title:r.title,excerpt:excerptAround(r.note||r.title,f.q)+' · '+r.doc_type+' · fiabilité : '+r.reliability,project_id:r.project_id,project_name:r.project_name,date:r.created_at,provider:null,status:null,role:null,open:{tab:'pilotage',project_id:r.project_id,document_id:r.id}}));
+  }else if(kind==='file'){
+   const rows=await many<Row>(c.env,"SELECT f.id,f.name,f.mime,f.updated_at,f.project_id,p.name AS project_name FROM files f JOIN projects p ON p.id=f.project_id AND p.user_id=f.user_id WHERE f.user_id=? AND f.trashed=0 AND (?='' OR f.project_id=?) AND f.name LIKE ? ESCAPE '\\' AND (?='' OR f.updated_at>=?) AND (?='' OR f.updated_at<=?) ORDER BY f.updated_at DESC LIMIT ? OFFSET ?",user,pj,pj,like2,from,from,to,to,lim,off);
+   push(kind,rows,r=>({kind,id:r.id,title:r.name,excerpt:r.mime,project_id:r.project_id,project_name:r.project_name,date:r.updated_at,provider:null,status:null,role:null,open:{tab:'files',project_id:r.project_id,file_id:r.id}}));
+  }else if(kind==='attachment'){
+   const rows=await many<Row>(c.env,"SELECT r.id,r.name,r.ref_key,r.mime,r.link_status,e.title AS conv_title,e.source_id,e.created_time,b.provider,b.id AS batch_id,f.entry_name FROM export_attachment_refs r JOIN export_conversations e ON e.id=r.conversation_id AND e.user_id=r.user_id JOIN export_batches b ON b.id=r.batch_id AND b.user_id=r.user_id LEFT JOIN export_files f ON f.id=r.file_id WHERE r.user_id=? AND (r.name LIKE ? ESCAPE '\\' OR r.ref_key LIKE ? ESCAPE '\\') AND (?='' OR LOWER(b.provider)=?) AND (?='' OR e.created_time>=?) AND (?='' OR e.created_time<=?) ORDER BY e.created_time DESC LIMIT ? OFFSET ?",user,like2,like2,prov,prov,from,from,to,to,lim,off);
+   push(kind,rows,r=>({kind,id:r.id,title:r.name||r.ref_key,excerpt:'Citée dans « '+r.conv_title+' » · '+({in_archive:'fichier présent dans l’archive : '+r.entry_name,ambiguous:'plusieurs fichiers possibles',referenced_only:'référencée seulement, fichier absent',unlinked:'archive non indexée'} as Record<string,string>)[r.link_status],project_id:null,project_name:null,date:r.created_time,provider:r.provider,status:null,role:null,open:{tab:'memory',batch_id:r.batch_id,source_conversation:r.source_id}}));
+  }else if(kind==='question'){
+   const rows=await many<Row>(c.env,"SELECT q.id,q.question,q.reason,q.status,q.created_at,q.project_id,p.name AS project_name FROM atelier_questions q LEFT JOIN projects p ON p.id=q.project_id AND p.user_id=q.user_id WHERE q.user_id=? AND (?='' OR q.project_id=?) AND (q.question LIKE ? ESCAPE '\\' OR q.reason LIKE ? ESCAPE '\\') AND (?='' OR q.status=?) AND (?='' OR q.created_at>=?) AND (?='' OR q.created_at<=?) ORDER BY q.created_at DESC LIMIT ? OFFSET ?",user,pj,pj,like2,like2,status,status,from,from,to,to,lim,off);
+   push(kind,rows,r=>({kind,id:r.id,title:r.question,excerpt:excerptAround(r.reason||r.question,f.q),project_id:r.project_id,project_name:r.project_name,date:r.created_at,provider:null,status:r.status,role:null,open:{tab:'inbox',question_id:r.id}}));
+  }else if(kind==='action'){
+   const rows=await many<Row>(c.env,"SELECT a.id,a.title,a.why,a.status,a.created_at,a.project_id,p.name AS project_name FROM martin_actions a LEFT JOIN projects p ON p.id=a.project_id AND p.user_id=a.user_id WHERE a.user_id=? AND (?='' OR a.project_id=?) AND (a.title LIKE ? ESCAPE '\\' OR a.why LIKE ? ESCAPE '\\') AND (?='' OR a.status=?) AND (?='' OR a.created_at>=?) AND (?='' OR a.created_at<=?) ORDER BY a.created_at DESC LIMIT ? OFFSET ?",user,pj,pj,like2,like2,status,status,from,from,to,to,lim,off);
+   push(kind,rows,r=>({kind,id:r.id,title:r.title,excerpt:excerptAround(r.why||r.title,f.q),project_id:r.project_id,project_name:r.project_name,date:r.created_at,provider:null,status:r.status,role:null,open:{tab:'inbox',action_id:r.id}}));
+  }
+ }
+ const shown=groups.reduce((n,g)=>n+g.items.length,0);
+ return c.json({query:f.q,groups:groups.filter(g=>g.items.length),searched,skipped,shown,next:kinds.length===1&&groups[0]?.more?off+f.per:null,
+  notice:'Recherche par texte exact dans le titre et le contenu. Atelier ne classe pas par pertinence : les plus récents d’abord.'});
 });

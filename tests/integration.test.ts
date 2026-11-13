@@ -1,3 +1,5 @@
+import {inventoryArchive,indexArchiveFiles,readConversations,Cancelled} from '../web/archive-import.ts';
+import {zipSync,deflateSync} from 'fflate';
 import {analysisStep} from '../server/history-run.ts';
 import {beforeAll,afterAll,describe,it,expect} from 'vitest';import {Miniflare,createFetchMock} from 'miniflare';import {build} from 'esbuild';import {readFile,readdir,mkdir} from 'node:fs/promises';import {unzipSync,strFromU8} from 'fflate';import {hashPassword,verifyPassword} from '../server/password';
 import {normalizeMigrationForD1} from './migration-sql.mjs';
@@ -1270,5 +1272,136 @@ describe('analyse de l’historique par Gemini, Groq et Mistral : accord, cache,
   expect((await db.prepare('SELECT COUNT(*) AS n FROM analysis_items WHERE user_id=?').bind(user).first<any>()).n).toBe(4);                        // les anciens éléments ne sont pas effacés
   expect((await json('/exports/'+batch+'/analysis/items')).body.items).toHaveLength(0);                                                           // mais ne sont plus présentés comme actuels
   const health=await (await mf.dispatchFetch(origin+'/api/health')).json() as any;expect(health.schema.applied).toContain('0020');
+ });
+});
+
+describe('import d’archive par segments : reprise, doublons, pièces jointes, archive hostile, cloisonnement',()=>{
+ const enc=(x:string)=>new TextEncoder().encode(x);
+ const PNG=new Uint8Array([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,1,2,3]);
+ const gpt=(id:string,title:string,t0:number,texts:[string,string][],extra:Record<string,any>={})=>({id,title,create_time:t0,update_time:t0+50,mapping:Object.fromEntries([['root',{id:'root',message:null,parent:null,children:['n0']}],...texts.map(([role,text],i)=>['n'+i,{id:'n'+i,parent:i?'n'+(i-1):'root',children:i<texts.length-1?['n'+(i+1)]:[],message:{id:'n'+i,author:{role},create_time:t0+i,content:{content_type:'text',parts:[text]},metadata:extra[i]||{}}}])])});
+ const seg0=[gpt('c-1','Mode cuisine',Date.parse('2026-08-20T10:00:00Z')/1000,[['user','Je veux un mode cuisine'],['assistant','Voici une idée']],{0:{attachments:[{id:'file-AAAA11',name:'plan.pdf',size:11,mime_type:'application/pdf'}]}}),gpt('c-2','Planning',Date.parse('2026-09-03T10:00:00Z')/1000,[['user','Planning hebdo'],['assistant','D’accord']])];
+ const seg1=[gpt('c-3','Sport',Date.parse('2026-10-05T10:00:00Z')/1000,[['user','Séances du lundi'],['assistant','Plan en 3 jours']],{0:{attachments:[{id:'file-ZZZZ99',name:'perdu.png'}]}}),gpt('c-2','Planning (doublon)',Date.parse('2026-09-03T10:00:00Z')/1000,[['user','Planning hebdo']])];
+ const files:Record<string,Uint8Array>={'conversations-000.json':enc(JSON.stringify(seg0)),'conversations-001.json':enc(JSON.stringify(seg1)),'user.json':enc('{}'),'file-AAAA11-plan.pdf':enc('%PDF-1.4 contenu'),'file-BBBB22.dat':PNG,'sans-extension':enc('Texte brut'),'../evil.txt':enc('x')};
+ const make=(f:Record<string,Uint8Array>,name='export.zip')=>new File([zipSync(f)],name);
+ let batch:any,aliceApi:any,bobApi:any;const apiFor=(cookie?:string)=>({post:async(p:string,b:unknown)=>{const r=await json(p,'POST',b,cookie);if(r.status>=400)throw Object.assign(new Error(r.status+' '+JSON.stringify(r.body)),{status:r.status});return r.body;},get:async(p:string)=>{const r=await json(p,'GET',undefined,cookie);if(r.status>=400)throw Object.assign(new Error(r.status+' '+JSON.stringify(r.body)),{status:r.status});return r.body;}});
+ it('inventaire d’un ZIP à plusieurs segments : tous reconnus, doublon entre segments compté, rien de manquant',async()=>{
+  aliceApi=apiFor();const r=await inventoryArchive(make(files),aliceApi);batch=r.batch;
+  expect(r.segments.map(x=>x.name)).toEqual(['conversations-000.json','conversations-001.json']);expect(r.segments.every(x=>x.status==='inventoried')).toBe(true);
+  expect(r.totals.conversations).toBe(3);expect(r.zip_entries).toBe(7);expect(r.other_entries).toBe(5);
+  const cov=(await json('/exports/'+batch.id+'/coverage')).body.coverage;
+  expect(cov.conversations).toMatchObject({declared:4,inventoried:3,duplicates:1,missing_from_inventory:0});
+  const segs=(await json('/exports/'+batch.id+'/segments')).body.items;expect(segs).toHaveLength(2);expect(segs[0].sha256).toMatch(/^[0-9a-f]{64}$/);
+  const rows=(await json('/exports/'+batch.id+'/conversations')).body.items;expect(rows.find((x:any)=>x.source_id==='c-3').segment).toBe('conversations-001.json');
+  expect(rows.find((x:any)=>x.source_id==='c-2').segment).toBe('conversations-000.json');expect(rows.find((x:any)=>x.source_id==='c-1').created_time).toBe('2026-08-20T10:00:00.000Z');
+ });
+ it('même archive importée deux fois : reprise sans doublon ; interruption puis reprise : mêmes chiffres',async()=>{
+  const again=await inventoryArchive(make(files),aliceApi);expect(again.batch.id).toBe(batch.id);expect(again.batch.resumed).toBe(true);expect(again.segments.every(x=>x.skipped)).toBe(true);
+  expect((await json('/exports/'+batch.id+'/coverage')).body.coverage.conversations).toMatchObject({declared:4,inventoried:3,duplicates:1});
+  // Annulation après le premier segment sur une archive différente, puis reprise complète.
+  const other={...files,'conversations-000.json':enc(JSON.stringify([...seg0,gpt('c-9','Autre',1780000000,[['user','Bonjour']])]))};
+  let stopAt=0;const ctl={signal:{aborted:false},onProgress:(p:any)=>{if(p.phase==='segments'&&p.done===1&&!stopAt){stopAt=1;ctl.signal.aborted=true;}}};
+  const cut=await inventoryArchive(make(other,'export2.zip'),aliceApi,ctl);expect(cut.cancelled).toBe(true);expect(cut.segments).toHaveLength(1);
+  const mid=(await json('/exports/'+cut.batch.id+'/coverage')).body.coverage.conversations;expect(mid.inventoried).toBe(3);expect(mid.declared).toBe(3);
+  const resumed=await inventoryArchive(make(other,'export2.zip'),aliceApi);expect(resumed.batch.id).toBe(cut.batch.id);expect(resumed.segments[0].skipped).toBe(true);
+  expect((await json('/exports/'+cut.batch.id+'/coverage')).body.coverage.conversations).toMatchObject({declared:5,inventoried:4,duplicates:1,missing_from_inventory:0});
+  expect((await json('/exports/'+cut.batch.id+'/conversations?limit=50')).body.items).toHaveLength(4);
+  const clash=await json('/exports/'+batch.id+'/segments','POST',{name:'conversations-000.json',size:5,sha256:'f'.repeat(64),conversation_count:1,duplicates:0,status:'inventoried'});expect(clash.status).toBe(409);      // même nom, autre contenu : autre export
+ });
+ it('index des fichiers : type réel, empreinte, nom dangereux, pièces jointes présentes ou seulement référencées',async()=>{
+  const r=await indexArchiveFiles(make(files),batch,aliceApi);expect(r).toMatchObject({total:5,hashed:4,problems:1,cancelled:false});
+  const list=(await json('/exports/'+batch.id+'/files')).body;
+  const by=(n:string)=>list.items.find((x:any)=>x.entry_name===n);
+  expect(by('file-BBBB22.dat')).toMatchObject({sniff_kind:'png',status:'hashed'});expect(by('file-AAAA11-plan.pdf').sniff_kind).toBe('pdf');expect(by('sans-extension').sniff_kind).toBe('text');
+  expect(by('file-BBBB22.dat').sha256).toBe((await import('node:crypto')).createHash('sha256').update(PNG).digest('hex'));
+  expect(by('../evil.txt')).toMatchObject({status:'unsafe_name',sha256:null});
+  const atts=(await json('/exports/'+batch.id+'/attachments')).body.items;
+  expect(atts.find((a:any)=>a.ref_key==='file-AAAA11')).toMatchObject({link_status:'in_archive',entry_name:'file-AAAA11-plan.pdf',sniff_kind:'pdf'});
+  expect(atts.find((a:any)=>a.ref_key==='file-ZZZZ99').link_status).toBe('referenced_only');
+  const cov=(await json('/exports/'+batch.id+'/coverage')).body.coverage.attachments;expect(cov).toMatchObject({referenced:2,in_archive:1,referenced_only:1,files_indexed:5,files_hashed:4});expect(cov.note).toContain('original reste dans votre archive');
+  const again=await indexArchiveFiles(make(files),batch,aliceApi);expect(again.skipped).toBe(4);expect(again.hashed).toBe(0);                                  // reprise : rien de refait
+  expect((await json('/exports/'+batch.id+'/files?kind=png')).body.items).toHaveLength(1);
+ });
+ it('bilan chiffré : période lue dans le contenu, comparaison inventaire / import, recoupement entre exports',async()=>{
+  const s=(await json('/exports/'+batch.id+'/summary?since=2026-09-01')).body;
+  expect(s.inventory).toMatchObject({conversations:3,before_since:1,since_or_after:2,undated:0});expect(s.inventory.first_created).toBe('2026-08-20T10:00:00.000Z');expect(s.inventory.last_created).toBe('2026-10-05T10:00:00.000Z');
+  expect(s.months.map((m:any)=>m.month)).toEqual(['2026-10','2026-09','2026-08']);expect(s.imported).toMatchObject({conversations:0,messages:0});expect(s.warning).toContain('Atelier ne filtre rien');
+  expect(s.other_exports_overlap).toBe(3);                                                                                                    // l'export « export2.zip » contient les mêmes conversations
+  expect(s.segments[0]).toMatchObject({status:'inventoried',n:2});
+ });
+ it('relecture ciblée d’une conversation : même archive exigée (empreinte), sans lire le reste',async()=>{
+  const got=await readConversations(make(files),batch.id,aliceApi,[{source_id:'c-3',segment:'conversations-001.json'}]);expect(got).toHaveLength(1);expect(got[0].title).toBe('Sport');
+  const altered={...files,'conversations-001.json':enc(JSON.stringify([...seg1,gpt('c-7','Intrus',1,[['user','x']])]))};
+  await expect(readConversations(make(altered),batch.id,aliceApi,[{source_id:'c-3',segment:'conversations-001.json'}])).rejects.toThrow(/même empreinte|pas la même archive/);
+  await expect(readConversations(make({'autre.json':enc('[]')}),batch.id,aliceApi,[{source_id:'c-3',segment:'conversations-001.json'}])).rejects.toThrow(/introuvable/);
+ });
+ it('archive hostile ou malformée : refusée ou signalée, rien d’exécuté, aucune fuite entre comptes',async()=>{
+  await expect(inventoryArchive(new File([enc('ceci n’est pas une archive zip, simplement du texte')],'faux.zip'),aliceApi)).rejects.toThrow();
+  await expect(inventoryArchive(make({'user.json':enc('{}')},'vide.zip'),aliceApi)).rejects.toThrow(/aucun fichier conversations/);
+  const trunc=zipSync(files);await expect(inventoryArchive(new File([trunc.subarray(0,trunc.length-40)],'coupe.zip'),aliceApi)).rejects.toThrow();
+  await expect(inventoryArchive(make({'conversations.json':enc('[{"mapping":')},'json-casse.zip'),aliceApi)).rejects.toThrow(/Aucune conversation reconnue/);
+  const bomb=deflateSync(new Uint8Array(30*1048576)),zip=zipSync({'conversations.json':enc(JSON.stringify([gpt('c-b','Bombe',1,[['user','salut']])])),'piege.bin':[bomb,{level:0}]});
+  const dv=new DataView(zip.buffer,zip.byteOffset,zip.byteLength);for(let i=0;i<zip.length-46;i++){if(dv.getUint32(i,true)===0x02014b50&&new TextDecoder().decode(zip.subarray(i+46,i+46+9))==='piege.bin'){dv.setUint16(i+10,8,true);dv.setUint32(i+24,30*1048576,true);}}   // annonce 30 Mo décompressés pour quelques Ko : suspect
+  const hb=await inventoryArchive(new File([zip],'bombe.zip'),aliceApi);const idx=await indexArchiveFiles(new File([zip],'bombe.zip'),hb.batch,aliceApi);expect(idx.problems).toBe(1);
+  expect((await json('/exports/'+hb.batch.id+'/files')).body.items[0].status).toBe('suspicious');
+  bobApi=apiFor(b);
+  for(const path of ['/segments','/files','/attachments','/summary','/coverage'])expect((await json('/exports/'+batch.id+path,'GET',undefined,b)).status).toBe(404);
+  expect((await json('/exports/'+batch.id+'/link-attachments','POST',{},b)).status).toBe(404);expect((await json('/exports/'+batch.id+'/files','POST',{rows:[{entry_name:'x',size:1,compressed_size:1,status:'indexed'}]},b)).status).toBe(404);
+  const mine=await inventoryArchive(make(files,'bob.zip'),bobApi);expect(mine.batch.id).not.toBe(batch.id);                                       // même archive, autre compte : inventaire séparé
+  expect((await json('/exports/'+mine.batch.id+'/summary','GET',undefined,b)).body.other_exports_overlap).toBe(0);
+  expect(Cancelled).toBeTruthy();
+  const health=await (await mf.dispatchFetch(origin+'/api/health')).json() as any;expect(health.schema.applied).toContain('0021');
+ });
+});
+
+describe('recherche unifiée : tous types, filtres combinés, pagination, ouverture au message exact, cloisonnement',()=>{
+ let pA:string,pB:string,bobP:string,db:D1Database,user:string;
+ it('prépare des données de chaque type dans deux projets',async()=>{
+  db=await mf.getD1Database('DB');user=(await json('/auth/me')).body.user.id;
+  pA=(await json('/projects','POST',{name:'Recherche A'})).body.id;pB=(await json('/projects','POST',{name:'Recherche B'})).body.id;bobP=(await json('/projects','POST',{name:'Recherche Bob'},b)).body.id;
+  const cv=(await json('/conversations','POST',{project_id:pA,title:'Fil du minuteur'})).body.id;await json('/conversations/'+cv+'/notes','POST',{content:'Le minuteur intégré est une mauvaise idée, trop de bruit.'});
+  const cvB=(await json('/conversations','POST',{project_id:pB,title:'Autre fil'})).body.id;await json('/conversations/'+cvB+'/notes','POST',{content:'Minuteur aussi dans le projet B.'});
+  const cvBob=(await json('/conversations','POST',{project_id:bobP,title:'Fil de Bob'},b)).body.id;await json('/conversations/'+cvBob+'/notes','POST',{content:'Minuteur secret de Bob'},b);
+  expect((await json('/spaces/'+pA+'/decisions','POST',{title:'Pas de minuteur',reason:'Décision après discussion',status:'validated'})).status).toBe(201);
+  expect((await json('/spaces/'+pA+'/tasks','POST',{title:'Retirer le minuteur',objective:'Supprimer le minuteur de la liste'})).status).toBe(201);
+  expect((await json('/prompts','POST',{project_id:pA,title:'Mission minuteur',body:'# Mission\n\nRetirer le minuteur.'})).status).toBe(201);
+  expect((await json('/workbench/actions','POST',{project_id:pA,title:'Tester le minuteur sur téléphone'})).status).toBe(201);
+  expect((await json('/workbench/questions','POST',{project_id:pA,question:'Faut-il garder un minuteur optionnel ?',reason:'Dépend du bruit'})).status).toBe(201);
+  const at=new Date().toISOString();
+  await db.prepare('INSERT INTO bridge_spaces(id,owner_id,name,created_at,updated_at) VALUES(?,?,?,?,?)').bind('sp-find',user,'Mémoire A',at,at).run();
+  await db.prepare('INSERT INTO bridge_project_spaces(project_id,space_id,user_id) VALUES(?,?,?)').bind(pA,'sp-find',user).run();
+  await db.prepare('INSERT INTO bridge_conversations(id,space_id,source_key,provider,title,imported_at) VALUES(?,?,?,?,?,?)').bind('bc-find','sp-find','ChatGPT:conv-xyz','ChatGPT','Vieille discussion',at).run();
+  const rows=[['k1','user','Je veux un minuteur de cuisine','2026-06-01T10:00:00.000Z'],['k2','assistant','Voici un minuteur à 3 étapes','2026-06-01T10:01:00.000Z'],['k3','user','Finalement le minuteur est inutile (100% sûr)','2026-09-10T09:00:00.000Z'],['k4','user','Rien à voir','2026-09-11T09:00:00.000Z']];
+  for(const [k,role,content,date] of rows)await db.prepare('INSERT INTO bridge_messages(id,owner_id,conversation_id,source_key,role,content,original_date,content_hash) VALUES(?,?,?,?,?,?,?,?)').bind('bm-'+k,user,'bc-find','node-'+k,role,content,date,'h-'+k).run();
+  await db.prepare('INSERT INTO bridge_spaces(id,owner_id,name,created_at,updated_at) VALUES(?,?,?,?,?)').bind('sp-bob',(await json('/auth/me','GET',undefined,b)).body.user.id,'Mémoire Bob',at,at).run();
+ });
+ it('un mot, tous les types : groupes, extrait centré, statut et projet de chaque résultat',async()=>{
+  await json('/projects','POST',{name:'Atelier du minuteur'});const r=await json('/workbench/find?q=minuteur&per=10');expect(r.status).toBe(200);
+  const kinds=r.body.groups.map((g:any)=>g.kind);for(const k of ['project','chat','imported','decision','task','prompt','action','question'])expect(kinds).toContain(k);
+  const dec=r.body.groups.find((g:any)=>g.kind==='decision').items[0];expect(dec).toMatchObject({title:'Pas de minuteur',status:'validated',project_name:'Recherche A'});
+  const imp=r.body.groups.find((g:any)=>g.kind==='imported').items;expect(imp).toHaveLength(3);expect(imp[0].date).toBe('2026-09-10T09:00:00.000Z');                                     // les plus récents d'abord (date d'origine)
+  expect(imp[0].open).toMatchObject({bridge_conversation_id:'bc-find',project_id:pA,source_conversation:'conv-xyz',source_message:'node-k3'});expect(imp[0].excerpt).toContain('minuteur');expect(imp[0].provider).toBe('ChatGPT');
+  expect(JSON.stringify(r.body)).not.toContain('de Bob');expect(r.body.skipped).toEqual([]);
+  expect(r.body.groups.find((g:any)=>g.kind==='chat').items.map((i:any)=>i.project_name).sort()).toEqual(['Recherche A','Recherche B']);
+ });
+ it('filtres combinés : projet, fournisseur, dates, rôle, statut, types',async()=>{
+  const q=async(qs:string)=>(await json('/workbench/find?q=minuteur&per=10&'+qs)).body;
+  const onlyA=await q('project='+pA);expect(onlyA.groups.find((g:any)=>g.kind==='chat').items.every((i:any)=>i.project_id===pA)).toBe(true);expect(onlyA.skipped).toEqual([{kind:'attachment',reason:'les pièces jointes ne sont pas rattachées à un projet'}]);expect(onlyA.searched).not.toContain('attachment');
+  const gpt=await q('provider=chatgpt');expect(gpt.groups.map((g:any)=>g.kind)).toEqual(['imported']);
+  const june=await q('kinds=imported&from=2026-06-01&to=2026-06-30');expect(june.groups[0].items).toHaveLength(2);
+  const later=await q('kinds=imported&from=2026-09-01');expect(later.groups[0].items.map((i:any)=>i.open.source_message)).toEqual(['node-k3']);
+  const asst=await q('role=assistant');expect(asst.groups.map((g:any)=>g.kind).sort()).toEqual(['imported']);expect(asst.groups[0].items[0].role).toBe('assistant');
+  const validated=await q('status=validated');expect(validated.groups.map((g:any)=>g.kind)).toEqual(['decision']);
+  const open=await q('status=open');expect(open.groups.map((g:any)=>g.kind).sort()).toEqual(['action','question']);
+  expect((await q('kinds=file,document')).groups).toHaveLength(0);expect((await q('kinds=inconnu')).searched.length).toBeGreaterThan(5);                                                    // type inconnu : ignoré, jamais une erreur
+  expect((await json('/workbench/find?q=a')).status).toBe(400);expect((await json('/workbench/find?q=minuteur&project='+bobP)).status).toBe(404);expect((await json('/workbench/find?q=minuteur&from=hier')).status).toBe(400);
+ });
+ it('pagination d’un seul type, caractères spéciaux littéraux, cloisonnement entre comptes',async()=>{
+  const p1=(await json('/workbench/find?q=minuteur&kinds=imported&per=2')).body;expect(p1.groups[0].items).toHaveLength(2);expect(p1.next).toBe(2);
+  const p2=(await json('/workbench/find?q=minuteur&kinds=imported&per=2&offset='+p1.next)).body;expect(p2.groups[0].items).toHaveLength(1);expect(p2.next).toBeNull();
+  expect(new Set([...p1.groups[0].items,...p2.groups[0].items].map((i:any)=>i.id)).size).toBe(3);
+  const pct=(await json('/workbench/find?q='+encodeURIComponent('100%')+'&kinds=imported')).body;expect(pct.groups[0].items).toHaveLength(1);                                    // « % » n'est pas un joker
+  expect((await json('/workbench/find?q='+encodeURIComponent('_____')+'&kinds=imported')).body.groups).toHaveLength(0);
+  const bob=(await json('/workbench/find?q=minuteur&per=10','GET',undefined,b)).body;expect(JSON.stringify(bob)).not.toContain('Recherche A');expect(JSON.stringify(bob)).not.toContain('Vieille discussion');expect(bob.groups.map((g:any)=>g.kind)).toEqual(['chat']);
+  const opened=await json('/bridge/conversations/bc-find?after=1');expect([200,404]).toContain(opened.status);
  });
 });

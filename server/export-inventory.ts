@@ -66,17 +66,21 @@ export function makeLots(rows:{source_id:string;created_time:string|null;message
  return out;
 }
 export interface CoverageRow{parse_status:string;import_status:string;project_id:string|null;project_confirmed:number;lot:string;message_count:number;imported_messages:number;attachment_refs:number}
-export function coverageOf(rows:CoverageRow[],analyses:{lot:string;kind:string}[],declaredTotal:number){
+export interface CoverageExtra{duplicates?:number;attachments?:{referenced:number;in_archive:number;ambiguous:number;referenced_only:number;files_indexed:number;files_hashed:number}}
+export function coverageOf(rows:CoverageRow[],analyses:{lot:string;kind:string}[],declaredTotal:number,extra:CoverageExtra={}){
+ const duplicates=extra.duplicates||0;
  const lots=[...new Set(rows.map(r=>r.lot).filter(Boolean))];
  const lotState=lots.map(l=>({lot:l,independent:analyses.filter(a=>a.lot===l&&a.kind==='independent').length,cross:analyses.filter(a=>a.lot===l&&a.kind!=='independent').length}));
  return {
-  conversations:{declared:declaredTotal,inventoried:rows.length,missing_from_inventory:Math.max(0,declaredTotal-rows.length),complete:rows.filter(r=>r.parse_status==='complete').length,partial:rows.filter(r=>r.parse_status==='partial').length,error:rows.filter(r=>r.parse_status==='error').length,ignored:rows.filter(r=>r.parse_status==='ignored').length},
+  conversations:{declared:declaredTotal,inventoried:rows.length,missing_from_inventory:Math.max(0,declaredTotal-rows.length-duplicates),duplicates,complete:rows.filter(r=>r.parse_status==='complete').length,partial:rows.filter(r=>r.parse_status==='partial').length,error:rows.filter(r=>r.parse_status==='error').length,ignored:rows.filter(r=>r.parse_status==='ignored').length},
   messages:{inventoried:rows.reduce((s,r)=>s+r.message_count,0),imported:rows.reduce((s,r)=>s+r.imported_messages,0)},
-  attachments:{referenced:rows.reduce((s,r)=>s+r.attachment_refs,0),accessible:0,note:'Les pièces jointes ne sont pas dans conversations.json : elles sont comptées comme référencées, jamais reconstituées.'},
+  attachments:extra.attachments?{referenced:extra.attachments.referenced,accessible:extra.attachments.in_archive,in_archive:extra.attachments.in_archive,ambiguous:extra.attachments.ambiguous,referenced_only:extra.attachments.referenced_only,files_indexed:extra.attachments.files_indexed,files_hashed:extra.attachments.files_hashed,
+   note:'« Dans l’archive » = un fichier de l’archive porte l’identifiant cité (rapprochement par nom, à vérifier) ; il n’est pas copié dans Atelier : l’original reste dans votre archive. « Référencée seulement » = aucun fichier trouvé.'}
+   :{referenced:rows.reduce((s,r)=>s+r.attachment_refs,0),accessible:0,in_archive:0,ambiguous:0,referenced_only:0,files_indexed:0,files_hashed:0,note:'Archive des fichiers non analysée : les pièces jointes sont comptées comme référencées, jamais reconstituées.'},
   projects:{assigned:rows.filter(r=>r.project_id).length,confirmed:rows.filter(r=>r.project_id&&r.project_confirmed).length,unassigned:rows.filter(r=>!r.project_id).length},
   imports:{imported:rows.filter(r=>r.import_status==='imported').length,partial:rows.filter(r=>r.import_status==='partial').length,not_imported:rows.filter(r=>r.import_status==='not_imported').length},
   lots:{total:lots.length,without_lot:rows.filter(r=>!r.lot).length,with_two_independent:lotState.filter(l=>l.independent>=2).length,with_cross:lotState.filter(l=>l.cross>=1).length,detail:lotState},
-  complete:declaredTotal>0&&rows.length>=declaredTotal&&rows.every(r=>r.parse_status==='complete'||r.parse_status==='ignored'),
+  complete:declaredTotal>0&&rows.length+duplicates>=declaredTotal&&rows.every(r=>r.parse_status==='complete'||r.parse_status==='ignored'),
   warning:'Un export peut ne pas contenir toutes les conversations du compte : cette couverture ne porte que sur le fichier inventorié.'
  };
 }
