@@ -280,3 +280,7 @@ Interface : `web/Home.tsx`, `Inbox.tsx`, `MemoryHub.tsx`, `Prompts.tsx`, `Export
 ## Pilotage du travail avec Claude (12 novembre 2026)
 
 `migrations/0019_claude_work.sql` : colonnes de dossier sur `plan_tasks` ; tables `quota_readings`, `quota_alerts`, `work_sessions`, `checkpoints`. Règles pures : `server/claude-advisor.ts`. Routes `/api/claude` (`server/routes/claude.ts`) : `/advise`, `/tasks/:id/advice`, `/tasks/:id/brief`, `/quotas`, `/quotas/import-statusline`, `/alerts`, `/sessions`, `/sessions/parse`, `/checkpoints`, `/checkpoints/draft`. Interface : `web/ClaudePilot.tsx`. Aucun appel réseau vers Anthropic n’est ajouté.
+
+## Analyse de l’historique (12 novembre 2026)
+
+`migrations/0020_history_analysis.sql` : `analysis_units`, `analysis_results`, `analysis_items`, colonne `export_batches.ai_consent_at`. Règles pures : `server/history-analysis.ts`. Moteur : `server/history-run.ts` (réutilise `ai-relay`, `ai-availability`, `ai-persist`, `connectors/ai`). Routes sous `/api/exports/:id/analysis` (`/consent`, `/prepare`, `/step`, `/retry-failed`, `/items`) et `/api/exports/analysis/items/:item`. Interface : `web/HistoryAnalysis.tsx`.

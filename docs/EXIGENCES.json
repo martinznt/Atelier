@@ -3895,9 +3895,9 @@
     "section": 28,
     "source": "PROMPT-CLAUDECODE-0002 (12 novembre 2026)",
     "exigence": "Analyses indépendantes par lot enregistrées séparément par assistant, avec croisement.",
-    "statut": "à faire",
-    "preuve": "server/routes/exports.ts (enregistrement des analyses)",
-    "limite": "Seul l’enregistrement manuel d’une analyse existe ; le lancement et le croisement automatiques ne sont pas réalisés."
+    "statut": "réalisé",
+    "preuve": "server/history-run.ts ; server/history-analysis.ts ; tests/history-analysis.test.mjs ; tests/integration.test.ts (analyse de l’historique)",
+    "limite": "Réalisé le 12 novembre 2026 par la branche feat/atelier-analyse-historique : lecture automatique et seconde lecture indépendante. Réponses des fournisseurs simulées ; pas d’exécution en arrière-plan."
   },
   {
     "id": "PIL-28-016",
@@ -4096,5 +4096,95 @@
     "statut": "à faire",
     "preuve": null,
     "limite": "Nécessite un collecteur hébergé et une configuration sur le poste de Martin ; ne donnerait pas le quota restant."
+  },
+  {
+    "id": "HIS-30-001",
+    "section": 30,
+    "source": "Demande du 12 novembre 2026 : IA intégrées pour la migration historique, mode sombre",
+    "exigence": "La migration de l’historique utilise en priorité Gemini, Groq et Mistral ; Claude n’est jamais appelé par cette analyse.",
+    "statut": "réalisé",
+    "preuve": "server/history-run.ts ; tests/history-analysis.test.mjs ; tests/integration.test.ts (analyse de l’historique)",
+    "limite": "Simulé : aucun appel réel à un fournisseur."
+  },
+  {
+    "id": "HIS-30-002",
+    "section": 30,
+    "source": "Demande du 12 novembre 2026 : IA intégrées pour la migration historique, mode sombre",
+    "exigence": "Extraction, indexation, rapprochements et contrôles techniques faits localement, sans IA.",
+    "statut": "réalisé",
+    "preuve": "server/history-analysis.ts ; tests/history-analysis.test.mjs ; tests/integration.test.ts (analyse de l’historique)",
+    "limite": null
+  },
+  {
+    "id": "HIS-30-003",
+    "section": 30,
+    "source": "Demande du 12 novembre 2026 : IA intégrées pour la migration historique, mode sombre",
+    "exigence": "Choix du fournisseur selon la tâche, avec bascule vers un autre fournisseur compatible en cas de limite.",
+    "statut": "réalisé",
+    "preuve": "tests/history-analysis.test.mjs ; tests/integration.test.ts (analyse de l’historique)",
+    "limite": "Ordre fixé par la préférence de Martin ; aucune mesure de qualité par fournisseur."
+  },
+  {
+    "id": "HIS-30-004",
+    "section": 30,
+    "source": "Demande du 12 novembre 2026 : IA intégrées pour la migration historique, mode sombre",
+    "exigence": "Reprise après erreur, gestion des limites, cache, résultats intermédiaires conservés, aucun retraitement d’une unité déjà analysée.",
+    "statut": "réalisé",
+    "preuve": "tests/history-analysis.test.mjs ; tests/integration.test.ts (analyse de l’historique)",
+    "limite": "L’analyse n’avance que lorsque l’écran est ouvert."
+  },
+  {
+    "id": "HIS-30-005",
+    "section": 30,
+    "source": "Demande du 12 novembre 2026 : IA intégrées pour la migration historique, mode sombre",
+    "exigence": "Suivi de consommation par fournisseur pour l’analyse.",
+    "statut": "réalisé",
+    "preuve": "server/routes/exports.ts (/analysis) ; tests/history-analysis.test.mjs ; tests/integration.test.ts (analyse de l’historique)",
+    "limite": "Jetons affichés seulement si le fournisseur les renvoie."
+  },
+  {
+    "id": "HIS-30-006",
+    "section": 30,
+    "source": "Demande du 12 novembre 2026 : IA intégrées pour la migration historique, mode sombre",
+    "exigence": "Seconde lecture indépendante des éléments sensibles ; deux réponses identiques ne valent pas preuve ; chaque élément renvoie aux messages d’origine.",
+    "statut": "réalisé",
+    "preuve": "tests/history-analysis.test.mjs ; tests/integration.test.ts (analyse de l’historique)",
+    "limite": null
+  },
+  {
+    "id": "HIS-30-007",
+    "section": 30,
+    "source": "Demande du 12 novembre 2026 : IA intégrées pour la migration historique, mode sombre",
+    "exigence": "Aucune donnée historique supprimée parce qu’une IA n’a pas su l’interpréter.",
+    "statut": "réalisé",
+    "preuve": "tests/history-analysis.test.mjs ; tests/integration.test.ts (analyse de l’historique)",
+    "limite": null
+  },
+  {
+    "id": "HIS-30-008",
+    "section": 30,
+    "source": "Demande du 12 novembre 2026 : IA intégrées pour la migration historique, mode sombre",
+    "exigence": "Inventaire réel des modèles, contextes, sorties structurées, quotas et traitements par lots de Gemini, Groq et Mistral.",
+    "statut": "bloqué",
+    "preuve": null,
+    "limite": "Documentation des fournisseurs inaccessible depuis l’environnement de développement et aucune clé disponible ; à faire depuis Atelier en production avec les connexions de Martin."
+  },
+  {
+    "id": "HIS-30-009",
+    "section": 30,
+    "source": "Demande du 12 novembre 2026 : IA intégrées pour la migration historique, mode sombre",
+    "exigence": "Rapprochement automatique des éléments relevés avec le dépôt GitHub (code, tests, mise en ligne).",
+    "statut": "à faire",
+    "preuve": null,
+    "limite": "Reste manuel, avec l’audit de référence."
+  },
+  {
+    "id": "HIS-30-010",
+    "section": 30,
+    "source": "Demande du 12 novembre 2026 : IA intégrées pour la migration historique, mode sombre",
+    "exigence": "Mode sombre lisible sur tous les écrans, suivant le réglage de l’appareil à la première visite.",
+    "statut": "réalisé",
+    "preuve": "web/styles.css ; web/App.tsx",
+    "limite": "Contrôlé sur Chromium à 360 et 390 px ; pas sur le téléphone réel."
   }
 ]

@@ -1,3 +1,4 @@
+import {analysisStep} from '../server/history-run.ts';
 import {beforeAll,afterAll,describe,it,expect} from 'vitest';import {Miniflare,createFetchMock} from 'miniflare';import {build} from 'esbuild';import {readFile,readdir,mkdir} from 'node:fs/promises';import {unzipSync,strFromU8} from 'fflate';import {hashPassword,verifyPassword} from '../server/password';
 import {normalizeMigrationForD1} from './migration-sql.mjs';
 import {queueReview,queueReviewDetailed,executeReview,maintenanceReviews,publishReport} from '../server/reviews';
@@ -1183,5 +1184,91 @@ describe('pilotage Claude : conseil de modèle, relevés de quota, retours de tr
   const exported=await json('/account/export?metadata=true');for(const tb of ['quota_readings','quota_alerts','work_sessions','checkpoints'])expect(Array.isArray(exported.body[tb])).toBe(true);
   expect((await json('/claude/checkpoints/'+cp.body.id,'DELETE')).status).toBe(200);
   const health=await (await mf.dispatchFetch(origin+'/api/health')).json() as any;expect(health.schema.applied).toContain('0019');
+ });
+});
+
+describe('analyse de l’historique par Gemini, Groq et Mistral : accord, cache, relais, reprise, seconde lecture',()=>{
+ let batch:string,db:D1Database,user:string,conv:string;const ids:Record<string,string>={};
+ const env=()=>({DB:db,MASTER_KEY:Buffer.alloc(32,7).toString('base64')} as any);
+ const sse=(text:string)=>new Response('data: '+JSON.stringify({choices:[{delta:{content:text}}],model:'m'})+'\n\n'+'data: '+JSON.stringify({choices:[{delta:{},finish_reason:'stop'}],usage:{prompt_tokens:120,completion_tokens:30}})+'\n\ndata: [DONE]\n\n',{status:200});
+ const gem=(text:string)=>new Response('data: '+JSON.stringify({candidates:[{content:{parts:[{text}]},finishReason:'STOP'}],modelVersion:'gemini-flash-test',usageMetadata:{promptTokenCount:120,candidatesTokenCount:30}})+'\n\n',{status:200});
+ const limit=()=>new Response(JSON.stringify({error:{message:'Rate limit reached on requests per minute (RPM)'}}),{status:429,headers:{'retry-after':'120','content-type':'application/json'}});
+ const first=JSON.stringify({items:[{kind:'refusal',text:'Pas de minuteur',sources:['k3'],quote:'Non, pas de minuteur.'},{kind:'decision',text:'Ajouter un minuteur',sources:['k2'],quote:'ajouter un minuteur'},{kind:'demand',text:'Inventé',sources:['k99'],quote:'x'}]});
+ const second=JSON.stringify({items:[{kind:'refusal',text:'Refus du minuteur',sources:['k3'],quote:'pas de minuteur'},{kind:'preference',text:'Mode pages',sources:['k1'],quote:'mode cuisine en pages'}]});
+ async function withFetch<T>(reply:Record<string,()=>Response>,fn:()=>Promise<T>){
+  const hits:Record<string,number>={mistral:0,groq:0,gemini:0},bodies:string[]=[],original=globalThis.fetch;
+  globalThis.fetch=(async(input:any,init?:any)=>{const url=String(typeof input==='string'?input:input.url);
+   const p=url.startsWith('https://api.mistral.ai/')?'mistral':url.startsWith('https://api.groq.com/')?'groq':url.includes('generativelanguage.googleapis.com')?'gemini':'';
+   if(!p)throw new Error('Appel réseau inattendu : '+url);hits[p]++;bodies.push(String(init?.body||''));return reply[p]();}) as any;
+  try{return {value:await fn(),hits,bodies};}finally{globalThis.fetch=original;}
+ }
+ it('prépare un inventaire, des messages importés et trois connexions',async()=>{
+  db=await mf.getD1Database('DB');const me=await json('/auth/me');user=me.body.user.id;
+  await db.prepare("DELETE FROM connections WHERE user_id=? AND provider IN ('mistral','gemini','groq','anthropic','openai')").bind(user).run();
+  for(const [p,m] of [['mistral','ministral-test'],['groq','openai/gpt-oss-120b'],['gemini','gemini-flash-test'],['anthropic','claude-test']] as const){
+   const r=await json('/connections','POST',{provider:p,label:p+'-hist',secret:'exemple-secret-factice-'+p,scopes:['chat'],api_consent:true});expect(r.status).toBe(201);ids[p]=r.body.id;
+   await db.prepare("UPDATE connections SET status='connected',models=? WHERE id=?").bind(JSON.stringify([m]),r.body.id).run();}
+  const b=await json('/exports','POST',{provider:'ChatGPT',filename:'hist.zip',size:1000,sha256:'d'.repeat(64),declared_total:2,notes:''});expect(b.status).toBe(201);batch=b.body.id;
+  expect((await json('/exports/'+batch+'/conversations','POST',{rows:[{source_id:'c1',title:'Mode cuisine',created_time:null,updated_time:null,message_count:3,node_count:3,branch_count:0,attachment_refs:0,non_text_parts:0,parse_status:'complete',parse_note:''},
+   {source_id:'c2',title:'Jamais importée',created_time:null,updated_time:null,message_count:5,node_count:5,branch_count:0,attachment_refs:0,non_text_parts:0,parse_status:'complete',parse_note:''}]})).status).toBe(200);
+  const at=new Date().toISOString();
+  await db.prepare('INSERT INTO bridge_spaces(id,owner_id,name,created_at,updated_at) VALUES(?,?,?,?,?)').bind('sp-hist',user,'Historique',at,at).run();
+  await db.prepare('INSERT INTO bridge_conversations(id,space_id,source_key,provider,title,imported_at) VALUES(?,?,?,?,?,?)').bind('bc-hist','sp-hist','ChatGPT:c1','ChatGPT','Mode cuisine',at).run();
+  const ms=[['k1','user','Je veux un mode cuisine en pages, seulement sur téléphone.'],['k2','assistant','Je propose d’ajouter un minuteur intégré.'],['k3','user','Non, pas de minuteur.']];
+  for(const [k,role,content] of ms)await db.prepare('INSERT INTO bridge_messages(id,owner_id,conversation_id,source_key,role,content,content_hash) VALUES(?,?,?,?,?,?,?)').bind('bm-'+k,user,'bc-hist',k,role,content,'hash-'+k).run();
+  conv=(await json('/exports/'+batch+'/conversations')).body.items.find((x:any)=>x.source_id==='c1').id;
+ });
+ it('découpage local sans IA, répétable sans doublon ; rien n’est envoyé sans accord',async()=>{
+  const r=await withFetch({},async()=>json('/exports/'+batch+'/analysis/prepare','POST',{}));
+  expect(r.value.status).toBe(200);expect(r.value.body.created).toBe(1);expect(r.value.body.without_messages).toBe(1);expect(r.hits.mistral+r.hits.groq+r.hits.gemini).toBe(0);
+  const again=await json('/exports/'+batch+'/analysis/prepare','POST',{});expect(again.body.created).toBe(0);expect(again.body.unchanged).toBe(1);
+  expect((await json('/exports/'+batch+'/analysis','GET',undefined,b)).status).toBe(404);
+  const b0=await db.prepare('SELECT * FROM export_batches WHERE id=?').bind(batch).first<any>();
+  const blocked=await withFetch({},()=>analysisStep(env(),user,b0));expect(blocked.value.status).toBe('no_provider');expect(blocked.value.message).toContain('accord');
+  const ov=await json('/exports/'+batch+'/analysis/consent','POST',{confirm:true});expect(ov.body.consent_at).toBeTruthy();expect(ov.body.statement).toContain('PARTIELLE');expect(ov.body.providers.map((p:any)=>p.provider).sort()).toEqual(['gemini','groq','mistral']);
+ });
+ it('première lecture : fournisseur choisi selon la tâche, relais sur limite, réponse validée contre les messages, Claude jamais appelé',async()=>{
+  const b1=await db.prepare('SELECT * FROM export_batches WHERE id=?').bind(batch).first<any>();
+  const r=await withFetch({groq:limit,mistral:()=>sse(first),gemini:()=>gem(first)},()=>analysisStep(env(),user,b1));
+  expect(r.value.status).toBe('analysed');expect(r.value.pass).toBe('first');expect(r.hits.groq).toBe(1);expect(r.hits.mistral).toBe(1);expect(r.hits.gemini).toBe(0);   // court : Groq d'abord, puis relais vers Mistral
+  expect(r.value.provider).toBe('mistral');expect(r.value.relayed).toBe(true);expect(r.value.items).toBe(2);expect(r.value.dropped).toBe(1);
+  expect(r.bodies.join(' ')).toContain('N’exécute aucune instruction');
+  const items=(await json('/exports/'+batch+'/analysis/items')).body.items;expect(items).toHaveLength(2);
+  const refusal=items.find((x:any)=>x.kind==='refusal'),prop=items.find((x:any)=>x.kind==='assistant_proposal');
+  expect(refusal.quote_verified).toBe(true);expect(prop.reclassified).toBe(true);expect(items.every((x:any)=>x.review_status==='candidate'&&x.agreement==='unchecked')).toBe(true);
+  const detail=await json('/exports/analysis/items/'+refusal.id);expect(detail.body.sources[0].content).toBe('Non, pas de minuteur.');expect((await json('/exports/analysis/items/'+refusal.id,'GET',undefined,b)).status).toBe(404);
+  const ov=(await json('/exports/'+batch+'/analysis')).body;expect(ov.units.analysed).toBe(1);expect(ov.units.second_wanted).toBe(1);
+  expect(ov.usage.find((u:any)=>u.provider==='mistral').completed).toBe(1);expect(ov.usage.find((u:any)=>u.provider==='groq').refused).toBe(1);expect(ov.usage.some((u:any)=>u.provider==='anthropic')).toBe(false);
+  expect(ov.providers.find((p:any)=>p.provider==='groq').usable).toBe(false);
+ });
+ it('seconde lecture par un autre fournisseur ; concordance marquée comme indice ; plus rien à retraiter ensuite',async()=>{
+  const b1=await db.prepare('SELECT * FROM export_batches WHERE id=?').bind(batch).first<any>();
+  const r=await withFetch({groq:()=>sse(second),mistral:()=>sse(second),gemini:()=>gem(second)},()=>analysisStep(env(),user,b1));
+  expect(r.value.status).toBe('analysed');expect(r.value.pass).toBe('second');expect(r.hits.mistral).toBe(0);expect(r.value.provider).not.toBe('mistral');
+  const items=(await json('/exports/'+batch+'/analysis/items')).body.items;expect(items).toHaveLength(4);
+  expect(items.filter((x:any)=>x.kind==='refusal').every((x:any)=>x.agreement==='agree')).toBe(true);expect(items.find((x:any)=>x.kind==='assistant_proposal').agreement).toBe('single');
+  expect(items.find((x:any)=>x.agreement==='agree').agreement_label).toContain('pas une preuve');
+  const done=await withFetch({},()=>analysisStep(env(),user,b1));expect(done.value.status).toBe('done');expect(done.hits.mistral+done.hits.groq+done.hits.gemini).toBe(0);
+  const prep=await json('/exports/'+batch+'/analysis/prepare','POST',{});expect(prep.body.created).toBe(0);                                       // cache : même contenu, aucun retraitement
+  const pid=items[0].id;expect((await json('/exports/analysis/items/'+pid,'PATCH',{review_status:'accepted'},b)).status).toBe(404);
+  expect((await json('/exports/analysis/items/'+pid,'PATCH',{review_status:'accepted',review_note:'vu'})).status).toBe(200);
+  expect((await json('/exports/'+batch+'/analysis/items?status=accepted')).body.items).toHaveLength(1);
+ });
+ it('réponse inexploitable conservée, limites partout → pause avec heure, message ajouté → nouvelle unité sans perte',async()=>{
+  await db.prepare("UPDATE connections SET quota=NULL WHERE user_id=? AND provider IN ('mistral','groq','gemini')").bind(user).run();
+  await expect(db.prepare("UPDATE bridge_messages SET content='modifié' WHERE id='bm-k3'").run()).rejects.toThrow();                          // un message importé ne se modifie pas
+  await db.prepare('INSERT INTO bridge_messages(id,owner_id,conversation_id,source_key,role,content,content_hash) VALUES(?,?,?,?,?,?,?)').bind('bm-k4',user,'bc-hist','k4','user','Finalement, un minuteur discret.','hash-k4').run();
+  const prep=await json('/exports/'+batch+'/analysis/prepare','POST',{});expect(prep.body.created).toBe(1);expect(prep.body.superseded).toBe(1);
+  const b1=await db.prepare('SELECT * FROM export_batches WHERE id=?').bind(batch).first<any>();
+  const bad=await withFetch({groq:()=>sse('Désolé, je ne peux pas.'),mistral:()=>sse('x'),gemini:()=>gem('x')},()=>analysisStep(env(),user,b1));
+  expect(bad.value.status).toBe('invalid');expect(bad.value.message).toContain('conservée');
+  const kept=await db.prepare("SELECT raw,status FROM analysis_results WHERE user_id=? AND status='invalid'").bind(user).first<any>();expect(kept.raw).toBe('Désolé, je ne peux pas.');
+  const paused=await withFetch({groq:limit,mistral:limit,gemini:limit},()=>analysisStep(env(),user,b1));
+  expect(paused.value.status).toBe('paused');expect(paused.value.until).toBeTruthy();expect(paused.hits.groq+paused.hits.mistral+paused.hits.gemini).toBe(3);
+  const again=await withFetch({groq:limit,mistral:limit,gemini:limit},()=>analysisStep(env(),user,b1));expect(again.value.status).toBe('paused');expect(again.hits.groq+again.hits.mistral+again.hits.gemini).toBe(0);  // en pause : aucun appel
+  const ov=(await json('/exports/'+batch+'/analysis')).body;expect(ov.units.pending).toBe(1);expect(ov.units.superseded).toBe(1);expect(ov.statement).toContain('PARTIELLE');
+  expect((await db.prepare('SELECT COUNT(*) AS n FROM analysis_items WHERE user_id=?').bind(user).first<any>()).n).toBe(4);                        // les anciens éléments ne sont pas effacés
+  expect((await json('/exports/'+batch+'/analysis/items')).body.items).toHaveLength(0);                                                           // mais ne sont plus présentés comme actuels
+  const health=await (await mf.dispatchFetch(origin+'/api/health')).json() as any;expect(health.schema.applied).toContain('0020');
  });
 });

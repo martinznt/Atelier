@@ -63,3 +63,5 @@ Reprise du 12 novembre 2026 : poste de pilotage sur `feat/atelier-poste-de-pilot
 - Lire seulement les fichiers de la tâche ; ne pas relire le dépôt entier pour une modification localisée ; ne pas refaire une analyse notée dans docs/ ou dans le dossier de la tâche.
 - Session longue : écrire un point de reprise (objectif, terminé, reste, décisions, fichiers, erreurs, tests, prochaine action) et repartir dans une session neuve.
 - Ne jamais inventer un état de quota. Détail : docs/QUOTAS_CLAUDE.md. Lancer aussi `node --test tests/claude-advisor.test.mjs`.
+
+Analyse de l'historique (12 novembre 2026) : docs/ANALYSE_HISTORIQUE.md. Elle n'utilise que Gemini, Groq et Mistral ; ne pas y ajouter Claude. Les capacités réelles des fournisseurs n'ont pas été vérifiées : ne pas supposer un mode JSON natif, un grand contexte ou une interface de lots. Lancer aussi `node --test tests/history-analysis.test.mjs`.

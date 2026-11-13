@@ -1,3 +1,15 @@
+# 12 novembre 2026 — Analyse de l’historique par Gemini, Groq et Mistral ; mode sombre corrigé (branche empilée, non fusionnée)
+
+Branche `feat/atelier-analyse-historique`, au-dessus de `feat/atelier-quotas-claude`. Migration additive `0020_history_analysis.sql`. Rien en ligne.
+
+**Réalisé :** découpage local, analyse pas à pas avec relais, cache par empreinte, pause sur limite, réponses brutes conservées, seconde lecture par un autre fournisseur, éléments reliés aux messages d’origine, validation par Martin (`docs/ANALYSE_HISTORIQUE.md`). Mode sombre : le fond et la couleur de base étaient fixés en clair, ce qui rendait des titres illisibles ; corrigé, et le thème suit le réglage de l’appareil à la première visite.
+
+**Vérifié en local :** `tsc`, 72 scénarios Miniflare (dont 5 nouveaux), `tests/history-analysis.test.mjs` (7), régressions, compilation, navigateur réel à 360 et 390 px en mode sombre sur douze écrans (aucun texte de contraste inférieur à 3).
+
+**Non vérifié :** aucun appel réel à Gemini, Groq ou Mistral ; documentation des fournisseurs inaccessible depuis cet environnement ; modèles, contextes, quotas et lots des fournisseurs non inventoriés.
+
+---
+
 # 12 novembre 2026 — Pilotage du travail avec Claude (branche empilée, non fusionnée)
 
 Branche `feat/atelier-quotas-claude`, au-dessus de `feat/atelier-poste-de-pilotage` (PR 36). Migration additive `0019_claude_work.sql`. Rien en ligne.
