@@ -1282,7 +1282,9 @@ describe('import d’archive par segments : reprise, doublons, pièces jointes, 
  const seg0=[gpt('c-1','Mode cuisine',Date.parse('2026-08-20T10:00:00Z')/1000,[['user','Je veux un mode cuisine'],['assistant','Voici une idée']],{0:{attachments:[{id:'file-AAAA11',name:'plan.pdf',size:11,mime_type:'application/pdf'}]}}),gpt('c-2','Planning',Date.parse('2026-09-03T10:00:00Z')/1000,[['user','Planning hebdo'],['assistant','D’accord']])];
  const seg1=[gpt('c-3','Sport',Date.parse('2026-10-05T10:00:00Z')/1000,[['user','Séances du lundi'],['assistant','Plan en 3 jours']],{0:{attachments:[{id:'file-ZZZZ99',name:'perdu.png'}]}}),gpt('c-2','Planning (doublon)',Date.parse('2026-09-03T10:00:00Z')/1000,[['user','Planning hebdo']])];
  const files:Record<string,Uint8Array>={'conversations-000.json':enc(JSON.stringify(seg0)),'conversations-001.json':enc(JSON.stringify(seg1)),'user.json':enc('{}'),'file-AAAA11-plan.pdf':enc('%PDF-1.4 contenu'),'file-BBBB22.dat':PNG,'sans-extension':enc('Texte brut'),'../evil.txt':enc('x')};
- const make=(f:Record<string,Uint8Array>,name='export.zip')=>new File([zipSync(f)],name);
+ // Date fixe : sans elle, zipSync encode l'heure courante (résolution 2 s) et deux ZIP « identiques » ont des empreintes différentes (test instable en CI).
+ const ZIP_DATE={mtime:new Date('2026-10-01T00:00:00Z')};
+ const make=(f:Record<string,Uint8Array>,name='export.zip')=>new File([zipSync(f,ZIP_DATE)],name);
  let batch:any,aliceApi:any,bobApi:any;const apiFor=(cookie?:string)=>({post:async(p:string,b:unknown)=>{const r=await json(p,'POST',b,cookie);if(r.status>=400)throw Object.assign(new Error(r.status+' '+JSON.stringify(r.body)),{status:r.status});return r.body;},get:async(p:string)=>{const r=await json(p,'GET',undefined,cookie);if(r.status>=400)throw Object.assign(new Error(r.status+' '+JSON.stringify(r.body)),{status:r.status});return r.body;}});
  it('inventaire d’un ZIP à plusieurs segments : tous reconnus, doublon entre segments compté, rien de manquant',async()=>{
   aliceApi=apiFor();const r=await inventoryArchive(make(files),aliceApi);batch=r.batch;
@@ -1478,7 +1480,8 @@ describe('import P0 : archive filtrée (conversations_filtrees.json + annexes), 
   'sites/siteA/index.html':enc('<!doctype html><title>A</title>'),'sites/siteA/style.css':enc('body{}'),
   'pieces_jointes/file-P0AAA111-plan.pdf':enc('%PDF-1.4 plan'),'bibliotheque_non_rattachee/renamed-doc.pdf':enc('%PDF-1.4 renamed'),'bibliotheque_non_rattachee/lib1.pdf':enc('%PDF-1.4 lib'),'bibliotheque_non_rattachee/sans-extension':PNG,
   ...(variant?{['variante-'+variant+'.txt']:enc('variante '+variant)}:{}),...over});
- const file=(f:Record<string,Uint8Array>,name='archive-filtree.zip')=>new File([zipSync(f)],name);
+ const ZIP_DATE_P0={mtime:new Date('2026-10-01T00:00:00Z')};   // même raison : empreinte stable d'un appel à l'autre
+ const file=(f:Record<string,Uint8Array>,name='archive-filtree.zip')=>new File([zipSync(f,ZIP_DATE_P0)],name);
  const apiFor=(cookie?:string)=>({post:async(p:string,b:unknown)=>{const r=await json(p,'POST',b,cookie);if(r.status>=400)throw Object.assign(new Error(r.status+' '+(r.body?.error||JSON.stringify(r.body))),{status:r.status,body:r.body});return r.body;},get:async(p:string)=>{const r=await json(p,'GET',undefined,cookie);if(r.status>=400)throw Object.assign(new Error(r.status+' '+JSON.stringify(r.body)),{status:r.status});return r.body;}});
  const failAt=(api:any,n:number)=>{let calls=0;const wrap=(fn:any)=>async(...a:any[])=>{if(++calls===n)throw new Error('Réseau coupé (simulé) à l’appel '+n);return fn(...a);};return {post:wrap(api.post),get:wrap(api.get),calls:()=>calls};};
  let A:any,batch:any,baseline:any;
