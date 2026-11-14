@@ -27,6 +27,23 @@ export function ExportSummary({batch}:{batch:any}){
  </div>;
 }
 
+const GAP:Record<string,string>={absent_de_l_archive:'Absent de l’archive',invalide:'Invalide (rejeté ou illisible)',non_importe:'Non importé dans la mémoire',ecart:'Écart à vérifier'};
+/** Rapport d'intégrité : ce qui est enregistré, ce qui manque et pourquoi. Chiffres relus sur le serveur, jamais estimés côté écran. */
+export function IntegrityReport({batch}:{batch:any}){
+ const [d,setD]=useState<any>(null),[error,setError]=useState<unknown>(null);
+ const load=useCallback(()=>api(`/exports/${batch.id}/integrity`).then(setD).catch(setError),[batch.id]);
+ useEffect(()=>{void load();},[load,batch.conversation_count]);
+ if(!d)return <><ErrorBox error={error}/><Loading/></>;
+ return <div className="stack"><ErrorBox error={error}/>
+  <p className={d.inventory_status==='complet'?'notice':'error'} role="status"><strong>{d.summary}</strong></p>
+  <p>Fichiers de conversations : {d.segments.registered} enregistré(s) sur {d.segments.detected} détecté(s). Conversations : {d.conversations.stored}. Nœuds de messages conservés : {d.nodes.stored} ({d.nodes.with_text} avec texte).</p>
+  {d.comparisons.length>0&&<ul className="plain">{d.comparisons.map((c:any)=><li key={c.category}>{c.category} : annoncé {c.claimed.length?c.claimed.join(' / '):'—'}, enregistré {c.recorded} → <strong>{c.status==='concordant'?'concordant':c.status==='ecart'?'écart à vérifier':'non annoncé'}</strong></li>)}</ul>}
+  {d.comparisons.length>0&&<p className="muted">{d.notice}</p>}
+  {d.gaps.length>0&&<><h4>Manques et anomalies</h4><ul className="plain">{d.gaps.map((g:any,k:number)=><li key={k} style={{overflowWrap:'anywhere'}}><strong>{GAP[g.category]||g.category}</strong> : {g.text}</li>)}</ul></>}
+  {d.not_preserved.fields.length>0&&<details className="fold"><summary className="fold-summary"><strong>Champs non conservés</strong><small className="muted">{d.not_preserved.fields.length}</small></summary><p className="muted">{d.not_preserved.note}</p><ul className="plain">{d.not_preserved.fields.map((f:any)=><li key={f.field}>{f.field} : {f.count}</li>)}</ul></details>}
+ </div>;
+}
+
 export function ArchiveFiles({batch,source,cancel,reload}:{batch:any;source:React.MutableRefObject<{sha:string;file:File}|null>;cancel:React.MutableRefObject<{aborted:boolean}>;reload:()=>Promise<any>}){
  const [segments,setSegments]=useState<any[]|null>(null),[files,setFiles]=useState<any|null>(null),[atts,setAtts]=useState<any[]|null>(null),[kind,setKind]=useState(''),[status,setStatus]=useState(''),[prog,setProg]=useState<Progress|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState<unknown>(null),[notice,setNotice]=useState('');
  const load=useCallback(async()=>{try{const [s,f,a]=await Promise.all([api(`/exports/${batch.id}/segments`),api(`/exports/${batch.id}/files?limit=40&kind=${kind}&status=${status}`),api(`/exports/${batch.id}/attachments?limit=40`)]);setSegments(s.items);setFiles(f);setAtts(a.items);}catch(e){setError(e);}},[batch.id,kind,status]);
@@ -40,6 +57,7 @@ export function ArchiveFiles({batch,source,cancel,reload}:{batch:any;source:Reac
  }
  if(!segments)return <><ErrorBox error={error}/><Loading/></>;
  return <div className="stack"><ErrorBox error={error}/>{notice&&<p className="notice" role="status">{notice}</p>}
+  <h4>Intégrité de l’import</h4><IntegrityReport batch={batch}/>
   <h4>Fichiers de conversations ({segments.length})</h4>
   {!segments.length?<p className="muted">Aucun segment enregistré pour cet export (inventaire ancien, avant la lecture par segments).</p>:<ul className="plain">{segments.map(s=><li key={s.name}><strong>{s.name}</strong> — {s.status==='inventoried'?s.conversation_count+' conversation(s)':s.status==='too_large'?'trop volumineux pour ce téléphone : à extraire sur un ordinateur':s.status==='invalid_json'?'JSON illisible':'non lisible'}{s.duplicate_count?' · '+s.duplicate_count+' doublon(s)':''}{s.note?<><br/><small className="muted">{s.note}</small></>:null}</li>)}</ul>}
   <h4>Fichiers de l’archive (pièces jointes)</h4>

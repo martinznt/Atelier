@@ -1282,7 +1282,9 @@ describe('import d’archive par segments : reprise, doublons, pièces jointes, 
  const seg0=[gpt('c-1','Mode cuisine',Date.parse('2026-08-20T10:00:00Z')/1000,[['user','Je veux un mode cuisine'],['assistant','Voici une idée']],{0:{attachments:[{id:'file-AAAA11',name:'plan.pdf',size:11,mime_type:'application/pdf'}]}}),gpt('c-2','Planning',Date.parse('2026-09-03T10:00:00Z')/1000,[['user','Planning hebdo'],['assistant','D’accord']])];
  const seg1=[gpt('c-3','Sport',Date.parse('2026-10-05T10:00:00Z')/1000,[['user','Séances du lundi'],['assistant','Plan en 3 jours']],{0:{attachments:[{id:'file-ZZZZ99',name:'perdu.png'}]}}),gpt('c-2','Planning (doublon)',Date.parse('2026-09-03T10:00:00Z')/1000,[['user','Planning hebdo']])];
  const files:Record<string,Uint8Array>={'conversations-000.json':enc(JSON.stringify(seg0)),'conversations-001.json':enc(JSON.stringify(seg1)),'user.json':enc('{}'),'file-AAAA11-plan.pdf':enc('%PDF-1.4 contenu'),'file-BBBB22.dat':PNG,'sans-extension':enc('Texte brut'),'../evil.txt':enc('x')};
- const make=(f:Record<string,Uint8Array>,name='export.zip')=>new File([zipSync(f)],name);
+ // Date fixe : sans elle, zipSync encode l'heure courante (résolution 2 s) et deux ZIP « identiques » ont des empreintes différentes (test instable en CI).
+ const ZIP_DATE={mtime:new Date('2026-10-01T00:00:00Z')};
+ const make=(f:Record<string,Uint8Array>,name='export.zip')=>new File([zipSync(f,ZIP_DATE)],name);
  let batch:any,aliceApi:any,bobApi:any;const apiFor=(cookie?:string)=>({post:async(p:string,b:unknown)=>{const r=await json(p,'POST',b,cookie);if(r.status>=400)throw Object.assign(new Error(r.status+' '+JSON.stringify(r.body)),{status:r.status});return r.body;},get:async(p:string)=>{const r=await json(p,'GET',undefined,cookie);if(r.status>=400)throw Object.assign(new Error(r.status+' '+JSON.stringify(r.body)),{status:r.status});return r.body;}});
  it('inventaire d’un ZIP à plusieurs segments : tous reconnus, doublon entre segments compté, rien de manquant',async()=>{
   aliceApi=apiFor();const r=await inventoryArchive(make(files),aliceApi);batch=r.batch;
@@ -1337,9 +1339,9 @@ describe('import d’archive par segments : reprise, doublons, pièces jointes, 
  });
  it('archive hostile ou malformée : refusée ou signalée, rien d’exécuté, aucune fuite entre comptes',async()=>{
   await expect(inventoryArchive(new File([enc('ceci n’est pas une archive zip, simplement du texte')],'faux.zip'),aliceApi)).rejects.toThrow();
-  await expect(inventoryArchive(make({'user.json':enc('{}')},'vide.zip'),aliceApi)).rejects.toThrow(/aucun fichier conversations/);
+  await expect(inventoryArchive(make({'user.json':enc('{}')},'vide.zip'),aliceApi)).rejects.toThrow(/aucun fichier de conversations/);
   const trunc=zipSync(files);await expect(inventoryArchive(new File([trunc.subarray(0,trunc.length-40)],'coupe.zip'),aliceApi)).rejects.toThrow();
-  await expect(inventoryArchive(make({'conversations.json':enc('[{"mapping":')},'json-casse.zip'),aliceApi)).rejects.toThrow(/Aucune conversation reconnue/);
+  await expect(inventoryArchive(make({'conversations.json':enc('[{"mapping":')},'json-casse.zip'),aliceApi)).rejects.toThrow(/Aucune conversation valide/);
   const bomb=deflateSync(new Uint8Array(30*1048576)),zip=zipSync({'conversations.json':enc(JSON.stringify([gpt('c-b','Bombe',1,[['user','salut']])])),'piege.bin':[bomb,{level:0}]});
   const dv=new DataView(zip.buffer,zip.byteOffset,zip.byteLength);for(let i=0;i<zip.length-46;i++){if(dv.getUint32(i,true)===0x02014b50&&new TextDecoder().decode(zip.subarray(i+46,i+46+9))==='piege.bin'){dv.setUint16(i+10,8,true);dv.setUint32(i+24,30*1048576,true);}}   // annonce 30 Mo décompressés pour quelques Ko : suspect
   const hb=await inventoryArchive(new File([zip],'bombe.zip'),aliceApi);const idx=await indexArchiveFiles(new File([zip],'bombe.zip'),hb.batch,aliceApi);expect(idx.problems).toBe(1);
@@ -1450,5 +1452,233 @@ describe('contexte utile pour une réflexion : sélection locale, fiabilité, al
   expect((await json('/workbench/context?project='+pj+'&q=de+la+et')).body.warnings[0]).toContain('Aucun mot significatif');
   expect((await json('/workbench/context?project='+pj+'&q=zzzxyzabc')).body.warnings[0]).toContain('Aucun élément trouvé');
   expect((await json('/workbench/context?project='+bobP+'&q=minuteur')).status).toBe(404);expect((await json('/workbench/context?project='+pj+'&q=minuteur','GET',undefined,b)).status).toBe(404);expect((await json('/workbench/context?project='+pj+'&q=ab')).status).toBe(400);
+ });
+});
+
+describe('import P0 : archive filtrée (conversations_filtrees.json + annexes), intégrité, reprise, concurrence, archives hostiles',()=>{
+ const enc=(x:string)=>new TextEncoder().encode(x);
+ const PNG=new Uint8Array([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,7,7,7]);
+ const T0=Date.parse('2026-09-05T08:00:00Z')/1000;
+ /** Conversation ChatGPT synthétique : arbre à nœuds, une branche alternative, un nœud système sans texte, des références de fichiers. */
+ const conv=(i:number,o:{refs?:string[];branch?:boolean}={})=>{
+  const id='p0-conv-'+String(i).padStart(3,'0'),mapping:Record<string,any>={};
+  const node=(nid:string,parent:string|null,children:string[],role:string,text:string|null,extra:any={})=>mapping[nid]={id:nid,parent,children,message:text===null?null:{id:nid,author:{role},create_time:T0+i*100+Object.keys(mapping).length,content:{content_type:'text',parts:[text]},metadata:{model_slug:'gpt-5',...extra}}};
+  node('root',null,['sys'],'',null);node('sys','root',['u1'],'system',' ');                     // nœud système sans texte exploitable
+  node('u1','sys',o.branch?['a1','a2']:['a1'],'user','Question '+i+' avec un peu de texte',{attachments:(o.refs||[]).map(r=>({id:r,name:r+'.pdf',size:10,mime_type:'application/pdf'})),unknown_meta:'x'});
+  node('a1','u1',[],'assistant','Réponse A de la conversation '+i);
+  if(o.branch)node('a2','u1',[],'assistant','Réponse B alternative '+i);
+  return {id,title:'Conversation '+i,create_time:T0+i*100,update_time:T0+i*100+60,current_node:o.branch?'a2':'a1',default_model_slug:'gpt-5',plugin_ids:['x'],mapping};
+ };
+ const convs=Array.from({length:12},(_,i)=>conv(i,{branch:i%4===0,refs:i===0?['file-P0AAA111','file-P0MISSING','file-P0CORR1','file-P0GONE']:[]}));
+ const nodeCount=convs.reduce((n,c)=>n+Object.keys(c.mapping).length,0),textNodes=convs.reduce((n,c)=>n+Object.values(c.mapping).filter((x:any)=>x.message&&x.message.content.parts[0].trim()).length,0);
+ const annexes=(extra:Record<string,any>={})=>({
+  'correspondance_fichiers.json':enc(JSON.stringify({'file-P0CORR1':'bibliotheque_non_rattachee/renamed-doc.pdf','file-P0GONE':'pieces_jointes/inexistant.pdf','file-LIB1':'bibliotheque_non_rattachee/lib1.pdf'})),
+  'verification.json':enc(JSON.stringify({verification:{conversations_conservees:12,messages_conserves:textNodes,noeuds:nodeCount,conversations_exclues:580,images_exclues:169,ok:true}})),
+  'inventaire_complet.json':enc(JSON.stringify({total:{conversations:12},fichiers:[{nom:'a'}]})),'EXCLUSIONS_IMAGES.json':enc(JSON.stringify([{id:'img-1',motif:'image exclue'}])),'LISEZMOI_ALLEGE.txt':enc('Archive allégée du 1er septembre 2026 UTC.'),...extra});
+ const base=(variant='',over:Record<string,Uint8Array>={},extra:Record<string,any>={}):Record<string,Uint8Array>=>({
+  'conversations_filtrees.json':enc(JSON.stringify(convs)),...annexes(extra),
+  'sites/siteA/index.html':enc('<!doctype html><title>A</title>'),'sites/siteA/style.css':enc('body{}'),
+  'pieces_jointes/file-P0AAA111-plan.pdf':enc('%PDF-1.4 plan'),'bibliotheque_non_rattachee/renamed-doc.pdf':enc('%PDF-1.4 renamed'),'bibliotheque_non_rattachee/lib1.pdf':enc('%PDF-1.4 lib'),'bibliotheque_non_rattachee/sans-extension':PNG,
+  ...(variant?{['variante-'+variant+'.txt']:enc('variante '+variant)}:{}),...over});
+ const ZIP_DATE_P0={mtime:new Date('2026-10-01T00:00:00Z')};   // même raison : empreinte stable d'un appel à l'autre
+ const file=(f:Record<string,Uint8Array>,name='archive-filtree.zip')=>new File([zipSync(f,ZIP_DATE_P0)],name);
+ const apiFor=(cookie?:string)=>({post:async(p:string,b:unknown)=>{const r=await json(p,'POST',b,cookie);if(r.status>=400)throw Object.assign(new Error(r.status+' '+(r.body?.error||JSON.stringify(r.body))),{status:r.status,body:r.body});return r.body;},get:async(p:string)=>{const r=await json(p,'GET',undefined,cookie);if(r.status>=400)throw Object.assign(new Error(r.status+' '+JSON.stringify(r.body)),{status:r.status});return r.body;}});
+ const failAt=(api:any,n:number)=>{let calls=0;const wrap=(fn:any)=>async(...a:any[])=>{if(++calls===n)throw new Error('Réseau coupé (simulé) à l’appel '+n);return fn(...a);};return {post:wrap(api.post),get:wrap(api.get),calls:()=>calls};};
+ let A:any,batch:any,baseline:any;
+ const integ=async(id:string)=>(await json('/exports/'+id+'/integrity')).body;
+ const snapshot=async(id:string)=>{const i=await integ(id),cov=(await json('/exports/'+id+'/coverage')).body.coverage;return {segs:i.segments.registered,convs:i.conversations.stored,dups:i.conversations.duplicates,nodes:i.nodes.stored,declared:cov.conversations.declared,inventoried:cov.conversations.inventoried,status:i.inventory_status,annexes:i.annexes.length};};
+
+ it('A/B. conversations_filtrees.json est détecté et validé ; segments, annexes et groupes reconnus ; rien d’une autre nature pris pour une conversation',async()=>{
+  dbRef=await mf.getD1Database('DB');A=apiFor();const r=await inventoryArchive(file(base()),A);batch=r.batch;
+  expect(r.segments).toHaveLength(1);expect(r.segments[0]).toMatchObject({name:'conversations_filtrees.json',status:'inventoried',conversations:12});
+  expect(r.totals).toMatchObject({conversations:12,nodes:nodeCount});expect(r.invalid_conversations).toBe(0);expect(r.annexes.map(x=>x.kind).sort()).toEqual(['correspondance','exclusions','inventaire','lisez_moi','verification']);
+  expect(r.annexes.every(x=>x.status==='stored')).toBe(true);
+  const b0=(await json('/exports/'+batch.id)).body;expect(b0).toBeDefined();
+  const list=(await json('/exports')).body.items.find((x:any)=>x.id===batch.id);expect(list.stats).toMatchObject({segments_detected:1,annexes_detected:5,zip_entries:12});expect(list.stats.entries_by_group).toMatchObject({sites:2,pieces_jointes:1,bibliotheque_non_rattachee:3,autre:6});
+  const segs=(await json('/exports/'+batch.id+'/segments')).body.items;expect(segs[0]).toMatchObject({rows_stored:12,nodes_stored:nodeCount,status:'inventoried'});
+ });
+ it('C. la structure est conservée nœud par nœud : parents, enfants dans l’ordre, branches, dates, identifiants, références, et ce qui n’est pas conservé est dit',async()=>{
+  const rows=(await json('/exports/'+batch.id+'/conversations?limit=50')).body.items;const c0=rows.find((x:any)=>x.source_id==='p0-conv-000');
+  expect(c0).toMatchObject({segment:'conversations_filtrees.json',source_index:0,node_count:5,branch_count:1,created_time:new Date(T0*1000).toISOString()});
+  const n=(await json('/exports/'+batch.id+'/conversations/'+c0.id+'/nodes')).body;
+  expect(n.nodes.map((x:any)=>x.node_id)).toEqual(Object.keys(convs[0].mapping));
+  const by=Object.fromEntries(n.nodes.map((x:any)=>[x.node_id,x]));expect(by.u1.children).toEqual(['a1','a2']);expect(by.a1.parent_id).toBe('u1');expect(by.a2.parent_id).toBe('u1');expect(by.root.parent_id).toBeNull();
+  expect(by.sys.has_text).toBe(false);expect(by.u1).toMatchObject({role:'user',has_text:true,attachment_refs:4,meta:{model_slug:'gpt-5'}});expect(by.u1.create_time).toBe(new Date((convs[0].mapping.u1.message.create_time)*1000).toISOString());
+  expect(n.conversation.meta.scalars).toMatchObject({default_model_slug:'gpt-5',current_node:'a2'});expect(n.conversation.meta.unstored_keys).toEqual(['plugin_ids']);expect(n.conversation.meta.structure).toMatchObject({roots:1,dangling:0,cycles:0,branch_points:1,current_node_ok:true});
+  const total=(await json('/exports/'+batch.id+'/integrity')).body;expect(total.nodes).toMatchObject({stored:nodeCount,announced_by_inventory:nodeCount,dangling:0,cycles:0,with_text:textNodes,without_text:nodeCount-textNodes});
+  expect(total.not_preserved.fields.find((f:any)=>f.field==='metadata.unknown_meta').count).toBe(12);                         // champ inconnu compté, pas supprimé en silence
+ });
+ it('E. annexes, groupes et fichiers : correspondance vérifiée contre l’archive, fichiers manquants distingués, bibliothèque non rattachée conservée à part',async()=>{
+  const idx=await indexArchiveFiles(file(base()),batch,A);expect(idx).toMatchObject({total:11,hashed:11,problems:0});
+  const i=await integ(batch.id);
+  expect(i.files_by_group.sites).toMatchObject({total:2,hashed:2});expect(i.files_by_group.pieces_jointes.total).toBe(1);expect(i.files_by_group.bibliotheque_non_rattachee.total).toBe(3);expect(i.files_by_group.autre.total).toBe(5);
+  expect(i.attachments).toMatchObject({in_archive:2,referenced_only:2,via_correspondance:1});expect(i.correspondance).toEqual({declared:3,present:2,path_missing:1});
+  const atts=(await json('/exports/'+batch.id+'/attachments')).body.items;const at=(k:string)=>atts.find((a:any)=>a.ref_key===k);
+  expect(at('file-P0AAA111')).toMatchObject({link_status:'in_archive',entry_name:'pieces_jointes/file-P0AAA111-plan.pdf'});
+  expect(at('file-P0CORR1')).toMatchObject({link_status:'in_archive',entry_name:'bibliotheque_non_rattachee/renamed-doc.pdf'});
+  expect(at('file-P0MISSING').link_status).toBe('referenced_only');expect(at('file-P0GONE').link_status).toBe('referenced_only');
+  const gone=(await json('/exports/'+batch.id+'/attachments?status=referenced_only')).body.items.find((a:any)=>a.ref_key==='file-P0GONE');expect(gone).toBeDefined();
+  expect((await json('/exports/'+batch.id+'/files?kind=png')).body.items.map((f:any)=>f.entry_name)).toEqual(['bibliotheque_non_rattachee/sans-extension']);   // type réel d'un fichier sans extension
+  const link=await json('/exports/'+batch.id+'/link-attachments','POST',{});expect(link.body).toMatchObject({declared_links:3,declared_present:2,declared_path_missing:1,declared_not_cited:1,via_correspondance:1});
+  const ann=(await json('/exports/'+batch.id+'/annexes')).body.items;expect(ann.find((a:any)=>a.kind==='correspondance').shape.correspondance).toMatchObject({form:'map',pairs:3,skipped:0});
+  const readme=ann.find((a:any)=>a.kind==='lisez_moi');expect((await json('/exports/'+batch.id+'/annexes/'+readme.id+'/content')).body.content).toBe('Archive allégée du 1er septembre 2026 UTC.');
+  const cov=(await json('/exports/'+batch.id+'/coverage')).body.coverage.attachments;expect(cov).toMatchObject({referenced:4,accessible:2});expect(cov.note).toContain('original reste dans votre archive');   // pas de « conservé » abusif
+ });
+ it('3. comparaison annoncé / enregistré : concordance, écart, absence d’annonce — et distinction absent / invalide / non importé',async()=>{
+  const i=await integ(batch.id);const cmp=Object.fromEntries(i.comparisons.map((x:any)=>[x.category,x.status]));expect(cmp).toEqual({conversations:'concordant',messages:'concordant',nodes:'concordant'});
+  expect(i.inventory_status).toBe('complet');expect(i.summary).toContain('Inventaire cohérent');
+  const cats=Object.fromEntries(i.gaps.map((g:any)=>[g.category,g.count]));expect(cats.absent_de_l_archive).toBeGreaterThanOrEqual(1);expect(cats.non_importe).toBe(12);expect(cats.invalide).toBeUndefined();   // les 12 conversations ne sont pas encore importées dans la mémoire
+  expect(i.gaps.some((g:any)=>/correspondance/.test(g.text)&&/absent/.test(g.text))).toBe(true);
+  const wrong=await inventoryArchive(file(base('faux',{},{'verification.json':enc(JSON.stringify({conversations_conservees:12,messages_conserves:textNodes+7,noeuds:nodeCount}))})),A);
+  const iw=await integ(wrong.batch.id);expect(Object.fromEntries(iw.comparisons.map((x:any)=>[x.category,x.status])).messages).toBe('ecart');expect(iw.gaps.some((g:any)=>g.category==='ecart'&&/messages/.test(g.text))).toBe(true);
+  expect(iw.notice).toContain('heuristique');
+  baseline=await snapshot(batch.id);expect(baseline).toMatchObject({segs:1,convs:12,nodes:nodeCount,dups:0,declared:12,inventoried:12,status:'complet',annexes:5});
+ });
+ it('D. interruption à plusieurs moments puis reprise : mêmes totaux que l’import ininterrompu, aucun doublon, aucun segment faussement terminé',async()=>{
+  const probe=failAt(A,1e9);await inventoryArchive(file(base('compte')),probe);const total=probe.calls();expect(total).toBeGreaterThan(8);
+  for(const [k,n] of [2,Math.floor(total*.25),Math.floor(total*.5),Math.floor(total*.75),total-1,total].entries()){
+   const f=base('coupure'+k);const failing=failAt(A,n);
+   await inventoryArchive(file(f),failing).then(()=>{},e=>{expect(String(e.message)).toMatch(/Réseau coupé/);});   // une annexe en échec est signalée sans faire échouer le reste : dans tous les cas la reprise doit converger
+   const mid=(await json('/exports')).body.items.find((x:any)=>x.sha256===undefined?false:true&&x.filename==='archive-filtree.zip'&&x.stats.zip_entries===13&&false);void mid;
+   const second=await inventoryArchive(file(f),A);const snap=await snapshot(second.batch.id);
+   expect({...snap}).toEqual(baseline);                                                                                                       // mêmes chiffres qu'un import sans coupure
+   const rows=(await json('/exports/'+second.batch.id+'/conversations?limit=50')).body.items;expect(new Set(rows.map((r:any)=>r.source_id)).size).toBe(12);expect(rows).toHaveLength(12);
+   const dup=await db2().prepare('SELECT COUNT(*) AS n FROM (SELECT conversation_id,node_id FROM export_nodes WHERE batch_id=? GROUP BY conversation_id,node_id HAVING COUNT(*)>1)').bind(second.batch.id).first<any>();expect(dup.n).toBe(0);
+  }
+ });
+ let dbRef:D1Database;const db2=()=>dbRef;
+ it('D. un segment n’est jamais déclaré terminé avant que le serveur ait recompté ce qu’il a enregistré',async()=>{
+  dbRef=await mf.getD1Database('DB');
+  const f=base('persist');const r=await inventoryArchive(file(f),A);const id=r.batch.id;
+  const sha='a'.repeat(64);
+  const incomplete=await json('/exports/'+id+'/segments','POST',{name:'autre-segment.json',size:10,sha256:sha,conversation_count:5,status:'inventoried',rows_expected:5,nodes_expected:20});
+  expect(incomplete.status).toBe(409);expect(incomplete.body.error).toContain('incomplet côté serveur');
+  expect((await json('/exports/'+id+'/segments')).body.items.map((s:any)=>s.name)).toEqual(['conversations_filtrees.json']);                // rien n'a été enregistré
+  expect((await json('/exports/'+id+'/coverage')).body.coverage.conversations.declared).toBe(12);
+  const forged=await json('/exports/'+id+'/segments','POST',{name:'conversations_filtrees.json',size:1,sha256:sha,conversation_count:12,status:'inventoried',rows_expected:12,nodes_expected:nodeCount});expect(forged.status).toBe(409);   // même nom, autre contenu
+ });
+ it('D. imports simultanés de la même archive : une seule fiche, aucune erreur, mêmes totaux',async()=>{
+  const f=base('simultane');const [r1,r2,r3]=await Promise.all([inventoryArchive(file(f),A),inventoryArchive(file(f),A),inventoryArchive(file(f),A)]);
+  expect(new Set([r1.batch.id,r2.batch.id,r3.batch.id]).size).toBe(1);expect(await snapshot(r1.batch.id)).toEqual(baseline);
+  const mine=(await json('/exports')).body.items.filter((x:any)=>x.stats.zip_entries===13&&x.filename==='archive-filtree.zip');expect(mine.filter((x:any)=>x.id===r1.batch.id)).toHaveLength(1);
+  const nodes=await db2().prepare('SELECT COUNT(*) AS n FROM export_nodes WHERE batch_id=?').bind(r1.batch.id).first<any>();expect(nodes.n).toBe(nodeCount);
+ });
+ it('B/F. archives invalides ou hostiles : refusées avec leur motif, rien d’exécuté, les bons segments restent importés',async()=>{
+  const deep='['.repeat(300)+']'.repeat(300);
+  await expect(inventoryArchive(file({'conversations_filtrees.json':enc(deep),'x.txt':enc('x')},'profond.zip'),A)).rejects.toThrow(/Imbrication JSON|Aucune conversation valide/);
+  await expect(inventoryArchive(file({'conversations_filtrees.json':enc(JSON.stringify({autre:'chose'}))},'mauvais-schema.zip'),A)).rejects.toThrow(/Aucune conversation valide.*(liste|reconnue)/);
+  await expect(inventoryArchive(file({'conversations_filtrees.json':enc('[]')},'vide.zip'),A)).rejects.toThrow(/vide/);
+  await expect(inventoryArchive(file({'conversations_filtrees.json':enc('[{"mapping":')},'tronque.zip'),A)).rejects.toThrow(/JSON illisible|Aucune conversation valide/);
+  await expect(inventoryArchive(file({'sites/conversations.json':enc(JSON.stringify(convs)),'pieces_jointes/conversations_filtrees.json':enc(JSON.stringify(convs))},'faux-positifs.zip'),A)).rejects.toThrow(/aucun fichier de conversations/);   // rangés dans sites/ ou pieces_jointes/ : ce sont des ressources
+  const mixed=await inventoryArchive(file({'conversations_filtrees.json':enc(JSON.stringify([...convs.slice(0,2),{title:'sans id',mapping:{}},{id:'x'},'texte'])),'conversations_1.json':enc(JSON.stringify({pas:'des conversations'}))},'melange.zip'),A);
+  expect(mixed.segments.map(s=>[s.name,s.status,s.reason_code||''])).toEqual([['conversations_1.json','unreadable','invalid_structure'],['conversations_filtrees.json','inventoried','']]);expect(mixed.invalid_conversations).toBe(3);
+  const im=await integ(mixed.batch.id);expect(im.inventory_status).toBe('incomplet');expect(im.segments.failed[0]).toMatchObject({name:'conversations_1.json',reason_code:'invalid_structure'});
+  expect(im.gaps.filter((g:any)=>g.category==='invalide').map((g:any)=>g.count).sort()).toEqual([1,1,3]);expect(im.conversations.stored).toBe(3);        // 2 valides + 1 entrée « erreur » (sans identifiant) ; les 3 rejetées restent dans l'archive, comptées à part
+  const evil=await inventoryArchive(file(base('hostile',{'../evil.txt':enc('x'),'sites/../../etc/passwd':enc('x')},{'correspondance_fichiers.json':enc(JSON.stringify({'file-P0AAA111':'../evil.txt','file-P0CORR1':'../../etc/passwd'}))})),A);
+  await indexArchiveFiles(file(base('hostile',{'../evil.txt':enc('x'),'sites/../../etc/passwd':enc('x')},{'correspondance_fichiers.json':enc(JSON.stringify({'file-P0AAA111':'../evil.txt','file-P0CORR1':'../../etc/passwd'}))})),evil.batch,A);
+  const files=(await json('/exports/'+evil.batch.id+'/files?status=unsafe_name&limit=50')).body.items.map((f:any)=>f.entry_name);expect(files.sort()).toEqual(['../evil.txt','sites/../../etc/passwd']);
+  const att=(await json('/exports/'+evil.batch.id+'/attachments')).body.items.find((a:any)=>a.ref_key==='file-P0CORR1');expect(att.link_status).toBe('referenced_only');expect(att.file_id||null).toBeNull();   // la correspondance ne peut pas désigner un fichier dangereux
+ });
+ it('B. fichier volumineux : plusieurs milliers de nœuds, plusieurs segments, résultat exact',async()=>{
+  const bigConvs=(seg:number)=>Array.from({length:150},(_,i)=>{const c=conv(seg*1000+i,{branch:i%5===0});for(let k=0;k<30;k++){c.mapping['x'+k]={id:'x'+k,parent:k?'x'+(k-1):'a1',children:k<29?['x'+(k+1)]:[],message:{id:'x'+k,author:{role:'user'},create_time:T0+k,content:{content_type:'text',parts:['Texte volumineux '.repeat(40)+k]},metadata:{}}};}c.mapping.a1.children=['x0'];return c;});
+  const b1=bigConvs(1),b2=bigConvs(2),size=JSON.stringify(b1).length+JSON.stringify(b2).length,expected=[...b1,...b2].reduce((n,c)=>n+Object.keys(c.mapping).length,0);
+  expect(size).toBeGreaterThan(3_000_000);
+  const r=await inventoryArchive(file({'conversations_1.json':enc(JSON.stringify(b1)),'conversations_2.json':enc(JSON.stringify(b2))},'volumineux.zip'),A);
+  expect(r.segments.map(s=>s.status)).toEqual(['inventoried','inventoried']);expect(r.totals).toMatchObject({conversations:300,nodes:expected});
+  const i=await integ(r.batch.id);expect(i).toMatchObject({inventory_status:'complet',segments:{detected:2,registered:2},nodes:{stored:expected,dangling:0,cycles:0}});
+ },60000);
+ it('E. annexes : forme inconnue signalée sans lien, JSON illisible conservé, trop volumineuse en métadonnées seules, empreinte vérifiée',async()=>{
+  const sha=async(t:string)=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',enc(t)))).map(x=>x.toString(16).padStart(2,'0')).join('');
+  const f=base('annexes',{},{});const r=await inventoryArchive(file(f),A);const id=r.batch.id;
+  const post=async(name:string,content:string|null,size?:number,sh?:string)=>json('/exports/'+id+'/annexes','POST',{name,size:size??(content?enc(content).length:5_000_000),sha256:sh??(content===null?'b'.repeat(64):await sha(content)),content});
+  const odd=await post('correspondance_fichiers.json',JSON.stringify({a:{b:1},c:{d:2}}));expect(odd.status).toBe(409);                                       // même nom, autre contenu : refusé
+  const shape=await json('/exports/'+id+'/annexes');expect(shape.body.items.find((a:any)=>a.kind==='correspondance').status).toBe('stored');
+  const e2=await inventoryArchive(file(base('annexes2',{},{'correspondance_fichiers.json':enc(JSON.stringify({a:{b:1},c:{d:2}})),'verification.json':enc('{pas du json')})),A);
+  const ann=(await json('/exports/'+e2.batch.id+'/annexes')).body.items;expect(ann.find((a:any)=>a.kind==='correspondance')).toMatchObject({status:'unrecognized_shape'});expect(ann.find((a:any)=>a.kind==='verification')).toMatchObject({status:'invalid_json',content_stored:1});
+  expect((await integ(e2.batch.id)).correspondance.declared).toBe(0);expect((await integ(e2.batch.id)).gaps.filter((g:any)=>g.category==='invalide').length).toBeGreaterThanOrEqual(2);
+  expect((await post('LISEZMOI_ALLEGE.txt','Texte différent',undefined,'c'.repeat(64))).status).toBe(409);
+  const big=await post('inventaire_complet.json',null,5_000_000,'d'.repeat(64));expect(big.status).toBe(409);                                                  // même nom que l'annexe existante, autre empreinte
+  const e3=await inventoryArchive(file({'conversations_filtrees.json':enc(JSON.stringify(convs.slice(0,2)))},'solo.zip'),A);
+  const tooBig=await json('/exports/'+e3.batch.id+'/annexes','POST',{name:'verification.json',size:5_000_000,sha256:'e'.repeat(64),content:null});expect(tooBig.status).toBe(201);expect(tooBig.body).toMatchObject({status:'too_large'});
+  expect((await json('/exports/'+e3.batch.id+'/annexes')).body.items[0].content_stored).toBe(0);expect((await json('/exports/'+e3.batch.id+'/annexes/'+(await json('/exports/'+e3.batch.id+'/annexes')).body.items[0].id+'/content')).status).toBe(404);
+  expect((await json('/exports/'+e3.batch.id+'/annexes','POST',{name:'user.json',size:2,sha256:await sha('{}'),content:'{}'})).status).toBe(400);                  // pas une annexe reconnue
+  expect((await json('/exports/'+e3.batch.id+'/annexes','POST',{name:'LISEZMOI_ALLEGE.txt',size:3,sha256:'f'.repeat(64),content:'abc'})).status).toBe(400);         // empreinte qui ne correspond pas au texte
+ });
+ it('F. séparation entre comptes sur chaque nouvelle route ; mêmes archives, comptes distincts ; jokers SQL littéraux',async()=>{
+  for(const [m,path,body] of [['GET','/integrity'],['GET','/annexes'],['GET','/files'],['GET','/segments'],['GET','/conversations/'+'00000000-0000-4000-8000-000000000000'+'/nodes'],['POST','/nodes',{items:[{source_id:'p0-conv-000',nodes:[{node_id:'n',parent_id:null,children:[],role:'',content_type:'',create_time:null,has_text:false,text_chars:0,attachment_refs:0}]}]}],['POST','/annexes',{name:'verification.json',size:2,sha256:'a'.repeat(64),content:null}],['POST','/link-attachments',{}]] as any[]){
+   const r=await json('/exports/'+batch.id+path,m,body,b);expect(r.status,m+' '+path).toBe(404);}
+  const mineB=await inventoryArchive(file(base()),apiFor(b));expect(mineB.batch.id).not.toBe(batch.id);expect((await json('/exports/'+mineB.batch.id+'/integrity','GET',undefined,b)).body.conversations.stored).toBe(12);
+  const nodesA=await db2().prepare('SELECT COUNT(*) AS n FROM export_nodes WHERE batch_id=?').bind(batch.id).first<any>();expect(nodesA.n).toBe(nodeCount);              // l'import de l'autre compte n'a rien touché
+  const proj=await json('/projects','POST',{name:'100% sûr_projet'});expect(proj.status).toBe(201);await json('/projects','POST',{name:'1000 autre'});
+  expect((await json('/projects?q='+encodeURIComponent('100%'))).body.items.map((p:any)=>p.name)).toEqual(['100% sûr_projet']);expect((await json('/projects?q='+encodeURIComponent('_____'))).body.items).toHaveLength(0);
+  expect((await json('/search?q='+encodeURIComponent('%'))).body.projects.map((p:any)=>p.name)).toEqual(['100% sûr_projet']);
+ });
+ it('3. l’export du compte ne prétend pas restituer ce qui a été perdu : structure et contenus de l’archive déclarés non inclus ; annexes sans leur texte ; sauvegarde non cassée',async()=>{
+  const ex=await json('/account/export?metadata=true');expect(ex.status).toBe(200);
+  expect(ex.body.export_nodes).toBeUndefined();const ni=ex.body.import_scope.not_included;expect(ni[0].what).toContain('Structure des conversations');expect(ni[0].rows).toBeGreaterThanOrEqual(nodeCount);expect(ni[2].what).toContain('Contenu des fichiers de l’archive');
+  expect(ex.body.export_annexes.length).toBeGreaterThanOrEqual(5);expect(JSON.stringify(ex.body.export_annexes)).not.toContain('Archive allégée');expect(ex.body.export_annexes.every((a:any)=>a.content===undefined)).toBe(true);
+  expect(ex.body.export_conversations.some((c:any)=>c.segment==='conversations_filtrees.json'&&c.source_index!==undefined)).toBe(true);expect(ex.body.export_links.length).toBeGreaterThanOrEqual(3);
+  const health=await (await mf.dispatchFetch(origin+'/api/health')).json() as any;expect(health.schema.applied).toContain('0022');expect(health.schema.missing).toEqual([]);
+ });
+ it('F. correspondance : un chemin absolu, Windows ou avec « .. » ne crée jamais de lien ; seuls les chemins relatifs sûrs vers un fichier présent le font',async()=>{
+  const refs=['file-PA1','file-PA2','file-PA3','file-PA4','file-PA5','file-PA6','file-PA7','file-PA8'];
+  const mapping={'file-PA1':'/pieces_jointes/fichier.pdf','file-PA2':'C:/pieces_jointes/fichier.pdf','file-PA3':'../pieces_jointes/fichier.pdf','file-PA4':'dossier/../../fichier.pdf','file-PA5':'./pieces_jointes/fichier.pdf','file-PA6':'pieces_jointes/fichier.pdf','file-PA7':'pieces_jointes/absent.pdf','file-PA8':'pieces_jointes\\fichier.pdf'};
+  const f={'conversations_filtrees.json':enc(JSON.stringify([conv(0,{refs})])),'correspondance_fichiers.json':enc(JSON.stringify(mapping)),'pieces_jointes/fichier.pdf':enc('%PDF-1.4 vrai'),'fichier.pdf':enc('%PDF-1.4 racine')};
+  const r=await inventoryArchive(file(f,'chemins.zip'),A);await indexArchiveFiles(file(f,'chemins.zip'),r.batch,A);
+  const atts=(await json('/exports/'+r.batch.id+'/attachments')).body.items,by=(k:string)=>atts.find((a:any)=>a.ref_key===k);
+  for(const k of ['file-PA1','file-PA2','file-PA3','file-PA4','file-PA8']){expect(by(k).link_status,k).toBe('referenced_only');expect(by(k).file_id||null,k).toBeNull();}   // chemins rejetés : jamais de lien, y compris vers « fichier.pdf » à la racine
+  expect(by('file-PA5')).toMatchObject({link_status:'in_archive',entry_name:'pieces_jointes/fichier.pdf'});expect(by('file-PA6')).toMatchObject({link_status:'in_archive',entry_name:'pieces_jointes/fichier.pdf'});
+  expect(by('file-PA7').link_status).toBe('referenced_only');                                                                                                         // chemin sûr mais fichier absent
+  const i=await integ(r.batch.id);expect(i.correspondance).toEqual({declared:3,present:2,path_missing:1});
+  const ann=(await json('/exports/'+r.batch.id+'/annexes')).body.items.find((a:any)=>a.kind==='correspondance');expect(ann.shape.correspondance).toMatchObject({form:'map',pairs:3,skipped:5,unsafe:5});
+  const links=await db2().prepare('SELECT declared_path FROM export_links WHERE batch_id=? ORDER BY declared_path').bind(r.batch.id).all<any>();expect(links.results.map((x:any)=>x.declared_path)).toEqual(['pieces_jointes/absent.pdf','pieces_jointes/fichier.pdf','pieces_jointes/fichier.pdf']);   // aucune ligne stockée pour un chemin dangereux
+  // une ligne ancienne ou forgée contenant un chemin dangereux ne produit pas non plus de lien
+  await db2().prepare("INSERT INTO export_links(id,user_id,batch_id,ref_key,declared_path,status) SELECT 'forge-1',user_id,id,'file-PA1','/pieces_jointes/fichier.pdf','present' FROM export_batches WHERE id=?").bind(r.batch.id).run();
+  await json('/exports/'+r.batch.id+'/link-attachments','POST',{});expect((await db2().prepare("SELECT status,file_id FROM export_links WHERE id='forge-1'").first<any>())).toMatchObject({status:'path_missing',file_id:null});
+  expect((await json('/exports/'+r.batch.id+'/attachments')).body.items.find((a:any)=>a.ref_key==='file-PA1').link_status).toBe('referenced_only');
+ });
+ it('D. D1 : un lot d’écriture est atomique (une erreur dans le lot n’en laisse aucune trace)',async()=>{
+  const d=await mf.getD1Database('DB');const before=(await d.prepare('SELECT COUNT(*) AS n FROM export_annexes').first<any>()).n;
+  await expect(d.batch([d.prepare("INSERT INTO export_links(id,user_id,batch_id,ref_key,declared_path,status) VALUES('zz-1','u','b','r','p','path_missing')"),d.prepare('INSERT INTO table_inexistante VALUES(1)')])).rejects.toThrow();
+  expect((await d.prepare("SELECT COUNT(*) AS n FROM export_links WHERE id='zz-1'").first<any>()).n).toBe(0);expect((await d.prepare('SELECT COUNT(*) AS n FROM export_annexes').first<any>()).n).toBe(before);
+ });
+});
+
+describe('readConversations : mêmes formats qu’à l’inventaire (validateConversationJson), rien de deviné',()=>{
+ const enc=(x:string)=>new TextEncoder().encode(x);
+ const hex=async(b:Uint8Array)=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',b as BufferSource))).map(x=>x.toString(16).padStart(2,'0')).join('');
+ const gptc=(id:string,title='T')=>({id,title,create_time:1788000000,mapping:{n1:{id:'n1',parent:null,children:[],message:{id:'n1',author:{role:'user'},create_time:1788000001,content:{content_type:'text',parts:['bonjour '+id]}}}}});
+ const claudec=(id:string)=>({uuid:id,name:'Claude '+id,created_at:'2026-09-02T10:00:00Z',chat_messages:[{uuid:'m-'+id,sender:'human',text:'salut',created_at:'2026-09-02T10:00:01Z'}]});
+ /** API simulée : le serveur « connaît » l'empreinte du fichier inventorié (le test cible la lecture, pas l'inventaire). */
+ const withFile=async(value:unknown,name='conversations_filtrees.json',tamper?:string)=>{const bytes=enc(typeof value==='string'?value:JSON.stringify(value));const sha=await hex(bytes);
+  const api={get:async()=>({items:[{name,sha256:tamper||sha}]}),post:async()=>({})};return {file:new File([bytes],name),api};};
+ const ids=async(value:unknown,wanted:string[],name='conversations_filtrees.json',tamper?:string)=>{const {file,api}=await withFile(value,name,tamper);return (await readConversations(file,'b',api as any,wanted.map(source_id=>({source_id,segment:name})))).map((c:any)=>c.id||c.uuid);};
+ it('tableau direct, clé « conversations », clé personnalisée unique, conversation seule, formats ChatGPT et Claude',async()=>{
+  expect(await ids([gptc('a'),gptc('b'),gptc('c')],['c','a'])).toEqual(['a','c']);
+  expect(await ids({conversations:[gptc('a'),gptc('b')]},['b'])).toEqual(['b']);
+  expect(await ids({conversations_conservees:[gptc('a'),gptc('b')],total:2,meta:{x:[1,2]}},['a','b'])).toEqual(['a','b']);   // enveloppe personnalisée acceptée par l'inventaire
+  expect(await ids(gptc('solo'),['solo'])).toEqual(['solo']);
+  expect(await ids([claudec('u1'),claudec('u2')],['u2'])).toEqual(['u2']);
+  expect(await ids({conversations:[claudec('u1')]},['u1'],'conversations.json')).toEqual(['u1']);
+ });
+ it('accord avec l’inventaire : tout ce que validateConversationJson accepte est relu, à l’identique',async()=>{
+  const {validateConversationJson,conversationId}=await import('../server/archive-entries.ts');
+  for(const v of [[gptc('a'),gptc('b')],{conversations:[gptc('a')]},{conversations_conservees:[gptc('a'),gptc('b')]},gptc('solo'),[claudec('u1')]]){
+   const val=validateConversationJson(v);expect(val.ok).toBe(true);const want=val.items.map(conversationId);expect(await ids(v,want)).toEqual(want);}
+ });
+ it('plusieurs listes → ambiguïté refusée, rien n’est choisi ; structure illisible refusée avec un motif',async()=>{
+  const two={conversations_a:[gptc('a')],conversations_b:[gptc('b')]};
+  await expect(ids(two,['a'])).rejects.toThrow(/Plusieurs listes de conversations|ambig/);await expect(ids(two,['b'])).rejects.toThrow(/aucun message n’a été importé/);
+  await expect(ids({autre:'chose'},['a'])).rejects.toThrow(/structure de conversations lisible/);await expect(ids('[{"mapping":',['a'])).rejects.toThrow();
+ });
+ it('conversation demandée absente ou identifiant incorrect : erreur explicite listant les identifiants, aucun résultat partiel',async()=>{
+  await expect(ids([gptc('a'),gptc('b')],['a','zzz'])).rejects.toThrow(/introuvable.*zzz/);
+  await expect(ids([gptc('a')],['A'])).rejects.toThrow(/introuvable/);                       // casse différente : autre identifiant
+  await expect(ids([gptc('a')],[''])).rejects.toThrow(/introuvable/);
+  await expect(ids({conversations_conservees:[gptc('a')]},['conversations_conservees'])).rejects.toThrow(/introuvable/);   // une clé n'est pas un identifiant
+ });
+ it('empreinte du segment : un fichier modifié depuis l’inventaire est refusé avant toute lecture',async()=>{
+  await expect(ids([gptc('a')],['a'],'conversations_filtrees.json','f'.repeat(64))).rejects.toThrow(/même empreinte|pas la même archive/);
+  expect(await ids([gptc('a')],['a'],'conversations_filtrees.json','0'.repeat(64))).toEqual(['a']);   // segment enregistré sans empreinte (ancien inventaire) : toléré comme avant
  });
 });

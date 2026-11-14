@@ -27,7 +27,14 @@ const checks:{id:string;table:string;columns:string[]}[]=[
  {id:'0020',table:'export_batches',columns:['ai_consent_at']},
  {id:'0020',table:'analysis_items',columns:['quote_verified','agreement']},
  {id:'0021',table:'export_files',columns:['sniff_kind','sha256']},
- {id:'0021',table:'export_conversations',columns:['segment']}
+ {id:'0021',table:'export_conversations',columns:['segment']},
+ {id:'0022',table:'export_conversations',columns:['meta','source_index']},
+ {id:'0022',table:'export_files',columns:['group_name']},
+ {id:'0022',table:'export_attachment_refs',columns:['link_source','note']},
+ {id:'0022',table:'export_segments',columns:['rows_stored','nodes_stored','dropped_fields','issues','wrapper','reason_code']},
+ {id:'0022',table:'export_nodes',columns:['id','user_id','batch_id','conversation_id','node_id','parent_id','children','role','content_type','create_time','has_text','text_chars','attachment_refs','meta']},
+ {id:'0022',table:'export_annexes',columns:['id','user_id','batch_id','name','kind','size','sha256','status','shape','content','note','created_at']},
+ {id:'0022',table:'export_links',columns:['id','user_id','batch_id','ref_key','declared_path','file_id','status']}
 ];
 let cache:{at:number;value:SchemaStatus}|null=null;
 /** Cache de 60 s par instance : la page de santé est publique, elle ne doit pas solliciter D1 à chaque appel. */
