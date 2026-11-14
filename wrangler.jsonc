@@ -57,11 +57,18 @@
     "enabled": false
   },
   "previews": {
-    "vars": {
-      "APP_ORIGIN": "http://localhost:8787",
-      "ALLOW_REGISTRATION": "false",
-      "STORAGE_LIMIT_MB": "20",
-      "MAX_FILE_MB": "0.25"
+  "vars": {
+    "APP_ORIGIN": "http://localhost:8787",
+    "ALLOW_REGISTRATION": "false",
+    "STORAGE_LIMIT_MB": "20",
+    "MAX_FILE_MB": "0.25"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "atelier-db-test",
+      "database_id": "098e53fe-0479-4084-87b1-81951d857fea",
+      "migrations_dir": "migrations"
     }
-  }
+  ]
 }
