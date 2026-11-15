@@ -5,7 +5,7 @@
 **Avant tout :** la PR du lot 4 doit être **fusionnée et en ligne**. Elle n’ajoute **aucune migration** : la fusion ne change donc pas la base de production. (Les lots 1 et 3 avaient des migrations ; elles doivent déjà être appliquées. Vérifiez sur `/api/health` : migrations 0007 à 0024, aucune manquante.)
 
 ## 1. Créer le projet
-1. Ouvrez Atelier → **Pilotage** → créez un projet nommé **Atelier** (si « Atelier » existe déjà, ouvrez-le).
+1. Ouvrez Atelier → **Projets** → onglet **Pilotage** → créez un projet nommé **Atelier** (si « Atelier » existe déjà, ouvrez-le).
 2. Ouvrez le projet → **Modèle du projet** → « Gabarit de départ » : **Atelier lui-même**. *Vous voyez :* « Suivi des fonctionnalités » coché.
 3. *(Facultatif, jamais essayé en réel)* **Dépôt GitHub** : associez `martinznt/Atelier`, en lecture seule. Sans cela, vous ne pourrez pas créer de mission (étape 5).
 

@@ -16,7 +16,7 @@ for(const width of [360,390])test(`Atelier dans Atelier : import, recherche, tâ
  const me=(await (await page.request.get('/api/auth/me')).json()).user.id as string;
  await page.reload();
  // (2) ouvrir le projet dans Pilotage
- await page.locator('.sidebar nav button',{hasText:'Pilotage'}).first().click();
+ await page.locator('.sidebar nav button',{hasText:'Projets'}).first().click();await page.locator('.screen-tabs').getByRole('button',{name:'Pilotage',exact:true}).click();
  await page.screenshot({path:`test-results/lot4-pilotage-${width}.png`,fullPage:true});
  await page.getByText('Atelier',{exact:true}).first().click();
  // gabarit « Atelier lui-même » (active le suivi des fonctionnalités)
@@ -56,7 +56,7 @@ for(const width of [360,390])test(`Atelier dans Atelier : import, recherche, tâ
  sql(`INSERT INTO connections(id,user_id,provider,label,secret,created_at) VALUES('${conn}','${me}','github','gh essai','x','${at}');`
   +`INSERT INTO repositories(id,user_id,project_id,connection_id,full_name,branch,head_sha,created_at,default_branch) VALUES('${repo}','${me}','${project}','${conn}','martinznt/Atelier','main','${'0'.repeat(40)}','${at}','main');`
   +`INSERT INTO plan_tasks(id,user_id,project_id,title,objective,acceptance,created_at,updated_at) VALUES('${task}','${me}','${project}','Lot 5A — Relier Sport et Livre de recettes','Relier les deux dépôts en lecture seule.','Les deux sites sont suivis dans Atelier.','${at}','${at}');`);
- await page.reload();await page.locator('.sidebar nav button',{hasText:'Pilotage'}).first().click();await page.getByText('Atelier',{exact:true}).first().click();
+ await page.reload();await page.locator('.sidebar nav button',{hasText:'Projets'}).first().click();await page.locator('.screen-tabs').getByRole('button',{name:'Pilotage',exact:true}).click();await page.getByText('Atelier',{exact:true}).first().click();
  // Valider une décision à l'écran : « Proposée » → « Actuelle », avec « Je valide »
  const decSec=page.locator('details.fold:has(> summary > strong:text-is("Décisions et À trancher"))').first();
  if(await decSec.getAttribute('open')===null)await decSec.locator('> summary').click(); // elle s'ouvre seule tant qu'il y a des décisions à trancher
