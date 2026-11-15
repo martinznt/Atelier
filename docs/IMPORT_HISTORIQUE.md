@@ -2,7 +2,7 @@
 
 Version du 13 novembre 2026, mission P0 (PR #40, branche `fix/import-p0-integrite`, base `1e27b01e0c8def013ed63e63ae2f8c076a8b7806`).
 
-> **État de vérification : tout ce qui est décrit ici a été testé uniquement sur des archives synthétiques fabriquées par les tests.** Rien n'a été essayé avec la véritable archive (≈ 97,55 Mo, filtrée depuis le 1er septembre 2026), ni sur le Samsung Galaxy A05s, ni avec un fournisseur réel. La PR #40 n'est pas fusionnée et la migration 0022 n'est pas appliquée en production. Voir la section « Ce qui est vérifié, et ce qui ne l'est pas ».
+> **État de vérification : tout ce qui est décrit ici a été testé uniquement sur des archives synthétiques fabriquées par les tests.** Rien n'a été essayé avec la véritable archive (≈ 97,55 Mo, filtrée depuis le 1er septembre 2026), ni sur le Samsung Galaxy A05s, ni avec un fournisseur réel. La PR #40 a été fusionnée le 15 novembre 2026 (commit `69a4158`) et `/api/health` de la production indiquait ce jour-là les migrations 0007 à 0022 appliquées ; **aucun essai de la vraie archive en production n'est documenté**. Un rapport d'une autre session (`docs/audits/RAPPORT_LOT_0_2026-11-15.md`) décrit un import local de la vraie archive : non reproduit ni vérifié ici. Voir la section « Ce qui est vérifié, et ce qui ne l'est pas ».
 
 ## Ne pas confondre trois choses
 
@@ -94,7 +94,7 @@ Archive malformée, tronquée, chiffrée, à taille annoncée fausse ou à taux 
 
 ## Migration 0022 (obligatoire)
 
-`migrations/0022_import_integrity.sql` est **additive** : colonnes ajoutées aux tables d'export existantes, et nouvelles tables `export_nodes`, `export_annexes`, `export_links`. Elle est **créée mais non appliquée en production**. Tant qu'elle ne l'est pas, `/api/health` signale `0022` manquante (la vérification contrôle **toutes** les tables créées — `export_nodes`, `export_annexes`, `export_links` — et **toutes** les colonnes ajoutées ; un état partiellement migré est donc déclaré manquant, jamais appliqué), et le nouvel inventaire (nœuds, annexes, rapport d'intégrité) ne peut pas fonctionner. Elle ne supprime ni ne renomme rien.
+`migrations/0022_import_integrity.sql` est **additive** : colonnes ajoutées aux tables d'export existantes, et nouvelles tables `export_nodes`, `export_annexes`, `export_links`. Elle a été **appliquée en production par la fusion de la PR #40 le 15 novembre 2026** (relu sur `/api/health`, migrations 0007 à 0022, aucune manquante). Tant qu'elle n'est pas appliquée sur une base (copie locale, aperçu avec base de test), `/api/health` signale `0022` manquante (la vérification contrôle **toutes** les tables créées — `export_nodes`, `export_annexes`, `export_links` — et **toutes** les colonnes ajoutées ; un état partiellement migré est donc déclaré manquant, jamais appliqué), et le nouvel inventaire (nœuds, annexes, rapport d'intégrité) ne peut pas fonctionner. Elle ne supprime ni ne renomme rien. Règle pour les migrations suivantes : la fusion dans `main` les applique en production (`npm run deploy:cloudflare` : garde-fou de branche, `wrangler d1 migrations apply atelier-db --remote`, déploiement) ; la fusion est donc aussi la décision de migrer.
 
 ## Limites de l'export du compte
 
