@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './fixtures';
 test('compte, projet, fichier et interface sans débordement',async({page},info)=>{
  const username=`test_${info.project.name.replace(/\W/g,'').slice(0,15)}_${Date.now().toString(36)}`;
  await page.goto('/');await page.getByRole('button',{name:'Créer un compte',exact:true}).click();await page.getByLabel('Adresse email',{exact:true}).fill(username+'@example.test');await page.locator('input[type="password"]').fill('test1234');await page.getByRole('button',{name:'Créer mon compte'}).click();await expect(page.getByText('Conservez vos codes de récupération')).toBeVisible();await page.getByLabel('J’ai conservé ces codes dans un endroit sûr.').check();await page.getByRole('button',{name:'Entrer dans mon atelier'}).click();

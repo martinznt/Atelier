@@ -1,7 +1,7 @@
 /* Lot 2 — audit de lisibilité : ouvre chaque rubrique à 360, 390 et 1280 px, mesure la plus petite taille de texte,
    le contraste (≥ 3:1), les cibles tactiles (≥ 24 px), le débordement horizontal et la présence de la ligne d'aide.
    Écrit un bilan dans test-results/lot2-audit-<ETIQUETTE>.json (ETIQUETTE = avant / apres). */
-import {test,expect,type Page} from '@playwright/test';
+import {test,expect,type Page} from './fixtures';
 import {mkdirSync,writeFileSync} from 'node:fs';
 const LABEL=process.env.AUDIT_LABEL||'mesure';
 const ORIGIN='http://localhost:8787';

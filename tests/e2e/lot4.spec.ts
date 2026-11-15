@@ -1,6 +1,6 @@
 /* Lot 4 — « Atelier dans Atelier » : le parcours de Martin sur téléphone (360 et 390 px), joué dans le vrai navigateur contre le Worker local.
    Aucun appel réel à GitHub : le dépôt de la mission est inséré dans la base locale (comme au lot 3). */
-import {test,expect,type Page} from '@playwright/test';
+import {test,expect,type Page} from './fixtures';
 import {execFileSync} from 'node:child_process';
 const ORIGIN='http://localhost:8787';
 const noOverflow=async(page:Page,label:string)=>expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'débordement : '+label).toBe(true);

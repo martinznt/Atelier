@@ -1,7 +1,7 @@
 /* Lot 2 (étape A) — interface lisible : ligne d'aide sur chaque écran (G1), page « Bien utiliser Atelier » (G2),
    libellés corrigés, journal unique dans « Activité », raccourcis, aucun texte sous 12 px, aucun débordement.
    Étape B : 4 entrées par intention, barre du bas sans élément caché. Rejoue aussi les parcours versionnables parmi les 38 (1, 2, 3, 29, 31, 32, 34, 38) : voir docs/audits/RAPPORT_LOT_2_*.md. */
-import {test,expect,type Page} from '@playwright/test';
+import {test,expect,type Page} from './fixtures';
 const ORIGIN='http://localhost:8787';
 const MODULES=['Accueil','À traiter','Mes projets','Pilotage','Discussions','Fichiers','Activité','Mémoire','Réglages','Quotas Claude Code'];
 const ENTRY:Record<string,string>={Accueil:'Aujourd’hui','À traiter':'Aujourd’hui','Mes projets':'Projets',Pilotage:'Projets',Discussions:'Projets',Fichiers:'Projets',Activité:'Projets',Mémoire:'Savoir',Réglages:'Réglages et aide','Quotas Claude Code':'Réglages et aide',Aide:'Réglages et aide'};
