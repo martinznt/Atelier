@@ -74,7 +74,7 @@ export function HelpPage(){
    <li><strong>Une connexion (IA, GitHub)</strong> : « Réglages et aide » → « Réglages » → « Connexions ».</li>
    <li><strong>Importer l’historique ChatGPT</strong> : « Savoir » → « Export ChatGPT ».</li>
    <li><strong>Chercher quelque chose</strong> : la loupe « Recherche » (barre du bas sur téléphone, haut de l’écran sur ordinateur).</li>
-   <li><strong>Passer une tâche à Claude Code</strong> : « Projets » → « Pilotage » → « Plan » → « Préparer une consigne », puis « Savoir » → « Prompts ».</li>
+   <li><strong>Passer une tâche à Claude Code</strong> : « Projets » → « Pilotage » → « Missions pour Claude Code » → « Nouvelle mission », puis « Copier le texte exact ». (L’ancienne « consigne » du Plan et « Savoir » → « Prompts » existent toujours.)</li>
    <li><strong>Ce qui s’est passé</strong> : « Projets » → « Activité » (un seul journal, filtrable par projet).</li>
    <li><strong>Les quotas Claude Code</strong> : « Réglages et aide » → « Quotas Claude Code ».</li>
   </ul></section>

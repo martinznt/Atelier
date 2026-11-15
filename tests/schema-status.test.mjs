@@ -12,7 +12,8 @@ const tables={
  review_configs:['daily_limit','post_comment','review_mode','relay','relay_max_attempts','auto_scope','no_daily_cap','auto_mark'],ai_usage:['connection_id','outcome'],
  handoff_packages:['content_hash','status'],plan_tasks:['depends_on','proof','work_kind','do_not_touch'],repositories:['verified_at'],
  conversations:['category','status'],export_conversations:['segment','meta','source_index'],export_attachment_refs:['link_source','note'],export_nodes:[...N0022.export_nodes],export_segments:[...N0022.export_segments],export_annexes:[...N0022.export_annexes],export_links:[...N0022.export_links],atelier_questions:['dedupe_key'],prompt_versions:['locked','sent_at'],ref_audit_files:['read_status'],quota_readings:['used_percent','source'],checkpoints:['next_action'],export_batches:['ai_consent_at'],analysis_items:['quote_verified','agreement'],export_files:['sniff_kind','sha256','group_name'],
- project_setup:['project_id','template','feature_seq'],project_modules:['project_id','module_key','enabled'],item_lifecycle:['kind','item_id','status','reliability','source_ref','proof_kind','replaced_by_id'],lifecycle_events:['kind','item_id','to_status','to_reliability','reason','author_kind'],project_features:['code','name','state','group_name'],feature_links:['feature_id','target_kind','target_id']
+ project_setup:['project_id','template','feature_seq'],project_modules:['project_id','module_key','enabled'],item_lifecycle:['kind','item_id','status','reliability','source_ref','proof_kind','replaced_by_id'],lifecycle_events:['kind','item_id','to_status','to_reliability','reason','author_kind'],project_features:['code','name','state','group_name'],feature_links:['feature_id','target_kind','target_id'],
+ missions:['repo_full_name','rules_commit','executor_family','verdict','verdict_evidence']
 };
 const fake=(t)=>({prepare:sql=>({all:async()=>{const m=/table_info\((\w+)\)/.exec(sql);return {results:(t[m[1]]||[]).map(name=>({name}))};}})});
 test('toutes les migrations présentes : complet, liste appliquée, rien de manquant',async()=>{
@@ -71,4 +72,10 @@ test('0023 : tout présent → appliquée ; une table manquante → seule 0023 m
   s=await status({...tables,[t]:undefined});assert.equal(s.complete,false);assert.deepEqual(s.missing,['0023']);assert.ok(s.applied.includes('0022'));
  }
  s=await status(without('item_lifecycle','proof_kind'));assert.deepEqual(s.missing,['0023']);
+});
+test('0024 absente (table missions) : déclarée manquante, antérieures intactes',async()=>{
+ resetSchemaCache();
+ const {missions:_m,...without}=tables;
+ const s=await schemaStatus(fake(without));
+ assert.equal(s.complete,false);assert.deepEqual(s.missing,['0024']);assert.ok(s.applied.includes('0023'));
 });

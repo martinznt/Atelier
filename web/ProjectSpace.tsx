@@ -4,6 +4,7 @@ import {api,post,patch,remove,date,download} from './api';
 import {Button,Field,ErrorBox,Empty,SectionTitle,Loading} from './ui';
 import {ModelSection,FeaturesSection} from './ProjectModel';
 import {Shortcut} from './Guide';
+import {MissionsSection} from './Missions';
 import {LifeBadge,LifecycleEditor,ReliabilityBadge} from './Lifecycle';
 import {DocumentsSection,ResumeSection,JournalSection,RefAuditSection,TaskExtras} from './ProjectExtras';
 
@@ -67,6 +68,7 @@ function Space({id}:{id:string;onOpenProject:(p:any)=>void}){
   <RepoSection id={id} repos={ov.repositories} onChanged={reload}/>
   <GithubSection gh={gh}/>
   <PlanSection id={id} plan={plan} decisions={decisions} onChanged={reload}/>
+  <MissionsSection id={id} plan={plan} decisions={decisions} repos={ov.repositories}/>
   <HandoffSection id={id} plan={plan} decisions={decisions} repos={ov.repositories} gh={gh} onChanged={reload}/>
   <DecisionSection id={id} decisions={decisions} plan={plan} onChanged={reload}/>
   <DocumentsSection id={id}/>
