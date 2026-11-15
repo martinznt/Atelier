@@ -1,3 +1,12 @@
+# Lot 0 — contrôles du 15 novembre 2026 (exécutés en local, Node 22)
+
+- `tsc` OK ; vitest 84/84 ; build OK ; régressions OK ; stockage 11/11 ; `node --test tests/*.test.mjs` 313/314 (échec : `wrangler-previews`, configuration modifiée à la main le 14 novembre, **non corrigé**, décision de Martin) ; audit des exigences : 0 preuve cassée.
+- PR 40 rebasée en local : tsc OK, vitest 103/103, node 339/340 (même échec). Annexes de 300 Ko à 1 Mo : bug trouvé sur la vraie archive, correctif testé hors de la branche de la PR.
+- Sauvegarde/restauration locale : base identique ligne par ligne ; altération détectée. Migration 0022 sur base remplie : 0 perte.
+- Vraie archive importée en local (jamais en ligne) : inventaire, index, messages, relance sans doublon. **Non validé** : téléphone, production, fournisseurs IA, GitHub réel, sauvegarde de production.
+
+---
+
 # Comptes email — contrôles du 24 octobre 2026
 
 - **173 tests locaux réussis** : test:core 9 (3 Node + 6 Python), test:bridge 27,

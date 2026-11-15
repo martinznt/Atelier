@@ -1,3 +1,12 @@
+# 15 novembre 2026 — Lot 0 : fiabilité et mesure (branche `ccr-6c1d630e-rou9c1`, aucune nouvelle fonction)
+
+**État Git vérifié :** `main` = `4353342` ; la PR 39 (migration 0021) **est fusionnée** (`1e27b01`) ; une seule PR ouverte : la 40 (brouillon, migration 0022 non appliquée). Le déploiement en production et les migrations 0001-0021 appliquées sont rapportés, non revérifiés.
+**Fait (exécuté en local) :** contrôles de base sur `main` (tous verts sauf `tests/wrangler-previews.test.mjs`, rouge depuis la modification manuelle de `wrangler.jsonc` du 14 novembre) ; PR 40 rebasée sans conflit et testée (103/103) ; sauvegarde → restauration locale prouvée ; migration 0022 testée sur base remplie sans perte ; vraie archive de Martin (SHA-256 conforme) passée dans l'importeur de la PR 40 en local : 137 conversations, 6 723 nœuds, texte 7,62 Mio sur 50 Mio autorisés.
+**Trouvé :** annexe 300 Ko-1 Mo refusée en 413 dans la PR 40 (correctif et test fournis dans `docs/audits/correctifs/`) ; pas de FTS5 dans le projet.
+**Non fait / non vérifié :** sauvegarde de la production, appels réels aux fournisseurs IA et à GitHub, téléphone, réglage du tableau de bord Cloudflare. Détail : `docs/audits/RAPPORT_LOT_0_2026-11-15.md` ; guides : `docs/GUIDE_IMPORT_REEL.md`, `docs/PROTOCOLE_TELEPHONE_A05S.md`.
+
+---
+
 # 13 novembre 2026 — Finalisation : import d'archives, recherche, contexte, preuves (branche `feat/atelier-finalisation`)
 
 **État Git vérifié le 13 novembre :** `main` = `aa05aca` (PR 38 fusionnée) ; production `aa05aca`, migrations 0007 à 0020 appliquées (lu sur `/api/health`). La PR 36 est fusionnée ; la PR 37 l'a été dans la branche de la PR 36 et son contenu est arrivé dans `main` par la PR 38. Cette branche (migration **0021**, additive) n'est **pas fusionnée** : rien de ce qui suit n'est en ligne.
