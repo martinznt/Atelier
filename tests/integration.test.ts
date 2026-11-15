@@ -1786,7 +1786,7 @@ describe('lot 1 : modèle de projet — modules, cycle de vie, fiabilité, fonct
   const fn=(await json('/model/'+pA+'/features','POST',{name:'Pomelo fonction',author_kind:'ai'})).body;
   const conn=crypto.randomUUID(),repo=crypto.randomUUID();
   await db.prepare("INSERT INTO connections(id,user_id,provider,label,secret,created_at) VALUES(?,?,'github','x','s','2026-11-01')").bind(conn,ownerA).run();
-  await db.prepare("INSERT INTO memory_repos(id,user_id,connection_id,full_name,branch,commit_sha,synced_at,status,created_at) VALUES(?,?,?,?,?,?,?,?,?)").bind(repo,ownerA,conn,'martinznt/Memoire-Projets','main','af30cd0e0000000000000000000000000000000a','2026-11-14T08:00:00.000Z','ok','2026-11-01').run();
+  await db.prepare("INSERT INTO memory_repos(id,user_id,connection_id,full_name,branch,commit_sha,synced_at,status,created_at) VALUES(?,?,?,?,?,?,?,?,?)").bind(repo,ownerA,conn,'martinznt/Memoire-Projets-copie','main','af30cd0e0000000000000000000000000000000a','2026-11-14T08:00:00.000Z','ok','2026-11-01').run();
   await db.prepare("INSERT INTO memory_docs(id,user_id,repo_id,path,blob_sha,size,doc_type,project_key,title,doc_date,indexed_commit,present,content,content_blob_sha) VALUES(?,?,?,?,?,?,?,?,?,?,?,1,?,?)").bind(crypto.randomUUID(),ownerA,repo,'00_PILOTAGE/pomelo.md','b1',40,'decision','atelier','Pomelo dans Git','2026-11-10','af30cd0e0000000000000000000000000000000a','Texte copié du dépôt : pomelo','b1').run();
   const r=await json('/workbench/find?q=pomelo');expect(r.status).toBe(200);
   const titles=r.body.groups.flatMap((g:any)=>g.items.map((i:any)=>i.title));expect(titles).toContain('Pomelo règle actuelle');expect(titles).not.toContain('Pomelo idée proposée');expect(titles.join('|')).not.toContain('Pomelo fonction');

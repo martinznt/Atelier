@@ -18,7 +18,7 @@ for(const width of [360,390])test(`modèle de projet et fonctionnalités à ${wi
  await page.getByRole('button',{name:'Ajouter la fonctionnalité'}).click();
  await expect(page.getByText('F-0001 — Recherche de test')).toBeVisible();
  await page.locator('summary',{hasText:'F-0001 — Recherche de test'}).click();
- await page.getByLabel('État',{exact:true}).selectOption('in_progress');await expect(page.locator('summary',{hasText:'F-0001'}).getByText('En cours')).toBeVisible();
+ await page.locator('label.field',{hasText:/^ÉtatÀ concevoir/}).locator('select').selectOption('in_progress');await expect(page.locator('summary',{hasText:'F-0001'}).getByText('En cours')).toBeVisible();
  // « Vérifié » sans source : refusé avec un message clair
  await page.getByLabel('Niveau de fiabilité').selectOption('verified');await page.getByLabel('Pourquoi ce changement ?').fill('Je l’ai vu');
  await page.getByRole('button',{name:'Enregistrer le changement'}).click();
@@ -26,9 +26,9 @@ for(const width of [360,390])test(`modèle de projet et fonctionnalités à ${wi
  await noOverflow('fonctionnalité');await page.screenshot({path:`test-results/lot1-fonction-${width}.png`,fullPage:true});
  // avec source ET « adapté à ma demande » : accepté
  await page.getByLabel('Source précise').fill('tests/e2e/lot1.spec.ts');await page.getByLabel('Adapté à ma demande').check();await page.getByRole('button',{name:'Enregistrer le changement'}).click();
- await expect(page.locator('summary',{hasText:'F-0001'}).getByText('Vérifié',{exact:true})).toBeVisible();
+ await expect(page.locator('summary .rel-verified')).toBeVisible();
  // la loupe retrouve la fonctionnalité et dit d'où elle vient
- await page.getByRole('button',{name:'Recherche globale'}).click();await page.getByLabel('Recherche globale',{exact:true}).fill('Recherche de test');
+ await page.getByRole('button',{name:'Recherche globale'}).click();await page.getByRole('searchbox',{name:'Recherche globale'}).fill('Recherche de test');
  await expect(page.getByText('F-0001 — Recherche de test').last()).toBeVisible();await expect(page.getByText('Source : Atelier').first()).toBeVisible();
  await noOverflow('recherche');await page.screenshot({path:`test-results/lot1-recherche-${width}.png`,fullPage:true});
 });
