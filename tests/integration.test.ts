@@ -1587,6 +1587,12 @@ describe('import P0 : archive filtrée (conversations_filtrees.json + annexes), 
   expect(r.segments.map(s=>s.status)).toEqual(['inventoried','inventoried']);expect(r.totals).toMatchObject({conversations:300,nodes:expected});
   const i=await integ(r.batch.id);expect(i).toMatchObject({inventory_status:'complet',segments:{detected:2,registered:2},nodes:{stored:expected,dangling:0,cycles:0}});
  },60000);
+ it('E. annexe de 300 Ko à 1 Mo (cas réel : inventaire_complet.json de 485 Ko) : enregistrée, pas refusée en 413',async()=>{
+  const big=JSON.stringify({total:{conversations:12},fichiers:Array.from({length:6000},(_,i)=>({nom:'fichier-'+i+'.pdf',octets:i,note:'x'.repeat(40)}))});expect(big.length).toBeGreaterThan(300_000);expect(big.length).toBeLessThan(1_000_000);
+  const r=await inventoryArchive(file(base('annexe-moyenne',{},{'inventaire_complet.json':enc(big)})),A);
+  const inv=r.annexes.find(x=>x.name==='inventaire_complet.json');expect(inv).toMatchObject({kind:'inventaire',status:'stored'});
+  const ann=(await json('/exports/'+r.batch.id+'/annexes')).body.items.find((a:any)=>a.kind==='inventaire');expect(ann.status).toBe('stored');
+ });
  it('E. annexes : forme inconnue signalée sans lien, JSON illisible conservé, trop volumineuse en métadonnées seules, empreinte vérifiée',async()=>{
   const sha=async(t:string)=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',enc(t)))).map(x=>x.toString(16).padStart(2,'0')).join('');
   const f=base('annexes',{},{});const r=await inventoryArchive(file(f),A);const id=r.batch.id;
