@@ -1,5 +1,5 @@
 /* Lot 1 : parcours du téléphone — modèle du projet, fonctionnalité, « Vérifié » refusé sans source, recherche, sans débordement. */
-import {test,expect} from '@playwright/test';
+import {test,expect} from './fixtures';
 for(const width of [360,390])test(`modèle de projet et fonctionnalités à ${width} px`,async({page},info)=>{
  await page.setViewportSize({width,height:800});
  const email=`lot1_${width}_${Date.now().toString(36)}@example.test`;

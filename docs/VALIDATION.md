@@ -1,3 +1,10 @@
+# Lot 4 — contrôles du 15 novembre 2026 (exécutés en local, Node 22)
+
+- `tsc` OK ; vitest **146/146** (dont 20 de `tests/lot4-parcours.test.ts`) ; build OK ; régressions OK ; `test:storage` 11/11 ; 5 fichiers demandés 38/38 ; `node --test tests/*.test.mjs` **376/376**.
+- Playwright (Chromium préinstallé, 360 et 390 px) : `tests/e2e/lot4.spec.ts` 2/2, sans débordement ni texte sous 12 px ; serveur local lancé avec `--var ALLOW_REGISTRATION:true` (les inscriptions sont fermées dans `wrangler.jsonc`).
+- Import du fichier de départ : aperçu sans écriture, création, second import = 0 ajout, 3 imports simultanés = 0 doublon, un fichier plus court ne supprime rien, élément déjà modifié non écrasé ; isolation A/B (aperçu, import, lecture, recherche, missions).
+- **Aucune migration** dans ce lot. **Simulé** : GitHub (règles d’Atelier lues avec les vrais fichiers au commit `fb195ce`). **Réel** : aucun appel à GitHub, aucune IA, aucune production, aucun téléphone.
+
 # Lot 2 (étape B) — contrôles du 15 novembre 2026 (exécutés en local, Node 22)
 
 - `tsc` OK ; vitest **113/113** ; build OK ; régressions, stockage, core OK ; `node --test tests/*.test.mjs` **358/358** ; 5 fichiers demandés 38/38 ; audit des exigences 567, 0 preuve cassée.

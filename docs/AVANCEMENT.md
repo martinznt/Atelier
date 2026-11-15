@@ -1,3 +1,8 @@
+# 15 novembre 2026 — Lot 4 : Atelier dans Atelier, banc d'essai (aucune migration)
+
+**Fait (exécuté en local, GitHub simulé) :** fichier de départ importable (94 fonctionnalités avec source et niveau réels, 12 décisions « Proposées »), import avec aperçu, sans doublon ni suppression ni modification, guide pas à pas, protocole téléphone, parcours complet testé à 360 et 390 px, mission du lot 5A générée localement et non envoyée, 14 manques listés comme fonctionnalités « à concevoir », 3 défauts corrigés avec tests. Vitest 146/146, `node --test` 376/376, Playwright 2/2.
+**Non fait / non vérifié :** import réel en production (Martin), téléphone (`docs/PROTOCOLE_TELEPHONE_LOT4.md`), lecture GitHub avec le jeton réel, jugement de Martin sur la mission du lot 5A, contenu des lots 5B et studio, texte des décisions D1 et D9 à D12. Rapport : `docs/audits/RAPPORT_LOT_4_2026-11-15.md` ; guide : `docs/atelier-dans-atelier/GUIDE_MARTIN.md`.
+
 # 15 novembre 2026 — Lot 2, étape B : 4 entrées par intention (branche `claude/atelier-lot2-interface-bgvx58`, PR en brouillon)
 
 **Réalisé (navigation seulement, aucune migration, aucune route, aucune donnée) :** les 11 écrans sont regroupés en 4 entrées (Aujourd'hui · Projets · Savoir · Réglages et aide) avec une rangée d'onglets par entrée ; barre du bas du téléphone = 4 entrées + Recherche, plus de « Plus ». L'étape A (PR n°46) est fusionnée et en ligne (`5e196d4`).

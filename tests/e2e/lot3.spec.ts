@@ -1,6 +1,6 @@
 /* Lot 3 — missions pour Claude Code : écran à 360 et 390 px, sans débordement, texte ≥ 12 px.
    Les lignes d'essai (dépôt, tâche, mission) sont insérées directement dans la base locale : aucun appel réel à GitHub n'est fait ici. */
-import {test,expect,type Page} from '@playwright/test';
+import {test,expect,type Page} from './fixtures';
 import {execFileSync} from 'node:child_process';
 const ORIGIN='http://localhost:8787';
 const noOverflow=async(page:Page,label:string)=>expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'débordement : '+label).toBe(true);

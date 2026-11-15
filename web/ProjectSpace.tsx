@@ -2,7 +2,7 @@
 import {useCallback,useEffect,useState} from 'react';
 import {api,post,patch,remove,date,download} from './api';
 import {Button,Field,ErrorBox,Empty,SectionTitle,Loading} from './ui';
-import {ModelSection,FeaturesSection} from './ProjectModel';
+import {ModelSection,FeaturesSection,SeedImportSection} from './ProjectModel';
 import {Shortcut} from './Guide';
 import {MissionsSection} from './Missions';
 import {LifeBadge,LifecycleEditor,ReliabilityBadge} from './Lifecycle';
@@ -65,6 +65,7 @@ function Space({id}:{id:string;onOpenProject:(p:any)=>void}){
   </Fold>
   <ModelSection id={id} onChanged={()=>setMk(k=>k+1)}/>
   <FeaturesSection id={id} reloadKey={mk}/>
+  <SeedImportSection id={id} onImported={()=>{setMk(k=>k+1);reload();}}/>
   <RepoSection id={id} repos={ov.repositories} onChanged={reload}/>
   <GithubSection gh={gh}/>
   <PlanSection id={id} plan={plan} decisions={decisions} onChanged={reload}/>
