@@ -4321,5 +4321,77 @@
     "statut": "à faire",
     "preuve": null,
     "limite": "La branche n’est pas fusionnée : rien n’est publié."
+  },
+  {
+    "id": "P0-32-001",
+    "section": 32,
+    "source": "Mission P0 du 13 novembre 2026 (fiabiliser l'import historique)",
+    "exigence": "Détecter conversations_filtrees.json et variantes sans faux positifs, avec validation de la structure JSON.",
+    "statut": "réalisé",
+    "preuve": "tests/archive-entries.test.mjs ; tests/integration.test.ts (import P0 A/B)",
+    "limite": "Archive réelle de 97,55 Mo non disponible."
+  },
+  {
+    "id": "P0-32-002",
+    "section": 32,
+    "source": "Mission P0 du 13 novembre 2026 (fiabiliser l'import historique)",
+    "exigence": "Conserver nœuds, parents, branches, dates, identifiants et références ; déclarer les champs non conservés.",
+    "statut": "réalisé",
+    "preuve": "tests/integration.test.ts (import P0 C)",
+    "limite": "Prouvé sur archives synthétiques seulement."
+  },
+  {
+    "id": "P0-32-003",
+    "section": 32,
+    "source": "Mission P0 du 13 novembre 2026 (fiabiliser l'import historique)",
+    "exigence": "Annexes et dossiers sites/pièces jointes/bibliothèque non rattachée : liens vérifiés, rien d'inventé.",
+    "statut": "réalisé",
+    "preuve": "tests/integration.test.ts (import P0 E)",
+    "limite": "Formes réelles des annexes inconnues : lecture tolérante."
+  },
+  {
+    "id": "P0-32-004",
+    "section": 32,
+    "source": "Mission P0 du 13 novembre 2026 (fiabiliser l'import historique)",
+    "exigence": "Reprise après interruption sans doublon, imports simultanés, preuve de persistance par segment.",
+    "statut": "réalisé",
+    "preuve": "tests/integration.test.ts (import P0 D)",
+    "limite": "Erreurs D1/R2 injectées côté serveur non simulées ; pas de test sur téléphone."
+  },
+  {
+    "id": "P0-32-005",
+    "section": 32,
+    "source": "Mission P0 du 13 novembre 2026 (fiabiliser l'import historique)",
+    "exigence": "Archives invalides ou hostiles refusées avec motif ; noms dangereux jamais liés.",
+    "statut": "réalisé",
+    "preuve": "tests/integration.test.ts (import P0 B/F)",
+    "limite": "Pas de test sur l'archive réelle."
+  },
+  {
+    "id": "P0-32-006",
+    "section": 32,
+    "source": "Mission P0 du 13 novembre 2026 (fiabiliser l'import historique)",
+    "exigence": "Séparation entre comptes sur les nouvelles routes ; jokers LIKE échappés.",
+    "statut": "réalisé",
+    "preuve": "tests/integration.test.ts (import P0 F)",
+    "limite": "ALLOW_REGISTRATION reste à true en production (décision du propriétaire)."
+  },
+  {
+    "id": "P0-32-007",
+    "section": 32,
+    "source": "Mission P0 du 13 novembre 2026 (fiabiliser l'import historique)",
+    "exigence": "Rapport d'intégrité annoncé / enregistré avec manques classés.",
+    "statut": "réalisé",
+    "preuve": "tests/integration.test.ts (import P0 3)",
+    "limite": "Comparaison heuristique, marquée à vérifier."
+  },
+  {
+    "id": "P0-32-008",
+    "section": 32,
+    "source": "Mission P0 du 13 novembre 2026 (fiabiliser l'import historique)",
+    "exigence": "Migration 0022 additive ; schéma vérifié par /api/health.",
+    "statut": "réalisé",
+    "preuve": "tests/schema-status.test.mjs",
+    "limite": "Non appliquée en production."
   }
 ]
