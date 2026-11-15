@@ -30,7 +30,7 @@ function stateOf(items){
 }
 const features=[];
 for(const [k,items] of groups){
- if(k==='REQ-00')continue; // préambule : aucune fonctionnalité
+ if(k==='REQ-00'||/^ADA-/.test(k))continue; // préambule ; et les exigences du lot 4 lui-même (déjà la fonctionnalité « Lot 4 »)
  const num=/^REQ-(\d+)$/.exec(k);
  const name=num?'§'+Number(num[1])+' — '+nice(heading.get(Number(num[1]))||k):LABEL[k]||('Refonte gratuite '+k+' — '+items[0].r.exigence.replace(/\s+/g,' ').slice(0,70).replace(/\s\S*$/,'')+'…');
  const c={};for(const {r} of items)c[r.statut]=(c[r.statut]||0)+1;
