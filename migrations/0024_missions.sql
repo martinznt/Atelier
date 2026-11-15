@@ -1,0 +1,45 @@
+-- Lot 3 — Missions pour Claude Code et registre des travaux (additif : une seule table nouvelle, aucune table existante modifiée).
+-- Atelier prépare le texte ; il n'envoie rien et n'exécute aucun test. « Envoyé » n'existe pas (aucun service ne le confirme).
+-- Les règles du dépôt visé sont lues en lecture seule à un commit figé (rules_*), jamais écrites dans le dépôt.
+CREATE TABLE missions (
+ id TEXT PRIMARY KEY,
+ user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+ project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+ task_id TEXT REFERENCES plan_tasks(id) ON DELETE SET NULL,
+ repository_id TEXT REFERENCES repositories(id) ON DELETE SET NULL,
+ repo_full_name TEXT NOT NULL,
+ branch TEXT NOT NULL DEFAULT '',
+ level TEXT NOT NULL DEFAULT 'short' CHECK(level IN ('short','full')),
+ title TEXT NOT NULL,
+ fields TEXT NOT NULL DEFAULT '{}',
+ feature_ids TEXT NOT NULL DEFAULT '[]',
+ decision_ids TEXT NOT NULL DEFAULT '[]',
+ draft_source TEXT NOT NULL DEFAULT 'assembled' CHECK(draft_source IN ('assembled','ai')),
+ ai_rewrite TEXT,
+ reviewed_at TEXT,
+ rules_state TEXT NOT NULL DEFAULT 'unread' CHECK(rules_state IN ('unread','read','no_rule_files','not_read')),
+ rules_commit TEXT,
+ rules_snapshot TEXT,
+ status TEXT NOT NULL DEFAULT 'draft' CHECK(status IN ('draft','ready','copied','exported')),
+ rendered TEXT, content_hash TEXT, frozen_at TEXT,
+ transfer_mode TEXT CHECK(transfer_mode IS NULL OR transfer_mode IN ('clipboard','download')), transferred_at TEXT,
+ executor_family TEXT NOT NULL DEFAULT '' CHECK(executor_family IN ('','haiku','sonnet','opus','fable','other')),
+ executor_model TEXT NOT NULL DEFAULT '',
+ executor_effort TEXT NOT NULL DEFAULT '' CHECK(executor_effort IN ('','low','medium','high','xhigh','max')),
+ executor_why TEXT NOT NULL DEFAULT '',
+ advice_line TEXT NOT NULL DEFAULT '',
+ pr_number INTEGER,
+ report_text TEXT NOT NULL DEFAULT '',
+ usage_source TEXT NOT NULL DEFAULT 'none' CHECK(usage_source IN ('none','usage_screen','declared')),
+ input_tokens INTEGER CHECK(input_tokens IS NULL OR input_tokens>=0),
+ output_tokens INTEGER CHECK(output_tokens IS NULL OR output_tokens>=0),
+ cost_usd REAL CHECK(cost_usd IS NULL OR cost_usd>=0),
+ verdict TEXT NOT NULL DEFAULT '' CHECK(verdict IN ('','accepted','redo','abandoned')),
+ verdict_note TEXT NOT NULL DEFAULT '',
+ verdict_evidence TEXT,
+ verdict_at TEXT,
+ revision INTEGER NOT NULL DEFAULT 1,
+ created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+);
+CREATE INDEX missions_project ON missions(user_id,project_id,updated_at DESC);
+CREATE INDEX missions_task ON missions(user_id,task_id);

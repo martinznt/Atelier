@@ -1,3 +1,13 @@
+# Lot 3 — contrôles du 15 novembre 2026 (exécutés en local, Node 22)
+
+- `tsc` OK ; vitest **126/126** (dont 12 de `tests/missions.test.ts` et 1 de `tests/migration-0024.test.ts`) ; build OK ; régressions OK ; `node --test tests/*.test.mjs` **376/376** (dont 17 de `tests/mission-core.test.mjs`) ; 5 fichiers demandés 38/38 ; audit des exigences : voir rapport.
+- Playwright (Chromium, 360 et 390 px) : `tests/e2e/lot3.spec.ts` 2/2, sans débordement ni texte sous 12 px ; lancé avec le Chromium préinstallé (`/opt/pw-browsers/chromium`) et `ALLOW_REGISTRATION=true` dans `.dev.vars` local.
+- Migration 0024 sur base remplie : 0 ligne modifiée, 1 table vide ajoutée, réponses de lecture identiques, cascade limitée au projet supprimé.
+- **Simulé** : GitHub (lecture des règles, PR, tests) et Mistral (reformulation) ; aucun appel réel.
+- **Non validé** : téléphone, production, lecture GitHub réelle, IA réelle, qualité mesurée (missions données à Claude Code sans question), D7 (routage), Firefox/WebKit.
+
+---
+
 # Lot 2 (étape A) — contrôles du 15 novembre 2026 (exécutés en local, Node 22)
 
 - `tsc` OK ; vitest **113/113** ; build OK ; régressions, stockage, core OK ; `node --test tests/*.test.mjs` **358/358** ; 5 fichiers demandés 38/38.

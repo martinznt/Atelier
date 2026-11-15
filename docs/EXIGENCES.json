@@ -4627,5 +4627,131 @@
     "statut": "à faire",
     "preuve": "docs/PROTOCOLE_TELEPHONE_LOT2.md",
     "limite": "Téléphone non essayé : à faire par Martin."
+  },
+  {
+    "id": "MIS-35-001",
+    "section": 35,
+    "source": "Lot 3 du 15 novembre 2026 (missions pour Claude Code, registre des travaux, retour vers la fiche)",
+    "exigence": "Mission en deux niveaux (D8 = C) : gabarit court par défaut, dossier complet pour un gros chantier ; toute mission contient objectif, périmètre, interdits, fichiers, tests exacts, preuves attendues, critère « terminé », rappel « rien de validé sans test réel » et « rapporter V/R/H ».",
+    "statut": "réalisé",
+    "preuve": "server/mission-core.ts ; tests/mission-core.test.mjs ; tests/missions.test.ts",
+    "limite": "Essai réel de qualité (donnée à Claude Code sans question de clarification) non fait : à mesurer par Martin."
+  },
+  {
+    "id": "MIS-35-002",
+    "section": 35,
+    "source": "Lot 3 du 15 novembre 2026 (missions pour Claude Code, registre des travaux, retour vers la fiche)",
+    "exigence": "Règles du dépôt visé lues en lecture seule à un commit figé (AGENTS.md, CLAUDE.md, package.json à la racine) et citées sans perdre aucune ligne : chaque ligne source est retenue ou ignorée avec sa raison, montrée en entier.",
+    "statut": "réalisé",
+    "preuve": "server/mission-core.ts ; server/routes/missions.ts ; tests/mission-core.test.mjs ; tests/missions.test.ts",
+    "limite": "Lecture GitHub simulée dans les tests ; jamais essayée avec la vraie connexion GitHub d'Atelier. Seuls les fichiers à la racine sont lus (.claude/, sous-dossiers, docs/agents/* non lus)."
+  },
+  {
+    "id": "MIS-35-003",
+    "section": 35,
+    "source": "Lot 3 du 15 novembre 2026 (missions pour Claude Code, registre des travaux, retour vers la fiche)",
+    "exigence": "Livre de recettes : les règles de fond sont citées (gratuit, RECETTES_KV, un test par nouveauté, build-sw, une version = même numéro partout, branches claude/<n°>-<sujet>) ; le partage Codex/Claude est ignoré et signalé.",
+    "statut": "réalisé",
+    "preuve": "tests/mission-core.test.mjs ; tests/missions.test.ts",
+    "limite": "Neutralisation limitée à deux formes (variante de branche codex/, parenthèse sur Codex) ; les autres lignes sur Codex sont ignorées mais montrées."
+  },
+  {
+    "id": "MIS-35-004",
+    "section": 35,
+    "source": "Lot 3 du 15 novembre 2026 (missions pour Claude Code, registre des travaux, retour vers la fiche)",
+    "exigence": "Sport : aucun CLAUDE.md ni AGENTS.md — la mission le dit et reprend seulement ce que package.json prouve ; aucune règle d'un dépôt n'est appliquée à l'autre (refus net si les règles lues viennent d'un autre dépôt ; changer de dépôt efface les règles lues).",
+    "statut": "réalisé",
+    "preuve": "tests/mission-core.test.mjs ; tests/missions.test.ts",
+    "limite": ""
+  },
+  {
+    "id": "MIS-35-005",
+    "section": 35,
+    "source": "Lot 3 du 15 novembre 2026 (missions pour Claude Code, registre des travaux, retour vers la fiche)",
+    "exigence": "Brouillon assemblé sans IA par défaut ; reformulation facultative par une IA gratuite (Gemini, Groq, Mistral) avec la clé de l'utilisateur, une seule demande jamais rejouée, résultat marqué Hypothèse jusqu'à « J'ai relu », restauration du brouillon d'origine possible.",
+    "statut": "réalisé",
+    "preuve": "server/routes/missions.ts ; tests/missions.test.ts",
+    "limite": "Réponse de Mistral simulée ; aucun appel réel à un fournisseur IA."
+  },
+  {
+    "id": "MIS-35-006",
+    "section": 35,
+    "source": "Lot 3 du 15 novembre 2026 (missions pour Claude Code, registre des travaux, retour vers la fiche)",
+    "exigence": "Registre des travaux : IA et modèle réellement utilisés, effort, pourquoi, PR, jetons et coût seulement s'ils sont connus (jamais calculés ni inventés), conseil d'Atelier distinct de ce qui a été utilisé.",
+    "statut": "réalisé",
+    "preuve": "migrations/0024_missions.sql ; server/routes/missions.ts ; tests/missions.test.ts",
+    "limite": ""
+  },
+  {
+    "id": "MIS-35-007",
+    "section": 35,
+    "source": "Lot 3 du 15 novembre 2026 (missions pour Claude Code, registre des travaux, retour vers la fiche)",
+    "exigence": "Verdict de Martin en un clic (acceptée, à refaire, abandonnée) avec preuve figée : état des tests GitHub et revue au moment du verdict ; accepter sans tests verts exige d'écrire pourquoi.",
+    "statut": "réalisé",
+    "preuve": "server/mission-core.ts ; server/routes/missions.ts ; tests/mission-core.test.mjs ; tests/missions.test.ts",
+    "limite": "GitHub simulé dans les tests."
+  },
+  {
+    "id": "MIS-35-008",
+    "section": 35,
+    "source": "Lot 3 du 15 novembre 2026 (missions pour Claude Code, registre des travaux, retour vers la fiche)",
+    "exigence": "Retour d'un dépôt vers la fiche : lien de la PR, état réel des tests GitHub (module existant), revue Atelier du SHA courant seulement (anciens SHA ignorés) ; une PR sans tests verts est dite sans valeur.",
+    "statut": "réalisé",
+    "preuve": "server/mission-core.ts ; server/routes/missions.ts ; tests/mission-core.test.mjs ; tests/missions.test.ts",
+    "limite": "GitHub simulé dans les tests ; jamais lu avec une vraie PR par Atelier."
+  },
+  {
+    "id": "MIS-35-009",
+    "section": 35,
+    "source": "Lot 3 du 15 novembre 2026 (missions pour Claude Code, registre des travaux, retour vers la fiche)",
+    "exigence": "Chaque mission est liée aux fonctionnalités (F-xxxx, identifiants stables) et aux décisions « actuelles » du lot 1 ; une décision non actuelle est refusée.",
+    "statut": "réalisé",
+    "preuve": "server/routes/missions.ts ; tests/missions.test.ts",
+    "limite": ""
+  },
+  {
+    "id": "MIS-35-010",
+    "section": 35,
+    "source": "Lot 3 du 15 novembre 2026 (missions pour Claude Code, registre des travaux, retour vers la fiche)",
+    "exigence": "Isolation A contre B sur toutes les routes de missions et dans l'export du compte ; aucune écriture dans les dépôts visés.",
+    "statut": "réalisé",
+    "preuve": "tests/missions.test.ts",
+    "limite": ""
+  },
+  {
+    "id": "MIS-35-011",
+    "section": 35,
+    "source": "Lot 3 du 15 novembre 2026 (missions pour Claude Code, registre des travaux, retour vers la fiche)",
+    "exigence": "Migration 0024 additive : une seule table nouvelle, vide ; toutes les anciennes tables identiques ligne par ligne ; suppression en cascade limitée aux missions du projet supprimé.",
+    "statut": "réalisé",
+    "preuve": "migrations/0024_missions.sql ; tests/migration-0024.test.ts ; tests/schema-status.test.mjs",
+    "limite": "Non appliquée en production."
+  },
+  {
+    "id": "MIS-35-012",
+    "section": 35,
+    "source": "Lot 3 du 15 novembre 2026 (missions pour Claude Code, registre des travaux, retour vers la fiche)",
+    "exigence": "Écran « Missions pour Claude Code » lisible à 360 et 390 px, sans débordement ni texte sous 12 px.",
+    "statut": "réalisé",
+    "preuve": "web/Missions.tsx ; tests/e2e/lot3.spec.ts",
+    "limite": "Mesuré dans Chromium, pas sur le Galaxy A05s."
+  },
+  {
+    "id": "MIS-35-013",
+    "section": 35,
+    "source": "Lot 3 du 15 novembre 2026 (missions pour Claude Code, registre des travaux, retour vers la fiche)",
+    "exigence": "Essai sur le Galaxy A05s préparé pas à pas ; jamais déclaré validé sans réponse de Martin.",
+    "statut": "à faire",
+    "preuve": "docs/PROTOCOLE_TELEPHONE_LOT3.md",
+    "limite": "Téléphone non essayé : à faire par Martin."
+  },
+  {
+    "id": "MIS-35-014",
+    "section": 35,
+    "source": "Lot 3 du 15 novembre 2026 (missions pour Claude Code, registre des travaux, retour vers la fiche)",
+    "exigence": "Choix automatique du meilleur modèle par mission et tableau de routage fixe (D7).",
+    "statut": "bloqué",
+    "preuve": "docs/audits/RAPPORT_LOT_3_2026-11-15.md",
+    "limite": "D7 = C non validée explicitement par Martin : non réalisé. Le choix automatique reste non réalisé (aucun classement ni benchmark inventé)."
   }
 ]
