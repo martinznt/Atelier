@@ -40,7 +40,8 @@ const checks:{id:string;table:string;columns:string[]}[]=[
  {id:'0023',table:'item_lifecycle',columns:['kind','item_id','status','reliability','source_ref','proof_kind','replaced_by_id']},
  {id:'0023',table:'lifecycle_events',columns:['kind','item_id','to_status','to_reliability','reason','author_kind']},
  {id:'0023',table:'project_features',columns:['code','name','state','group_name']},
- {id:'0023',table:'feature_links',columns:['feature_id','target_kind','target_id']}
+ {id:'0023',table:'feature_links',columns:['feature_id','target_kind','target_id']},
+ {id:'0024',table:'missions',columns:['repo_full_name','rules_commit','executor_family','verdict','verdict_evidence']}
 ];
 let cache:{at:number;value:SchemaStatus}|null=null;
 /** Cache de 60 s par instance : la page de santé est publique, elle ne doit pas solliciter D1 à chaque appel. */

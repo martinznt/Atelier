@@ -1,3 +1,10 @@
+# 15 novembre 2026 — Lot 3 : missions pour Claude Code, registre des travaux, retour (branche `ccr-42fa5a0b-aqmogn`, migration 0024 non appliquée)
+
+**Fait (exécuté en local, GitHub et Mistral simulés) :** missions courtes ou complètes, règles du dépôt visé lues en lecture seule à un commit figé et citées sans perte (Codex ignoré et signalé pour Recettes ; Sport sans règles propres), brouillon sans IA, reformulation facultative par IA gratuite marquée Hypothèse, registre (IA, modèle, pourquoi, PR, jetons si connus), retour de PR (tests GitHub, revue du SHA courant), verdict en un clic avec preuve, isolation A/B, migration 0024 testée sur base remplie.
+**Non fait / non vérifié :** D7 (tableau de routage : non validée), lecture GitHub réelle, IA réelle, téléphone (`docs/PROTOCOLE_TELEPHONE_LOT3.md`), mesure « mission donnée à Claude Code sans question », verdict sur une vraie mission. Détail : `docs/audits/RAPPORT_LOT_3_2026-11-15.md`.
+
+---
+
 # 15 novembre 2026 — Lot 2, étape A : interface lisible (branche `claude/atelier-lot2-interface-bgvx58`, PR en brouillon)
 
 **Réalisé (interface seulement, aucune migration, aucune route serveur) :** textes agrandis (plus aucun texte sous 12 px, cases à cocher de 24 px), libellés corrigés (« Quotas Claude Code », « À faire par vous »), journal d'activité unique dans « Activité » (filtre par projet), raccourcis vers l'endroit principal de GitHub, de l'import ChatGPT, des consignes et de la mémoire, ligne d'aide « À quoi ça sert / La suite logique » sur chaque écran (G1), page « Bien utiliser Atelier » avec 5 parcours (G2).
