@@ -5,7 +5,7 @@ import {api,date} from './api';
 import {Button,Field,ErrorBox,Loading,Modal} from './ui';
 import {vault} from './vault';
 import {ReliabilityBadge} from './Lifecycle';
-const LABEL:Record<string,string>={project:'Projets',memory:'Notes de mémoire du projet',chat:'Messages du chat',imported:'Historique importé',decision:'Décisions',task:'Tâches',prompt:'Prompts',document:'Documents de référence',file:'Fichiers',attachment:'Pièces jointes citées',question:'Questions d’Atelier',action:'À faire par Martin',feature:'Fonctionnalités',gitdoc:'Documents Git (Memoire-Projets, copie)'};
+const LABEL:Record<string,string>={project:'Projets',memory:'Notes de mémoire du projet',chat:'Messages du chat',imported:'Historique importé',decision:'Décisions',task:'Tâches',prompt:'Prompts',document:'Documents de référence',file:'Fichiers',attachment:'Pièces jointes citées',question:'Questions d’Atelier',action:'À faire par vous',feature:'Fonctionnalités',gitdoc:'Documents Git (Memoire-Projets, copie)'};
 const STATUS:Record<string,string>={proposed:'proposée',validated:'actuelle',to_design:'à concevoir',phone_verified:'vérifié sur téléphone',rejected:'rejetée',superseded:'remplacée',todo:'à faire',ready:'prête',in_progress:'en cours',waiting:'en attente',blocked:'bloquée',to_verify:'à vérifier',done:'terminée',abandoned:'abandonnée',open:'ouverte',answered:'répondue',withdrawn:'retirée',dismissed:'écartée',to_prepare:'à préparer',to_give:'à donner',given:'déjà donné',awaiting:'en attente de retour',response_received:'réponse reçue',processed:'traité',obsolete:'obsolète'};
 const ROLE:Record<string,string>={user:'Vous',assistant:'Assistant',note:'Note',system:'Système',tool:'Outil'};
 const PROVIDERS=['ChatGPT','Claude','gemini','groq','mistral','anthropic','openai'];

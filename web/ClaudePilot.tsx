@@ -29,7 +29,7 @@ export function ClaudePilot({refresh}:{refresh:number}){
  useEffect(()=>{try{sessionStorage.setItem('atelier:claude-onglet',tab);}catch{/* stockage indisponible */}},[tab]);
  const tabs:[string,string][]=[['advice','Quel modèle'],['quotas','Quotas'],['resume','Reprise'],['sessions','Retours']];
  return <section className="memory-hub">
-  <SectionTitle eyebrow="CLAUDE" title="Travailler sans gaspiller">Le bon modèle pour chaque tâche, vos limites relevées, et ce qu’il faut garder pour la prochaine session.</SectionTitle>
+  <SectionTitle eyebrow="QUOTAS ET RETOURS CLAUDE CODE" title="Travailler sans gaspiller">Le bon modèle pour chaque tâche, vos limites relevées, et ce qu’il faut garder pour la prochaine session.</SectionTitle>
   <div className="space-tabs" role="tablist">{tabs.map(([k,v])=><button key={k} role="tab" aria-selected={tab===k} className={tab===k?'active':''} onClick={()=>setTab(k)}>{v}</button>)}</div>
   {tab==='advice'?<AdviceTab/>:tab==='quotas'?<QuotaTab refresh={refresh}/>:tab==='resume'?<CheckpointTab refresh={refresh}/>:<SessionTab refresh={refresh}/>}
  </section>;

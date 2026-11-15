@@ -41,7 +41,7 @@ export function DiscussionOrganiser({conversation,all,onClose,onChanged,onOpen}:
  useEffect(()=>{void loadLinks();},[conversation.id]);
  async function save(){setBusy(true);setError(null);try{onChanged(await patch(`/workbench/conversations/${conversation.id}`,{title:title.trim()||conversation.title,category:category||null,status,objective,pinned,summary}));onClose();}catch(e){setError(e);}finally{setBusy(false);}}
  async function addLink(){setBusy(true);setError(null);try{await post(`/workbench/conversations/${conversation.id}/links`,{to_id:linkTo,note});setLinkTo('');setNote('');await loadLinks();}catch(e){setError(e);}finally{setBusy(false);}}
- const KIND:Record<string,string>={decision:'Décision',plan_task:'Tâche',question:'Question',action:'Action de Martin',conversation:'Extrait réutilisé',prompt:'Prompt',handoff:'Transmission',document:'Document'};
+ const KIND:Record<string,string>={decision:'Décision',plan_task:'Tâche',question:'Question',action:'Action pour vous',conversation:'Extrait réutilisé',prompt:'Prompt',handoff:'Transmission',document:'Document'};
  return <Modal title="Organiser la discussion" onClose={onClose}><div className="stack">
   <ErrorBox error={error}/>
   <Field label="Titre"><input value={title} maxLength={120} onChange={e=>setTitle(e.target.value)}/></Field>
@@ -75,7 +75,7 @@ export function MessageActionModal({message,conversation,all,onClose,onDone}:{me
   setBusy(true);setError(null);
   try{
    if(action==='reuse'){await post(`/workbench/messages/${message.id}/reuse`,{target_conversation_id:target,excerpt:excerpt.trim()});onDone('Extrait cité dans « '+(others.find(c=>c.id===target)?.title||'la discussion')+' », avec un lien vers ce message.');}
-   else{const r=await post(`/workbench/messages/${message.id}/extract`,{kind:action,title:title.trim(),excerpt:excerpt.trim(),reason});onDone(r.kind==='decision'?'Décision proposée créée. Elle reste « proposée » tant que vous ne la validez pas dans Pilotage.':r.kind==='question'?'Question ajoutée aux Questions d’Atelier.':r.kind==='action'?'Action ajoutée à « À faire par Martin ».':'Tâche ajoutée au plan du projet.');}
+   else{const r=await post(`/workbench/messages/${message.id}/extract`,{kind:action,title:title.trim(),excerpt:excerpt.trim(),reason});onDone(r.kind==='decision'?'Décision proposée créée. Elle reste « proposée » tant que vous ne la validez pas dans Pilotage.':r.kind==='question'?'Question ajoutée aux Questions d’Atelier.':r.kind==='action'?'Action ajoutée à « À faire par vous ».':'Tâche ajoutée au plan du projet.');}
    onClose();
   }catch(e){setError(e);}finally{setBusy(false);}
  }
@@ -84,7 +84,7 @@ export function MessageActionModal({message,conversation,all,onClose,onDone}:{me
   <p className="muted">Source : « {conversation.title} » · {message.role==='user'?'vous':message.provider||message.role} · {date(message.created_at)}. Le message d’origine n’est pas modifié.</p>
   <Field label="Extrait exact (réduisez-le au passage utile)" hint={exact?'Passage exact du message.':'Ce texte n’est plus un passage exact du message : corrigez-le.'}><textarea rows={5} value={excerpt} maxLength={4000} onChange={e=>setExcerpt(e.target.value)}/></Field>
   <Field label="Que faire de cet extrait ?"><select value={action} onChange={e=>setAction(e.target.value)}>
-   <option value="reuse">Le citer dans une autre discussion</option><option value="decision">Créer une décision proposée</option><option value="question">Créer une question d’Atelier</option><option value="action">Créer une action à faire par Martin</option><option value="plan_task">Créer une tâche du plan</option></select></Field>
+   <option value="reuse">Le citer dans une autre discussion</option><option value="decision">Créer une décision proposée</option><option value="question">Créer une question d’Atelier</option><option value="action">Créer une action à faire par vous</option><option value="plan_task">Créer une tâche du plan</option></select></Field>
   {action==='reuse'?<Field label="Discussion de destination (même projet)"><select value={target} onChange={e=>setTarget(e.target.value)}><option value="">Choisir</option>{others.map(c=><option key={c.id} value={c.id}>{c.title}</option>)}</select></Field>:<>
    <Field label={action==='question'?'Question':'Intitulé'}><input value={title} maxLength={200} onChange={e=>setTitle(e.target.value)}/></Field>
    <Field label="Raison ou précision (facultatif)"><textarea rows={2} value={reason} maxLength={1000} onChange={e=>setReason(e.target.value)}/></Field>

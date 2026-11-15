@@ -4555,5 +4555,77 @@
     "statut": "à faire",
     "preuve": "docs/PROTOCOLE_TELEPHONE_LOT1.md",
     "limite": "Téléphone non essayé : à faire par Martin."
+  },
+  {
+    "id": "INT-34-001",
+    "section": 34,
+    "source": "Lot 2 du 15 novembre 2026 (interface lisible, étape A)",
+    "exigence": "Textes agrandis : aucun texte visible sous 12 px sur les 11 rubriques à 360, 390 et 1280 px ; cases à cocher de 24 px.",
+    "statut": "réalisé",
+    "preuve": "web/styles.css ; tests/e2e/lot2.spec.ts ; tests/e2e/lot2-audit.spec.ts",
+    "limite": "Mesuré dans Chromium de bureau, pas sur le Galaxy A05s. Les seuils WCAG n'ont pas pu être relus à la source (w3.org injoignable)."
+  },
+  {
+    "id": "INT-34-002",
+    "section": 34,
+    "source": "Lot 2 du 15 novembre 2026 (interface lisible, étape A)",
+    "exigence": "Libellés corrigés : « Claude » devient « Quotas Claude Code » ; « À faire par Martin » devient « À faire par vous ».",
+    "statut": "réalisé",
+    "preuve": "web/App.tsx ; web/Inbox.tsx ; web/Find.tsx ; web/Discussions.tsx ; tests/e2e/lot2.spec.ts",
+    "limite": "Le nom de l'utilisateur n'est pas utilisé (c'est une adresse email, trop longue pour un onglet) : « vous »."
+  },
+  {
+    "id": "INT-34-003",
+    "section": 34,
+    "source": "Lot 2 du 15 novembre 2026 (interface lisible, étape A)",
+    "exigence": "Journal d'activité unique : « Activité » (même table d'événements, filtre par projet) ; Pilotage ne garde qu'un raccourci.",
+    "statut": "réalisé",
+    "preuve": "web/App.tsx ; web/ProjectExtras.tsx ; tests/e2e/lot2.spec.ts",
+    "limite": "Aucune route serveur modifiée."
+  },
+  {
+    "id": "INT-34-004",
+    "section": 34,
+    "source": "Lot 2 du 15 novembre 2026 (interface lisible, étape A)",
+    "exigence": "Une fonction, un endroit principal : GitHub (Réglages → Connexions), import ChatGPT (Mémoire → Export ChatGPT), consignes (Mémoire → Prompts), mémoire (Mémoire) ; des raccourcis ailleurs.",
+    "statut": "partiel",
+    "preuve": "web/Guide.tsx ; web/ProjectSpace.tsx ; web/MemoryHub.tsx ; web/SharedMemory.tsx ; web/Settings.tsx",
+    "limite": "Raccourcis seulement : aucune fonction retirée. Fusion plus poussée proposée à Martin dans le rapport."
+  },
+  {
+    "id": "INT-34-005",
+    "section": 34,
+    "source": "Lot 2 du 15 novembre 2026 (interface lisible, étape A)",
+    "exigence": "Guide intégré G1 : sur chaque écran, « À quoi ça sert », « La suite logique » et un lien d'aide.",
+    "statut": "réalisé",
+    "preuve": "web/Guide.tsx ; tests/e2e/lot2.spec.ts",
+    "limite": ""
+  },
+  {
+    "id": "INT-34-006",
+    "section": 34,
+    "source": "Lot 2 du 15 novembre 2026 (interface lisible, étape A)",
+    "exigence": "Guide G2 : page « Bien utiliser Atelier » avec 5 parcours écrits avec les vrais écrans.",
+    "statut": "réalisé",
+    "preuve": "web/Guide.tsx ; tests/e2e/lot2.spec.ts",
+    "limite": "Les étapes sont relues contre les libellés des écrans, mais les 5 parcours n'ont pas été déroulés de bout en bout un par un."
+  },
+  {
+    "id": "INT-34-007",
+    "section": 34,
+    "source": "Lot 2 du 15 novembre 2026 (interface lisible, étape A)",
+    "exigence": "Parcours : jamais moins de parcours validés qu'avant (38 parcours du 13 novembre).",
+    "statut": "partiel",
+    "preuve": "docs/audits/RAPPORT_LOT_2_2026-11-15.md ; tests/e2e/lot2.spec.ts",
+    "limite": "Les scripts de 30 parcours ne sont pas versionnés : non rejoués. Voir le tableau avant/après."
+  },
+  {
+    "id": "INT-34-008",
+    "section": 34,
+    "source": "Lot 2 du 15 novembre 2026 (interface lisible, étape A)",
+    "exigence": "Essai sur le Galaxy A05s préparé pas à pas ; jamais déclaré validé sans réponse de Martin.",
+    "statut": "à faire",
+    "preuve": "docs/PROTOCOLE_TELEPHONE_LOT2.md",
+    "limite": "Téléphone non essayé : à faire par Martin."
   }
 ]

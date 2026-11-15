@@ -1,3 +1,12 @@
+# Lot 2 (étape A) — contrôles du 15 novembre 2026 (exécutés en local, Node 22)
+
+- `tsc` OK ; vitest **113/113** ; build OK ; régressions, stockage, core OK ; `node --test tests/*.test.mjs` **358/358** ; 5 fichiers demandés 38/38.
+- Playwright (Chromium bureau et Android 360 px) : `flow`, `lot1`, `lot2` (guide, aide, libellés, journal unique, raccourcis, aucun texte sous 12 px, aucun débordement à 360/390/1280 px) : 12/12.
+- Mesures avant/après (`tests/e2e/lot2-audit.spec.ts`) : textes sous 12 px 369 → 0 ; contraste sous 3:1 21 → 0 ; cases sous 24 px 36 → 0.
+- **Non validé** : téléphone, 18 parcours non rejoués, seuils WCAG à la source, zoom du texte, Firefox/WebKit.
+
+---
+
 # Lot 1 — contrôles du 15 novembre 2026 (exécutés en local, Node 22)
 
 - `tsc` OK ; vitest **113/113** ; build OK ; régressions, stockage, core OK ; `node --test tests/*.test.mjs` 356/357 (échec connu : `wrangler-previews`, non corrigé) ; audit des exigences : 553, 0 preuve cassée.
