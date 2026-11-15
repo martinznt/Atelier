@@ -6,7 +6,7 @@ for(const width of [360,390])test(`modèle de projet et fonctionnalités à ${wi
  await page.goto('/');await page.getByRole('button',{name:'Créer un compte',exact:true}).click();await page.getByLabel('Adresse email',{exact:true}).fill(email);await page.locator('input[type="password"]').fill('test1234');await page.getByRole('button',{name:'Créer mon compte'}).click();await expect(page.getByText('Conservez vos codes de récupération')).toBeVisible();await page.getByLabel('J’ai conservé ces codes dans un endroit sûr.').check();await page.getByRole('button',{name:'Entrer dans mon atelier'}).click();
  await expect(page.getByRole('button',{name:'Recherche globale'})).toBeVisible();
  const init=await page.request.post('/api/spaces/init',{data:{template:'sport'},headers:{Origin:'http://localhost:8787'}});expect(init.ok()).toBe(true);
- await page.locator('.sidebar nav button',{hasText:'Pilotage'}).first().click();
+ await page.locator('.sidebar nav button',{hasText:'Projets'}).first().click();await page.locator('.screen-tabs').getByRole('button',{name:'Pilotage',exact:true}).click();
  const noOverflow=async(label:string)=>expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'débordement horizontal : '+label).toBe(true);
  await page.locator('summary:has(> strong:text-is("Modèle du projet"))').click();
  await expect(page.getByText('Tout projet a le même noyau')).toBeVisible();
