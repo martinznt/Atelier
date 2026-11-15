@@ -4374,7 +4374,7 @@
     "exigence": "Séparation entre comptes sur les nouvelles routes ; jokers LIKE échappés.",
     "statut": "réalisé",
     "preuve": "tests/integration.test.ts (import P0 F)",
-    "limite": "ALLOW_REGISTRATION reste à true en production (décision du propriétaire)."
+    "limite": "Au 15 novembre 2026, ALLOW_REGISTRATION a été mis à false en production sur décision du propriétaire (« pour l'instant »), après la fusion de la PR 40 ; à vérifier sur le déploiement réel."
   },
   {
     "id": "P0-32-007",

@@ -49,7 +49,7 @@
   },
   "vars": {
     "APP_ORIGIN": "http://localhost:8787",
-    "ALLOW_REGISTRATION": "true",
+    "ALLOW_REGISTRATION": "false",
     "STORAGE_LIMIT_MB": "20",
     "MAX_FILE_MB": "0.25"
   },
