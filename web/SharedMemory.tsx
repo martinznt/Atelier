@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Upload, Download, ArrowRightLeft, Search, PlugZap, FileText, ShieldCheck, RefreshCw, Pencil, Copy } from 'lucide-react';
 import { api, post, patch, remove, date, bytes, download } from './api';
 import { Button, Empty, ErrorBox, Field, Loading, Modal } from './ui';
+import { Shortcut } from './Guide';
 import { batches } from '../passerelle/public/importers.mjs';
 
 const assistants = ['Claude', 'Claude Code', 'ChatGPT', 'Codex'];
@@ -39,6 +40,7 @@ export function SharedMemory({ project }: { project: any }) {
       <div className="panel-heading"><div><h2>Retrouver dans les conversations</h2><p>Recherche dans tous les textes importés de ce projet, sans ouvrir tout l’historique.</p></div></div>
       <form className="bridge-search" onSubmit={e => { e.preventDefault(); api(`/bridge/search?space=${space.id}&q=${encodeURIComponent(query)}`).then(setResults).catch(setError); }}><input aria-label="Rechercher dans les imports" placeholder="Une décision, une consigne, un passage…" minLength={1} maxLength={120} required value={query} onChange={e => setQuery(e.target.value)} /><Button type="submit" kind="secondary"><Search size={16} />Rechercher</Button></form>
       {results && <div className="search-results"><p>{results.notice}</p>{!results.messages.length && !results.handoffs.length && <p>Aucun résultat. Essayez un autre terme.</p>}{results.messages.map((m: any) => <button key={m.id} onClick={() => openConversation(m.conversation_id)}><strong>{m.title} · {m.provider}</strong><p>{m.excerpt}</p></button>)}{results.handoffs.map((h: any) => <article key={h.id}><strong>{h.title}</strong><p>{h.excerpt}</p></article>)}</div>}
+      <Shortcut to="memory" store={['atelier:memoire-onglet','export']} label="Ouvrir « Export ChatGPT »">Pour importer un export officiel ChatGPT (bilan chiffré, reprise, recherche exacte), l’endroit principal est « Mémoire » → « Export ChatGPT ».</Shortcut>
       {!conversations.length ? <Empty title="Vos anciens échanges ont leur place ici">Importez un export officiel ChatGPT ou Claude, un journal local Claude Code/Codex, ou un compte rendu. Le bilan indiquera les éléments absents.</Empty> : <div className="bridge-conversations">{conversations.map(c => <button key={c.id} onClick={() => openConversation(c.id)}><FileText size={20} /><span><strong>{c.title}</strong><small>{c.provider} · {c.message_count} messages ou fragments · importé le {date(c.imported_at)}</small></span></button>)}</div>}
       {next !== null && <Button kind="text" onClick={() => api(`/bridge/spaces/${space.id}/conversations?offset=${next}`).then(d => { setConversations(old => [...old, ...d.items]); setNext(d.next); }).catch(setError)}>Conversations suivantes</Button>}
     </section>

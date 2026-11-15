@@ -1,4 +1,5 @@
 /* Compléments de l'espace projet : documents de référence, synthèse de reprise, journal, audit de référence, consignes. */
+import {Shortcut} from './Guide';
 import {useCallback,useEffect,useState} from 'react';
 import {api,post,patch,remove,date,download} from './api';
 import {Button,Field,ErrorBox,Loading} from './ui';
@@ -60,12 +61,10 @@ export function ResumeSection({id}:{id:string}){
  </Fold>;
 }
 
+/** Le journal n'a plus qu'un endroit : « Activité » (même table d'événements, filtre par projet). Ici, un raccourci. */
 export function JournalSection({id}:{id:string}){
- const [items,setItems]=useState<any[]|null>(null),[next,setNext]=useState<number|null>(null),[error,setError]=useState<unknown>(null);
- const load=async(before?:number)=>{try{const d=await api(`/workbench/journal?project=${id}&limit=30${before?`&before=${before}`:''}`);setItems(old=>before&&old?[...old,...d.items]:d.items);setNext(d.next);}catch(e){setError(e);}};
- return <Fold title="Journal du projet" summary="décisions, tâches, questions, prompts, synchronisations" onOpen={()=>{if(!items)void load();}}>
-  <ErrorBox error={error}/>{!items?<Loading/>:!items.length?<p className="muted">Aucun événement enregistré pour ce projet.</p>:<ul className="plain">{items.map(e=><li key={e.seq}><small className="muted">{date(e.created_at)}</small><br/>{e.detail}</li>)}</ul>}
-  {next&&<Button kind="text" onClick={()=>void load(next)}>Événements plus anciens</Button>}
+ return <Fold title="Journal du projet" summary="dans « Activité »" open>
+  <Shortcut to="activity" store={['atelier:journal-projet',id]} label="Ouvrir le journal de ce projet">Décisions, tâches, questions, prompts et synchronisations sont dans « Activité », avec un filtre par projet.</Shortcut>
  </Fold>;
 }
 

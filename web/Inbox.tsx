@@ -11,7 +11,7 @@ export function Inbox({refresh}:{refresh:number}){
  useEffect(()=>{api('/projects').then(d=>setProjects(d.items)).catch(()=>{});},[refresh]);
  return <section className="inbox">
   <SectionTitle eyebrow="À TRAITER" title="Ce qui attend votre réponse">Les actions que vous seul pouvez faire, et les questions dont la réponse change le projet.</SectionTitle>
-  <div className="space-tabs" role="tablist"><button role="tab" aria-selected={tab==='actions'} className={tab==='actions'?'active':''} onClick={()=>setTab('actions')}>À faire par Martin</button><button role="tab" aria-selected={tab==='questions'} className={tab==='questions'?'active':''} onClick={()=>setTab('questions')}>Questions d’Atelier</button></div>
+  <div className="space-tabs" role="tablist"><button role="tab" aria-selected={tab==='actions'} className={tab==='actions'?'active':''} onClick={()=>setTab('actions')}>À faire par vous</button><button role="tab" aria-selected={tab==='questions'} className={tab==='questions'?'active':''} onClick={()=>setTab('questions')}>Questions d’Atelier</button></div>
   <Field label="Projet"><select value={project} onChange={e=>setProject(e.target.value)}><option value="">Tous les projets</option>{projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></Field>
   {tab==='actions'?<Actions project={project} projects={projects} refresh={refresh}/>:<Questions project={project} projects={projects} refresh={refresh}/>}
  </section>;

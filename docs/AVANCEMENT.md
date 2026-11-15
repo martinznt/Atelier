@@ -1,3 +1,10 @@
+# 15 novembre 2026 — Lot 2, étape A : interface lisible (branche `claude/atelier-lot2-interface-bgvx58`, PR en brouillon)
+
+**Réalisé (interface seulement, aucune migration, aucune route serveur) :** textes agrandis (plus aucun texte sous 12 px, cases à cocher de 24 px), libellés corrigés (« Quotas Claude Code », « À faire par vous »), journal d'activité unique dans « Activité » (filtre par projet), raccourcis vers l'endroit principal de GitHub, de l'import ChatGPT, des consignes et de la mémoire, ligne d'aide « À quoi ça sert / La suite logique » sur chaque écran (G1), page « Bien utiliser Atelier » avec 5 parcours (G2).
+**Vérifié en local :** tsc ; vitest 113/113 ; `node --test` 358/358 ; régressions, stockage, core ; build ; Playwright 12/12 (Chromium bureau et Android 360 px ; 360, 390, 1280 px). **Non vérifié :** téléphone (protocole prêt : `docs/PROTOCOLE_TELEPHONE_LOT2.md`), 18 des 38 parcours non rejoués (scripts non versionnés), seuils WCAG non relus à la source. Étape B non commencée (attend « étape A validée, lance B »). Rapport : `docs/audits/RAPPORT_LOT_2_2026-11-15.md`.
+
+---
+
 # 15 novembre 2026 — Lot 1 : modèle de projet (branche `ccr-10660c75-ywk6y7`, PR 44 en brouillon, migration 0023 non appliquée)
 
 **Fait (exécuté en local) :** cycle de vie sans suppression, échelle de fiabilité unique, « Vérifié » refusé sans source, modules et gabarits, suivi des fonctionnalités (F-0001…), recherche unique avec origine Git/Atelier. `npm test` 113/113, tsc, build, régressions, parcours navigateur 360 et 390 px ; migration testée sur base remplie (anciennes tables identiques) et avec `backup:local`.
