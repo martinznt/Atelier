@@ -66,3 +66,34 @@ function LinkForm({project,feature,onChanged,plan,setPlan}:{project:string;featu
  return <div className="stack"><ErrorBox error={error}/><Field label="Relier à une tâche ou une décision"><select value={target} onChange={e=>setTarget(e.target.value)}><option value="">Choisir…</option>{options.map(o=><option key={o.k} value={o.k}>{o.label}</option>)}</select></Field>
   <Button kind="secondary" disabled={!target} onClick={()=>{const [k,i]=target.split(':');post(`/model/${project}/features/${feature.id}/links`,{target_kind:k,target_id:i}).then(()=>{setTarget('');onChanged();}).catch(setError);}}>Relier</Button></div>;
 }
+
+/* Lot 4 — importer un fichier de départ : aperçu d'abord, puis ajout. Ne modifie ni ne supprime jamais rien. */
+export function SeedImportSection({id,onImported}:{id:string;onImported:()=>void}){
+ const [seed,setSeed]=useState<any>(null),[name,setName]=useState(''),[preview,setPreview]=useState<any>(null),[done,setDone]=useState<string>(''),[error,setError]=useState<unknown>(null),[busy,setBusy]=useState(false);
+ async function choose(file:File|undefined){
+  setSeed(null);setPreview(null);setDone('');setError(null);setName('');if(!file)return;
+  if(file.size>300000){setError(new Error('Ce fichier est trop gros (plus de 300 Ko) : ce n’est pas un fichier de départ d’Atelier.'));return;}
+  try{
+   const data=JSON.parse(await file.text());setBusy(true);
+   const r=await post(`/model/${id}/import?dry_run=1`,data);setSeed(data);setName(file.name);setPreview(r);
+  }catch(e:any){setError(e instanceof SyntaxError?new Error('Ce fichier n’est pas lisible : choisissez le fichier « atelier-depart.json ».'):e);}
+  finally{setBusy(false);}
+ }
+ async function go(){
+  setBusy(true);setError(null);
+  try{const r=await post(`/model/${id}/import`,seed);setDone(r.message);setPreview(null);setSeed(null);onImported();}catch(e){setError(e);}finally{setBusy(false);}
+ }
+ const sum=preview?.summary;
+ return <Fold title="Importer un fichier de départ" summary="ajoute des fonctionnalités et des décisions, sans rien modifier">
+  <p className="muted">Ce fichier ne fait qu’<strong>ajouter</strong> : il ne change et ne supprime rien de ce qui existe déjà. Si vous l’importez deux fois, la deuxième fois n’ajoute rien. Les décisions arrivent « Proposées » : c’est vous qui les validez, une par une.</p>
+  <ErrorBox error={error}/>
+  <Field label="Fichier de départ (.json)" hint="Par exemple atelier-depart.json. Un aperçu s’affiche avant tout ajout."><input type="file" accept=".json,application/json" disabled={busy} onChange={e=>{const f=e.target.files?.[0];e.target.value='';void choose(f);}}/></Field>
+  {busy&&<Loading/>}
+  {done&&<div className="notice" role="status"><strong>{done}</strong></div>}
+  {sum&&<div className="stack" role="status">
+   <p><strong>Aperçu de « {name} » (rien n’est encore écrit) :</strong></p>
+   <ul className="plain"><li>Fonctionnalités à ajouter : <strong>{sum.features.new}</strong> · déjà présentes : {sum.features.already_present}</li><li>Décisions à ajouter : <strong>{sum.decisions.new}</strong> · déjà présentes : {sum.decisions.already_present}</li></ul>
+   {sum.features.new+sum.decisions.new===0?<p className="muted">Tout est déjà présent : il n’y a rien à ajouter.</p>:<Button disabled={busy} onClick={()=>void go()}>Ajouter {sum.features.new} fonctionnalité(s) et {sum.decisions.new} décision(s)</Button>}
+  </div>}
+ </Fold>;
+}

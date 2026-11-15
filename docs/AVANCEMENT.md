@@ -1,3 +1,10 @@
+# 15 novembre 2026 — Lot 4 : Atelier dans Atelier, banc d'essai (aucune migration)
+
+**Fait (exécuté en local, GitHub simulé) :** fichier de départ importable (94 fonctionnalités avec source et niveau réels, 12 décisions « Proposées »), import avec aperçu, sans doublon ni suppression ni modification, guide pas à pas, protocole téléphone, parcours complet testé à 360 et 390 px, mission du lot 5A générée localement et non envoyée, 14 manques listés comme fonctionnalités « à concevoir », 3 défauts corrigés avec tests. Vitest 146/146, `node --test` 376/376, Playwright 2/2.
+**Non fait / non vérifié :** import réel en production (Martin), téléphone (`docs/PROTOCOLE_TELEPHONE_LOT4.md`), lecture GitHub avec le jeton réel, jugement de Martin sur la mission du lot 5A, contenu des lots 5B et studio, texte des décisions D1 et D9 à D12. Rapport : `docs/audits/RAPPORT_LOT_4_2026-11-15.md` ; guide : `docs/atelier-dans-atelier/GUIDE_MARTIN.md`.
+
+---
+
 # 15 novembre 2026 — Lot 3 : missions pour Claude Code, registre des travaux, retour (branche `ccr-42fa5a0b-aqmogn`, migration 0024 non appliquée)
 
 **Fait (exécuté en local, GitHub et Mistral simulés) :** missions courtes ou complètes, règles du dépôt visé lues en lecture seule à un commit figé et citées sans perte (Codex ignoré et signalé pour Recettes ; Sport sans règles propres), brouillon sans IA, reformulation facultative par IA gratuite marquée Hypothèse, registre (IA, modèle, pourquoi, PR, jetons si connus), retour de PR (tests GitHub, revue du SHA courant), verdict en un clic avec preuve, isolation A/B, migration 0024 testée sur base remplie.

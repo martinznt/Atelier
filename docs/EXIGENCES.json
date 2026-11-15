@@ -4753,5 +4753,68 @@
     "statut": "bloqué",
     "preuve": "docs/audits/RAPPORT_LOT_3_2026-11-15.md",
     "limite": "D7 = C non validée explicitement par Martin : non réalisé. Le choix automatique reste non réalisé (aucun classement ni benchmark inventé)."
+  },
+  {
+    "id": "ADA-36-001",
+    "section": 36,
+    "source": "Lot 4 du 15 novembre 2026 (Atelier dans Atelier, banc d’essai)",
+    "exigence": "Fichier de départ importable : projet Atelier relié à martinznt/Atelier en lecture seule, fonctionnalités avec source et niveau réels, décisions D1 à D12 proposées (Martin les valide), lots 0 à 3 faits et lots 5A et 5B à concevoir.",
+    "statut": "réalisé",
+    "preuve": "docs/atelier-dans-atelier/atelier-depart.json ; scripts/build-atelier-seed.mjs ; tests/lot4-parcours.test.ts",
+    "limite": "Le niveau « Vérifié » n’est posé que sur 11 fonctionnalités dont un test existant est cité. Le texte des décisions D1, D9 à D12 et le contenu des lots 5B et studio n’existent dans aucun fichier : non inventés. Import réel en production : à faire par Martin."
+  },
+  {
+    "id": "ADA-36-002",
+    "section": 36,
+    "source": "Lot 4 du 15 novembre 2026 (Atelier dans Atelier, banc d’essai)",
+    "exigence": "Import sans doublon (deux fois = rien de plus), sans suppression ni modification, avec aperçu, sans migration.",
+    "statut": "réalisé",
+    "preuve": "server/seed-core.ts ; server/routes/model.ts ; web/ProjectModel.tsx ; tests/lot4-parcours.test.ts ; tests/e2e/lot4.spec.ts",
+    "limite": "Joué dans Miniflare et dans Chromium local ; la production n’a pas été touchée."
+  },
+  {
+    "id": "ADA-36-003",
+    "section": 36,
+    "source": "Lot 4 du 15 novembre 2026 (Atelier dans Atelier, banc d’essai)",
+    "exigence": "Isolation A/B de l’import, de la lecture, de la recherche et des missions.",
+    "statut": "réalisé",
+    "preuve": "tests/lot4-parcours.test.ts",
+    "limite": "Deux comptes de test seulement."
+  },
+  {
+    "id": "ADA-36-004",
+    "section": 36,
+    "source": "Lot 4 du 15 novembre 2026 (Atelier dans Atelier, banc d’essai)",
+    "exigence": "Parcours complet testé en local : import, recherche, tâche, validation d’une décision, mission du lot 5A, verdict, à 360 et 390 px.",
+    "statut": "réalisé",
+    "preuve": "tests/e2e/lot4.spec.ts ; tests/lot4-parcours.test.ts",
+    "limite": "Chromium de bureau seulement ; GitHub simulé ; téléphone non essayé (protocole docs/PROTOCOLE_TELEPHONE_LOT4.md)."
+  },
+  {
+    "id": "ADA-36-005",
+    "section": 36,
+    "source": "Lot 4 du 15 novembre 2026 (Atelier dans Atelier, banc d’essai)",
+    "exigence": "Mission du lot 5A générée localement avec les vraies règles d’Atelier, non envoyée.",
+    "statut": "réalisé",
+    "preuve": "docs/atelier-dans-atelier/MISSION_LOT_5A_generee.md ; tests/lot4-parcours.test.ts",
+    "limite": "Règles lues dans Git (commit fb195ce) puis servies par un GitHub simulé ; qualité jamais jugée par Martin ni mesurée avec Claude Code."
+  },
+  {
+    "id": "ADA-36-006",
+    "section": 36,
+    "source": "Lot 4 du 15 novembre 2026 (Atelier dans Atelier, banc d’essai)",
+    "exigence": "Liste des manques du banc d’essai, chacun avec sa source, ajoutée comme fonctionnalités « à concevoir ».",
+    "statut": "réalisé",
+    "preuve": "docs/audits/RAPPORT_LOT_4_2026-11-15.md ; scripts/atelier-seed-findings.mjs",
+    "limite": "Aucune de ces fonctionnalités n’est codée."
+  },
+  {
+    "id": "ADA-36-007",
+    "section": 36,
+    "source": "Lot 4 du 15 novembre 2026 (Atelier dans Atelier, banc d’essai)",
+    "exigence": "Jugement final : la mission générée est-elle meilleure que celles écrites à la main ? Appartient à Martin.",
+    "statut": "à faire",
+    "preuve": "docs/audits/RAPPORT_LOT_4_2026-11-15.md",
+    "limite": "Réponse de Martin attendue (oui ou non avec raisons)."
   }
 ]

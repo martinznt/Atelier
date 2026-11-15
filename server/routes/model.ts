@@ -1,8 +1,9 @@
 /* Lot 1 — Modèle de projet : gabarit et modules, cycle de vie (états + fiabilité) et suivi des fonctionnalités.
    Chaque requête est filtrée par l'utilisateur de la session ET par le projet. Aucune suppression d'information. */
 import {Hono} from 'hono';import {z} from 'zod';
-import {fail,jsonBody,many,now,one,owned,run,uid,userId} from '../core.ts';
+import {event,fail,jsonBody,many,now,one,owned,run,uid,userId} from '../core.ts';
 import {FEATURE_STATES,FEATURE_STATE_LABEL,KINDS,LIFE,LIFE_LABEL,MODULES,MODULE_KEYS,PROJECT_TEMPLATES,RELIABILITY_VIEW,STORED_RELIABILITY,applyChange,effectiveModules,effectiveReliability,featureCode,initialState,legacyDecision,legacyDecisionMirror,legacyDocument,legacyMemory,templateOf,type Author,type ItemState,type Kind,type Life,type ModuleKey} from '../lifecycle-core.ts';
+import {checkSeed,importReason,seedFile,seedId} from '../seed-core.ts';
 import type {AppEnv,Env,Row} from '../types.ts';
 export const model=new Hono<AppEnv>();
 const text=(n:number)=>z.string().max(n).default('');
@@ -159,4 +160,47 @@ model.delete('/:project/features/:id/links/:link',async c=>{
  if(!f)fail(404,'Cette fonctionnalité est introuvable dans ce projet.');
  await run(c.env,'DELETE FROM feature_links WHERE id=? AND user_id=? AND feature_id=?',c.req.param('link'),user,f.id);
  return c.json(await featureView(c.env,user,f));
+});
+
+/* ───────── Lot 4 : importer un fichier de départ (créer seulement, jamais modifier ni supprimer) ───────── */
+model.post('/:project/import',async c=>{
+ const user=userId(c),p=await owned(c.env,'projects',c.req.param('project'),user);await needModule(c.env,user,p.id,'features');
+ const dry=c.req.query('dry_run')==='1',parsed=seedFile.safeParse(await jsonBody(c));
+ if(!parsed.success)fail(422,'Ce fichier n’est pas un fichier de départ valable : '+parsed.error.issues.slice(0,3).map(i=>(i.path.join('.')||'fichier')+' — '+i.message).join(' ; ')+'. Rien n’a été importé.');
+ const seed=parsed.data,problems=checkSeed(seed);
+ if(problems.length)return c.json({ok:false,imported:false,problems,message:'Le fichier contient '+problems.length+' problème(s). Rien n’a été importé.'},422);
+ const fIds=await Promise.all(seed.features.map(f=>seedId(user,p.id,'feature',f.key))),dIds=await Promise.all(seed.decisions.map(d=>seedId(user,p.id,'decision',d.key)));
+ const have=async(table:string,ids:string[])=>{const s=new Set<string>();for(let i=0;i<ids.length;i+=40){const part=ids.slice(i,i+40);for(const r of await many<Row>(c.env,`SELECT id FROM ${table} WHERE user_id=? AND project_id=? AND id IN (${part.map(()=>'?').join(',')})`,user,p.id,...part))s.add(r.id);}return s;};
+ const hasF=await have('project_features',fIds),hasD=await have('project_decisions',dIds);
+ // Un identifiant dérivé qui existerait dans un AUTRE projet ou compte ne peut pas arriver ici (le projet et l'utilisateur sont dans le calcul).
+ const newF=seed.features.map((f,i)=>({f,id:fIds[i]})).filter(x=>!hasF.has(x.id)),newD=seed.decisions.map((d,i)=>({d,id:dIds[i]})).filter(x=>!hasD.has(x.id));
+ const summary={features:{new:newF.length,already_present:seed.features.length-newF.length},decisions:{new:newD.length,already_present:seed.decisions.length-newD.length}};
+ const names={features:{new:newF.map(x=>x.f.name),already_present:seed.features.filter((_,i)=>hasF.has(fIds[i])).map(f=>f.name)},decisions:{new:newD.map(x=>x.d.title),already_present:seed.decisions.filter((_,i)=>hasD.has(dIds[i])).map(d=>d.title)}};
+ if(dry||(!newF.length&&!newD.length))return c.json({ok:true,imported:false,dry_run:dry,summary,names,message:dry?'Aperçu seulement : rien n’a été écrit.':'Tout est déjà présent : rien n’a été ajouté, rien n’a été modifié.'});
+ const at=now();
+ let start=0;
+ if(newF.length){
+  await run(c.env,'INSERT INTO project_setup(project_id,user_id,template,feature_seq,created_at,updated_at) VALUES(?,?,?,0,?,?) ON CONFLICT(project_id) DO NOTHING',p.id,user,(await modelOf(c.env,user,p.id)).template,at,at);
+  const seq=await one<Row>(c.env,'UPDATE project_setup SET feature_seq=feature_seq+?,updated_at=? WHERE project_id=? AND user_id=? RETURNING feature_seq',newF.length,at,p.id,user);
+  start=seq!.feature_seq-newF.length;
+ }
+ const stmts:D1PreparedStatement[]=[];
+ for(const [i,{f,id}] of newF.entries()){
+  const n=start+i+1,verified=f.reliability==='verified',rel=f.reliability,src=verified?(f.source_ref+' · test : '+f.test_ref).slice(0,300):f.source_ref,evId=await seedId(user,p.id,'event',f.key);
+  const status=rel==='hypothesis'?'hypothesis':'current';
+  stmts.push(
+   c.env.DB.prepare('INSERT INTO project_features(id,user_id,project_id,code,name,description,state,source_kind,source_ref,group_name,position,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO NOTHING').bind(id,user,p.id,featureCode(n),f.name,f.description,f.state,f.source_kind,f.source_ref,f.group,n,at,at),
+   c.env.DB.prepare('INSERT INTO item_lifecycle(user_id,project_id,kind,item_id,status,reliability,source_ref,proof_kind,fit_confirmed_at,replaced_by_id,author_kind,revision,updated_at) VALUES(?,?,?,?,?,?,?,?,?,NULL,?,1,?) ON CONFLICT(user_id,kind,item_id) DO NOTHING').bind(user,p.id,'feature',id,status,rel,src,verified?'test':'',verified?at:null,'martin',at),
+   c.env.DB.prepare('INSERT INTO lifecycle_events(id,user_id,project_id,kind,item_id,from_status,to_status,from_reliability,to_reliability,reason,source_ref,replaced_by_id,author_kind,created_at) VALUES(?,?,?,?,?,NULL,?,NULL,?,?,?,NULL,?,?) ON CONFLICT(id) DO NOTHING').bind(evId,user,p.id,'feature',id,status,rel,importReason(rel),src,'martin',at));
+ }
+ for(const {d,id} of newD){
+  const evId=await seedId(user,p.id,'event','decision:'+d.key);
+  stmts.push(
+   c.env.DB.prepare("INSERT INTO project_decisions(id,user_id,project_id,title,reason,status,source_kind,source_ref,created_at,updated_at) VALUES(?,?,?,?,?,'proposed','other',?,?,?) ON CONFLICT(id) DO NOTHING").bind(id,user,p.id,d.title,d.reason,d.source_ref,at,at),
+   c.env.DB.prepare("INSERT INTO item_lifecycle(user_id,project_id,kind,item_id,status,reliability,source_ref,proof_kind,fit_confirmed_at,replaced_by_id,author_kind,revision,updated_at) VALUES(?,?,'decision',?,'proposed','hypothesis',?,'',NULL,NULL,'ai',1,?) ON CONFLICT(user_id,kind,item_id) DO NOTHING").bind(user,p.id,id,d.source_ref,at),
+   c.env.DB.prepare("INSERT INTO lifecycle_events(id,user_id,project_id,kind,item_id,from_status,to_status,from_reliability,to_reliability,reason,source_ref,replaced_by_id,author_kind,created_at) VALUES(?,?,?,'decision',?,NULL,'proposed',NULL,'hypothesis',?,?,NULL,'ai',?) ON CONFLICT(id) DO NOTHING").bind(evId,user,p.id,id,'Décision recopiée du fichier de départ : à valider par vous, une par une.',d.source_ref,at));
+ }
+ for(let i=0;i<stmts.length;i+=90)await c.env.DB.batch(stmts.slice(i,i+90));
+ await event(c.env,user,'seed_import','Fichier de départ importé : '+newF.length+' fonctionnalité(s) et '+newD.length+' décision(s) ajoutée(s), rien modifié.',p.id);
+ return c.json({ok:true,imported:true,dry_run:false,summary,names,message:'Importé : '+newF.length+' fonctionnalité(s) et '+newD.length+' décision(s) ajoutée(s). Les décisions sont « Proposées » : validez-les vous-même, une par une.'},201);
 });
