@@ -4,17 +4,18 @@ import {useEffect,useRef,useState} from 'react';
 import {api,date} from './api';
 import {Button,Field,ErrorBox,Loading,Modal} from './ui';
 import {vault} from './vault';
-const LABEL:Record<string,string>={project:'Projets',memory:'Notes de mémoire du projet',chat:'Messages du chat',imported:'Historique importé',decision:'Décisions',task:'Tâches',prompt:'Prompts',document:'Documents de référence',file:'Fichiers',attachment:'Pièces jointes citées',question:'Questions d’Atelier',action:'À faire par Martin'};
-const STATUS:Record<string,string>={proposed:'proposée',validated:'validée',rejected:'rejetée',superseded:'remplacée',todo:'à faire',ready:'prête',in_progress:'en cours',waiting:'en attente',blocked:'bloquée',to_verify:'à vérifier',done:'terminée',abandoned:'abandonnée',open:'ouverte',answered:'répondue',withdrawn:'retirée',dismissed:'écartée',to_prepare:'à préparer',to_give:'à donner',given:'déjà donné',awaiting:'en attente de retour',response_received:'réponse reçue',processed:'traité',obsolete:'obsolète'};
+import {ReliabilityBadge} from './Lifecycle';
+const LABEL:Record<string,string>={project:'Projets',memory:'Notes de mémoire du projet',chat:'Messages du chat',imported:'Historique importé',decision:'Décisions',task:'Tâches',prompt:'Prompts',document:'Documents de référence',file:'Fichiers',attachment:'Pièces jointes citées',question:'Questions d’Atelier',action:'À faire par Martin',feature:'Fonctionnalités',gitdoc:'Documents Git (Memoire-Projets, copie)'};
+const STATUS:Record<string,string>={proposed:'proposée',validated:'actuelle',to_design:'à concevoir',phone_verified:'vérifié sur téléphone',rejected:'rejetée',superseded:'remplacée',todo:'à faire',ready:'prête',in_progress:'en cours',waiting:'en attente',blocked:'bloquée',to_verify:'à vérifier',done:'terminée',abandoned:'abandonnée',open:'ouverte',answered:'répondue',withdrawn:'retirée',dismissed:'écartée',to_prepare:'à préparer',to_give:'à donner',given:'déjà donné',awaiting:'en attente de retour',response_received:'réponse reçue',processed:'traité',obsolete:'obsolète'};
 const ROLE:Record<string,string>={user:'Vous',assistant:'Assistant',note:'Note',system:'Système',tool:'Outil'};
 const PROVIDERS=['ChatGPT','Claude','gemini','groq','mistral','anthropic','openai'];
 
 export function FindModal({onClose,onOpen}:{onClose:()=>void;onOpen:(open:any)=>void}){
  const [q,setQ]=useState(''),[filters,setFilters]=useState({project:'',provider:'',status:'',role:'',from:'',to:'',kinds:[] as string[]}),[showFilters,setShowFilters]=useState(false),[projects,setProjects]=useState<any[]>([]);
- const [res,setRes]=useState<any>(null),[loading,setLoading]=useState(false),[error,setError]=useState<unknown>(null),[reader,setReader]=useState<any>(null),[local,setLocal]=useState<any[]>([]),[moreBusy,setMoreBusy]=useState('');
+ const [showAll,setShowAll]=useState(false),[res,setRes]=useState<any>(null),[loading,setLoading]=useState(false),[error,setError]=useState<unknown>(null),[reader,setReader]=useState<any>(null),[local,setLocal]=useState<any[]>([]),[moreBusy,setMoreBusy]=useState('');
  const online=navigator.onLine,tick=useRef(0);
  useEffect(()=>{api('/projects').then(r=>setProjects(r.items||[])).catch(()=>{});},[]);
- const qs=(extra:Record<string,string|number>={})=>{const p=new URLSearchParams({q});for(const [k,v] of Object.entries({project:filters.project,provider:filters.provider,status:filters.status,role:filters.role,from:filters.from,to:filters.to,kinds:filters.kinds.join(','),per:8,...extra}))if(v!==''&&v!==undefined)p.set(k,String(v));return p.toString();};
+ const qs=(extra:Record<string,string|number>={})=>{const p=new URLSearchParams({q});for(const [k,v] of Object.entries({project:filters.project,provider:filters.provider,status:filters.status,role:filters.role,from:filters.from,to:filters.to,kinds:filters.kinds.join(','),all:showAll?'1':'',per:8,...extra}))if(v!==''&&v!==undefined)p.set(k,String(v));return p.toString();};
  useEffect(()=>{
   setRes(null);setLocal([]);setError(null);if(q.trim().length<2)return;
   let alive=true;const controller=new AbortController(),mine=++tick.current;
@@ -24,7 +25,7 @@ export function FindModal({onClose,onOpen}:{onClose:()=>void;onOpen:(open:any)=>
    catch(e){if(alive)setError(e);}finally{if(alive)setLoading(false);}
   },350);
   return()=>{alive=false;controller.abort();clearTimeout(timer);};
- },[q,filters.project,filters.provider,filters.status,filters.role,filters.from,filters.to,filters.kinds.join(','),online]);
+ },[q,showAll,filters.project,filters.provider,filters.status,filters.role,filters.from,filters.to,filters.kinds.join(','),online]);
  async function more(kind:string){
   setMoreBusy(kind);
   try{const group=res.groups.find((g:any)=>g.kind===kind),d=await api('/workbench/find?'+qs({kinds:kind,offset:group.items.length,per:20}));
@@ -68,9 +69,11 @@ export function FindModal({onClose,onOpen}:{onClose:()=>void;onOpen:(open:any)=>
   {loading&&<Loading/>}
   {q.trim().length>0&&q.trim().length<2&&<p className="muted">Saisissez au moins 2 caractères.</p>}
   {res&&!res.groups.length&&!loading&&<p className="muted">Aucun résultat pour « {q} » avec ces filtres. La recherche porte sur le texte exact (sans accent ni synonyme).</p>}
+  {res&&res.not_searched?.length>0&&<p className="muted">Pas cherché : {res.not_searched.map((s:any)=>LABEL[s.kind]+' ('+s.reason+')').join(' ; ')}.</p>}
+  {res&&<label className="check"><input type="checkbox" checked={showAll} onChange={e=>setShowAll(e.target.checked)}/>Tout afficher{res.hidden>0&&!showAll?' — '+res.hidden+' résultat(s) non actuel(s) masqué(s) (remplacés, abandonnés, rejetés, proposés ou hypothèses)':''}</label>}
   {res&&res.skipped?.length>0&&<p className="muted">Non interrogé avec ces filtres : {res.skipped.map((s:any)=>LABEL[s.kind]+' ('+s.reason+')').join(' ; ')}.</p>}
   {res?.groups.map((g:any)=><section key={g.kind} className="search-group"><h4>{g.label} <small className="muted">({g.items.length}{g.more?'+':''})</small></h4>
-   <div className="search-results">{g.items.map((h:any)=><button key={h.kind+h.id} onClick={()=>void openHit(h)}><strong>{h.title}</strong><small>{[h.project_name,h.provider,h.role&&ROLE[h.role],h.status&&(STATUS[h.status]||h.status),h.date&&date(h.date)].filter(Boolean).join(' · ')}</small><span>{h.excerpt}</span></button>)}</div>
+   <div className="search-results">{g.items.map((h:any)=><button key={h.kind+h.id} onClick={()=>void openHit(h)}><strong>{h.title}</strong><small>{[h.project_name,h.provider,h.role&&ROLE[h.role],h.status&&(STATUS[h.status]||h.status),h.date&&date(h.date)].filter(Boolean).join(' · ')}</small><span>{h.excerpt}</span><small className="origin"><strong>{h.origin==='git'?'Source : Git':'Source : Atelier'}</strong>{h.origin_note?' · '+h.origin_note:''}{h.life?' · '+h.life:''}{h.reliability&&<> · <ReliabilityBadge level={h.reliability.level}/></>}</small></button>)}</div>
    {g.more&&<Button kind="text" disabled={moreBusy===g.kind} onClick={()=>void more(g.kind)}>Voir plus de résultats</Button>}</section>)}
   {res&&<p className="muted">{res.notice}</p>}
   {!online&&<><p className="notice">Hors connexion : recherche limitée aux contenus déjà synchronisés sur cet appareil.</p>{local.map((r,i)=><details key={i}><summary>{r.source}</summary><pre>{JSON.stringify(r.value,null,2).slice(0,3000)}</pre></details>)}</>}

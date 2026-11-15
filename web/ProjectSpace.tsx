@@ -2,13 +2,15 @@
 import {useCallback,useEffect,useState} from 'react';
 import {api,post,patch,remove,date,download} from './api';
 import {Button,Field,ErrorBox,Empty,SectionTitle,Loading} from './ui';
+import {ModelSection,FeaturesSection} from './ProjectModel';
+import {LifeBadge,LifecycleEditor,ReliabilityBadge} from './Lifecycle';
 import {DocumentsSection,ResumeSection,JournalSection,RefAuditSection,TaskExtras} from './ProjectExtras';
 
 const STATUS:Record<string,string>={todo:'À faire',ready:'Prêt',in_progress:'En cours',waiting:'En attente',blocked:'Bloqué',to_verify:'À vérifier',done:'Terminé',abandoned:'Abandonné'};
 const OWNER:Record<string,string>={user:'Vous',chatgpt:'ChatGPT',claude_code:'Claude Code',codex:'Codex',gemini:'Gemini',mistral:'Mistral',other_ai:'Autre IA',automation:'Automatisation'};
 const DEST:Record<string,string>={claude_code:'Claude Code',chatgpt:'ChatGPT',codex:'Codex',gemini:'Gemini',mistral:'Mistral',other:'Autre IA'};
 const PROJECT_STATE:Record<string,string>={active:'Actif',paused:'En pause',blocked:'Bloqué',done:'Terminé'};
-const DECISION:Record<string,string>={proposed:'Proposée',validated:'Validée',rejected:'Rejetée',superseded:'Remplacée'};
+const DECISION:Record<string,string>={proposed:'Proposée',validated:'Actuelle',rejected:'Rejetée',superseded:'Remplacée'};
 const CI:Record<string,string>={success:'réussi',failure:'échec',pending:'en attente',unknown:'inconnu'};
 const PRIORITY:Record<number,string>={1:'Haute',2:'Normale',3:'Basse'};
 
@@ -35,7 +37,7 @@ export function ProjectSpace({onProject,refresh}:{onProject:(p:any)=>void;refres
 }
 
 function Space({id}:{id:string;onOpenProject:(p:any)=>void}){
- const [ov,setOv]=useState<any>(null),[gh,setGh]=useState<any>(null),[plan,setPlan]=useState<any>(null),[decisions,setDecisions]=useState<any[]>([]),[error,setError]=useState<unknown>(null);
+ const [ov,setOv]=useState<any>(null),[gh,setGh]=useState<any>(null),[plan,setPlan]=useState<any>(null),[decisions,setDecisions]=useState<any[]>([]),[error,setError]=useState<unknown>(null),[mk,setMk]=useState(0);
  const reload=useCallback(async()=>{
   setError(null);
   try{
@@ -59,6 +61,8 @@ function Space({id}:{id:string;onOpenProject:(p:any)=>void}){
     <li><strong>Terminé et vérifié :</strong> {a.verified.length?a.verified.map((t:any)=>t.title).join(' · '):'rien encore'}{a.unverified_done.length>0&&<span className="muted"> ({a.unverified_done.length} terminée(s) sans preuve : non comptées comme vérifiées)</span>}</li>
     <li><strong>Bloque ou reste :</strong> {a.blockers.length?a.blockers.map((t:any)=>t.title+' — '+t.question).join(' · '):'aucun blocage'}{a.waiting.length>0&&<span className="muted"> · en attente de prérequis : {a.waiting.map((t:any)=>t.title).join(', ')}</span>}</li></ul>
   </Fold>
+  <ModelSection id={id} onChanged={()=>setMk(k=>k+1)}/>
+  <FeaturesSection id={id} reloadKey={mk}/>
   <RepoSection id={id} repos={ov.repositories} onChanged={reload}/>
   <GithubSection gh={gh}/>
   <PlanSection id={id} plan={plan} decisions={decisions} onChanged={reload}/>
@@ -86,13 +90,13 @@ function RepoSection({id,repos,onChanged}:{id:string;repos:any[];onChanged:()=>v
  const [conns,setConns]=useState<any[]>([]),[conn,setConn]=useState(''),[list,setList]=useState<any[]>([]),[full,setFull]=useState(''),[shared,setShared]=useState(false),[error,setError]=useState<unknown>(null),[busy,setBusy]=useState(false),[notice,setNotice]=useState('');
  useEffect(()=>{api('/connections').then(r=>{const g=r.items.filter((c:any)=>c.provider==='github');setConns(g);setConn(c=>c||g[0]?.id||'');}).catch(()=>{});},[]);
  async function loadRepos(){if(!conn)return;setBusy(true);setError(null);try{const r=await api(`/github/repositories?connection=${conn}`);setList(r.items);}catch(e){setError(e);}finally{setBusy(false);}}
- async function link(){setBusy(true);setError(null);setNotice('');try{await post(`/spaces/${id}/repository`,{connection_id:conn,full_name:full,confirm_shared:shared});setNotice('Dépôt vérifié et associé.');setFull('');setShared(false);onChanged();}catch(e){setError(e);}finally{setBusy(false);}}
+ async function link(){setBusy(true);setError(null);setNotice('');try{await post(`/spaces/${id}/repository`,{connection_id:conn,full_name:full,confirm_shared:shared});setNotice('Dépôt trouvé chez GitHub et associé.');setFull('');setShared(false);onChanged();}catch(e){setError(e);}finally{setBusy(false);}}
  async function refresh(rid:string){setBusy(true);setError(null);try{await post(`/spaces/${id}/repository/${rid}/refresh`,{});onChanged();}catch(e){setError(e);}finally{setBusy(false);}}
  async function unlink(rid:string){setBusy(true);setError(null);try{await remove(`/spaces/${id}/repository/${rid}`);onChanged();}catch(e){setError(e);}finally{setBusy(false);}}
- return <Fold title="Dépôt GitHub" summary={repos.length?repos.map(r=>r.full_name+' · '+r.branch+(r.verified?' · vérifié':'')).join(' ; '):'aucun dépôt associé'} open={!repos.length}>
+ return <Fold title="Dépôt GitHub" summary={repos.length?repos.map(r=>r.full_name+' · '+r.branch+(r.verified?' · existe chez GitHub':'')).join(' ; '):'aucun dépôt associé'} open={!repos.length}>
   <ErrorBox error={error}/>{notice&&<p role="status" className="notice">{notice}</p>}
   {repos.map(r=><article className="panel" key={r.id}><strong><a href={r.url} target="_blank" rel="noreferrer">{r.full_name}</a></strong>
-   <p className="muted">Branche principale : {r.branch} · dernier commit lu : {String(r.head_sha).slice(0,8)} · {r.verified?'vérifié le '+date(r.verified_at):'non vérifié'} · écriture : {r.can_push===null?'inconnue':r.can_push?'autorisée':'non (lecture seule)'}{r.shared_ack?' · partagé avec un autre projet (confirmé)':''}</p>
+   <p className="muted">Branche principale : {r.branch} · dernier commit lu : {String(r.head_sha).slice(0,8)} · {r.verified?'existe chez GitHub (contrôlé le '+date(r.verified_at)+')':'pas encore contrôlé chez GitHub'} · écriture : {r.can_push===null?'inconnue':r.can_push?'autorisée':'non (lecture seule)'}{r.shared_ack?' · partagé avec un autre projet (confirmé)':''}</p>
    <div className="stack"><Button kind="secondary" disabled={busy} onClick={()=>void refresh(r.id)}>Actualiser la vérification</Button><Button kind="text" disabled={busy} onClick={()=>void unlink(r.id)}>Dissocier</Button></div></article>)}
   {!conns.length?<p className="muted">Aucune connexion GitHub : ajoutez-en une dans Réglages → Connexions. Le reste du projet fonctionne sans elle.</p>:<div className="stack">
    <Field label="Connexion GitHub"><select value={conn} onChange={e=>setConn(e.target.value)}>{conns.map(c=><option key={c.id} value={c.id}>{c.label}</option>)}</select></Field>
@@ -242,20 +246,25 @@ function HandoffDetail({h,busy,run,copy,exportFile,reload,setNotice}:{h:any;busy
 }
 
 function DecisionSection({id,decisions,plan,onChanged}:{id:string;decisions:any[];plan:any;onChanged:()=>void}){
- const [title,setTitle]=useState(''),[reason,setReason]=useState(''),[source,setSource]=useState(''),[error,setError]=useState<unknown>(null),[busy,setBusy]=useState(false);
+ const [title,setTitle]=useState(''),[reason,setReason]=useState(''),[source,setSource]=useState(''),[error,setError]=useState<unknown>(null),[busy,setBusy]=useState(false),[states,setStates]=useState<Record<string,any>>({}),[showAll,setShowAll]=useState(false);
+ const loadStates=useCallback(async()=>{try{const r=await api(`/model/${id}/items?kind=decision&all=1`);setStates(Object.fromEntries(r.items.map((i:any)=>[i.id,i])));}catch{/* l’état reste déduit de l’ancienne colonne */}},[id]);
+ useEffect(()=>{void loadStates();},[loadStates,decisions]);
  const run=async(fn:()=>Promise<any>)=>{setBusy(true);setError(null);try{await fn();onChanged();}catch(e){setError(e);}finally{setBusy(false);}};
  const toSettle=[...plan.tasks.filter((t:any)=>t.status==='blocked'&&t.blocking_question).map((t:any)=>({key:'t'+t.id,text:'« '+t.title+' » : '+t.blocking_question})),...decisions.filter(d=>d.status==='proposed').map(d=>({key:'d'+d.id,text:'Décision proposée : '+d.title}))];
+ const cands=Object.values(states).map((x:any)=>({id:x.id,title:x.title,status:x.status}));
+ const shown=decisions.filter(d=>showAll||!states[d.id]||states[d.id].status==='current'||states[d.id].status==='proposed'),hidden=decisions.length-shown.length;
  return <Fold title="Décisions et À trancher" summary={decisions.length+' décision(s) · '+toSettle.length+' à trancher'} open={toSettle.length>0}>
   <ErrorBox error={error}/>
   {toSettle.length>0&&<div className="notice"><strong>À trancher</strong><ul>{toSettle.map(x=><li key={x.key}>{x.text}</li>)}</ul></div>}
-  {decisions.map(d=><details className="fold" key={d.id}><summary className="fold-summary"><strong>{d.title}</strong><small className="muted">{DECISION[d.status]} · {date(d.updated_at)}{d.source_ref?' · source : '+d.source_ref:''}</small></summary><div className="fold-body stack">
+  {decisions.length>0&&<label className="check"><input type="checkbox" checked={showAll} onChange={e=>setShowAll(e.target.checked)}/>Tout afficher{hidden>0&&!showAll?' ('+hidden+' remplacée(s), abandonnée(s) ou rejetée(s) masquée(s))':''}</label>}
+  {shown.map(d=>{const st=states[d.id];return <details className="fold" key={d.id}><summary className="fold-summary"><strong>{d.title}</strong><small className="muted">{st?<><LifeBadge status={st.status}/> <ReliabilityBadge level={st.reliability}/></>:DECISION[d.status]} · {date(d.updated_at)}{d.source_ref?' · source : '+d.source_ref:''}</small></summary><div className="fold-body stack">
    {d.reason&&<p>{d.reason}</p>}{d.supersedes_id&&<p className="muted">Remplace une décision précédente.</p>}
-   <div className="stack">{Object.entries(DECISION).filter(([k])=>k!==d.status&&k!=='superseded').map(([k,v])=><Button key={k} kind="secondary" disabled={busy} onClick={()=>void run(()=>patch(`/spaces/${id}/decisions/${d.id}`,{status:k,revision:d.revision}))}>{v}</Button>)}</div></div></details>)}
+   {st&&<LifecycleEditor project={id} kind="decision" item={st} candidates={cands} onChanged={()=>{onChanged();void loadStates();}}/>}</div></details>;})}
   <div className="stack"><h4>Nouvelle décision</h4>
    <Field label="Décision"><input value={title} maxLength={200} onChange={e=>setTitle(e.target.value)}/></Field>
    <Field label="Raison"><textarea rows={2} value={reason} maxLength={2000} onChange={e=>setReason(e.target.value)}/></Field>
    <Field label="Source (PR, rapport, conversation…)"><input value={source} maxLength={300} onChange={e=>setSource(e.target.value)}/></Field>
    <Button disabled={busy||!title.trim()} onClick={()=>void run(async()=>{await post(`/spaces/${id}/decisions`,{title:title.trim(),reason,source_ref:source,status:'proposed'});setTitle('');setReason('');setSource('');})}>Proposer la décision</Button></div>
-  <p className="muted">Une décision n’est « validée » que par vous. Elle reste rattachée à ce projet et n’apparaît pas dans l’autre.</p>
+  <p className="muted">Une décision n’est « actuelle » que par votre validation. Une décision remplacée ou abandonnée reste consultable ; rien n’est jamais supprimé. Elle reste rattachée à ce projet.</p>
  </Fold>;
 }

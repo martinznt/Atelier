@@ -6,6 +6,7 @@ const client=createApiClient({cache:vault,scope:sessionScope,online:()=>navigato
 export const api=client.api;
 export const apiBlob=client.blob;
 export const post=(path:string,data:unknown)=>api(path,{method:'POST',body:JSON.stringify(data)});
+export const put=(path:string,data:unknown)=>api(path,{method:'PUT',body:JSON.stringify(data)});
 export const patch=(path:string,data:unknown)=>api(path,{method:'PATCH',body:JSON.stringify(data)});
 export const remove=(path:string,data?:unknown)=>api(path,{method:'DELETE',body:data?JSON.stringify(data):undefined});
 export async function download(path:string,name:string,init?:RequestInit){saveBlob(await client.blob(path,init),name);}
