@@ -1,3 +1,12 @@
+# Lot 1 — contrôles du 15 novembre 2026 (exécutés en local, Node 22)
+
+- `tsc` OK ; vitest **113/113** ; build OK ; régressions, stockage, core OK ; `node --test tests/*.test.mjs` 356/357 (échec connu : `wrangler-previews`, non corrigé) ; audit des exigences : 553, 0 preuve cassée.
+- Migration 0023 sur base remplie : 0 ligne modifiée, 6 tables vides ajoutées, réponses de lecture identiques ; rejouée avec `backup:local` sur la base locale de wrangler.
+- Chromium à 360 et 390 px : modèle, fonctionnalité, « Vérifié » refusé puis accepté, recherche, aucun débordement.
+- **Non validé** : téléphone, production, restauration après 0023, Firefox/WebKit, contraste mesuré, fournisseurs IA, GitHub réel.
+
+---
+
 # Lot 0 — contrôles du 15 novembre 2026 (exécutés en local, Node 22)
 
 - `tsc` OK ; vitest 84/84 ; build OK ; régressions OK ; stockage 11/11 ; `node --test tests/*.test.mjs` 313/314 (échec : `wrangler-previews`, configuration modifiée à la main le 14 novembre, **non corrigé**, décision de Martin) ; audit des exigences : 0 preuve cassée.

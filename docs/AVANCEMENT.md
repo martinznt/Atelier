@@ -1,3 +1,10 @@
+# 15 novembre 2026 — Lot 1 : modèle de projet (branche `ccr-10660c75-ywk6y7`, PR 44 en brouillon, migration 0023 non appliquée)
+
+**Fait (exécuté en local) :** cycle de vie sans suppression, échelle de fiabilité unique, « Vérifié » refusé sans source, modules et gabarits, suivi des fonctionnalités (F-0001…), recherche unique avec origine Git/Atelier. `npm test` 113/113, tsc, build, régressions, parcours navigateur 360 et 390 px ; migration testée sur base remplie (anciennes tables identiques) et avec `backup:local`.
+**Non fait / non vérifié :** téléphone (protocole `docs/PROTOCOLE_TELEPHONE_LOT1.md`), sauvegarde de production, éditeur d'état pour les tâches, branchement de la correspondance Memoire-Projets (lot 5A). Test `wrangler-previews` toujours rouge sur `main` (décision de Martin). Détail : `docs/audits/RAPPORT_LOT_1_2026-11-15.md`.
+
+---
+
 # 15 novembre 2026 — Lot 0 : fiabilité et mesure (branche `ccr-6c1d630e-rou9c1`, aucune nouvelle fonction)
 
 **État Git vérifié :** `main` = `4353342` ; la PR 39 (migration 0021) **est fusionnée** (`1e27b01`) ; une seule PR ouverte : la 40 (brouillon, migration 0022 non appliquée). Le déploiement en production et les migrations 0001-0021 appliquées sont rapportés, non revérifiés.

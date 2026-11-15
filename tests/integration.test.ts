@@ -1440,7 +1440,9 @@ describe('contexte utile pour une réflexion : sélection locale, fiabilité, al
   const cv=(await json('/conversations','POST',{project_id:pj,title:'Fil minuteur'})).body.id;await json('/conversations/'+cv+'/notes','POST',{content:'Le minuteur sonne trop fort pour les voisins.'});
   await json('/decisions-placeholder','GET');
   await json('/spaces/'+po+'/decisions','POST',{title:'Minuteur du projet voisin',reason:'Autre projet, ne doit pas apparaître',status:'validated'});
-  const r=await json('/workbench/context?project='+pj+'&q='+encodeURIComponent('Faut-il garder le minuteur dans la salle ?'));expect(r.status).toBe(200);
+  const r=await json('/workbench/context?all=1&project='+pj+'&q='+encodeURIComponent('Faut-il garder le minuteur dans la salle ?'));expect(r.status).toBe(200);
+  // Lot 1 (D6) : par défaut, seule l'information « actuelle » est montrée ; la remplacée et la proposée sont consultables avec all=1 (ci-dessus).
+  const cur=await json('/workbench/context?project='+pj+'&q='+encodeURIComponent('Faut-il garder le minuteur dans la salle ?'));expect(cur.body.hits.map((h:any)=>h.id)).not.toContain(dOld.id);expect(cur.body.hits.find((h:any)=>h.title==='Minuteur optionnel ?')).toBeUndefined();expect(cur.body.hits.map((h:any)=>h.id)).toContain(d1.id);
   expect(r.body.terms).toContain('minuteur');expect(r.body.basis).toBe('local');
   const kinds=[...new Set(r.body.hits.map((h:any)=>h.kind))];for(const k of ['decision','task','chat'])expect(kinds).toContain(k);
   expect(JSON.stringify(r.body)).not.toContain('projet voisin');
@@ -1686,5 +1688,149 @@ describe('readConversations : mêmes formats qu’à l’inventaire (validateCon
  it('empreinte du segment : un fichier modifié depuis l’inventaire est refusé avant toute lecture',async()=>{
   await expect(ids([gptc('a')],['a'],'conversations_filtrees.json','f'.repeat(64))).rejects.toThrow(/même empreinte|pas la même archive/);
   expect(await ids([gptc('a')],['a'],'conversations_filtrees.json','0'.repeat(64))).toEqual(['a']);   // segment enregistré sans empreinte (ancien inventaire) : toléré comme avant
+ });
+});
+
+describe('lot 1 : modèle de projet — modules, cycle de vie, fiabilité, fonctionnalités, recherche unique, cloisonnement A/B',()=>{
+ let pA:string,pB:string,fA:any;
+ it('gabarit et modules : un projet libre n’a aucun module ; un module se (dés)active ; une fonctionnalité exige le module',async()=>{
+  pA=(await json('/projects','POST',{name:'Lot 1 — projet A'})).body.id;pB=(await json('/projects','POST',{name:'Lot 1 — projet de Bob'},b)).body.id;
+  const m=await json('/model/'+pA);expect(m.status).toBe(200);expect(m.body).toMatchObject({template:'vide',explicit:false,enabled:{code_deploy:false,features:false,learning_path:false}});
+  expect(m.body.modules.map((x:any)=>x.key)).toEqual(['code_deploy','features','learning_path']);expect(m.body.modules.find((x:any)=>x.key==='learning_path').skeleton).toBe(true);
+  expect((await json('/model/'+pA+'/features','POST',{name:'Refusée sans module'})).status).toBe(403);
+  expect((await json('/model/'+pA+'/features')).status).toBe(403);
+  expect((await json('/model/templates')).body.templates.map((t:any)=>t.key)).toEqual(['livre_recettes','sport','atelier','vide']);
+  expect((await json('/model/'+pA+'/modules','PUT',{modules:{bidon:true}})).status).toBe(400);expect((await json('/model/'+pA+'/modules','PUT',{template:'inexistant'})).status).toBe(400);
+  const on=await json('/model/'+pA+'/modules','PUT',{template:'atelier',modules:{features:true,code_deploy:false}});expect(on.status).toBe(200);expect(on.body.enabled).toEqual({code_deploy:false,features:true,learning_path:false});expect(on.body.template).toBe('atelier');
+  // L'autre compte ne voit ni ne change le modèle de ce projet.
+  expect((await json('/model/'+pA,'GET',undefined,b)).status).toBe(404);expect((await json('/model/'+pA+'/modules','PUT',{modules:{features:false}},b)).status).toBe(404);expect((await json('/model/'+pA)).body.enabled.features).toBe(true);
+ });
+ it('fonctionnalité : identifiant stable F-0001, état, source, niveau de fiabilité, regroupement, liens',async()=>{
+  const c1=await json('/model/'+pA+'/features','POST',{name:'Recherche par ingrédient',description:'Trouver une recette par un ingrédient',source_kind:'conversation',source_ref:'Fil du 12 novembre',group_name:'Recherche'});expect(c1.status).toBe(201);fA=c1.body;
+  expect(fA).toMatchObject({code:'F-0001',state:'to_design',state_label:'À concevoir',group_name:'Recherche'});expect(fA.life).toMatchObject({status:'current',reliability:'confirmed',author_kind:'martin'});
+  const c2=await json('/model/'+pA+'/features','POST',{name:'Minuteur',author_kind:'ai'});expect(c2.body.code).toBe('F-0002');expect(c2.body.life).toMatchObject({status:'proposed',reliability:'hypothesis',author_kind:'ai'});
+  expect((await json('/model/'+pA+'/features','POST',{name:'X',state:'phone_verified'})).status).toBe(422);expect((await json('/model/'+pA+'/features','POST',{name:''})).status).toBe(400);
+  const up=await json('/model/'+pA+'/features/'+fA.id,'PATCH',{state:'in_progress',revision:fA.revision});expect(up.status).toBe(200);expect(up.body).toMatchObject({state:'in_progress',state_label:'En cours',code:'F-0001'});
+  expect((await json('/model/'+pA+'/features/'+fA.id,'PATCH',{state:'done',revision:fA.revision})).status).toBe(409);
+  expect((await json('/model/'+pA+'/features/'+fA.id,'PATCH',{state:'phone_verified',author_kind:'ai',revision:up.body.revision})).status).toBe(422);
+  const ph=await json('/model/'+pA+'/features/'+fA.id,'PATCH',{state:'phone_verified',revision:up.body.revision});expect(ph.status).toBe(200);fA=ph.body;expect(fA.state_label).toBe('Vérifié sur téléphone');expect(fA.code).toBe('F-0001');
+  // liens vers une tâche et une décision du même projet seulement
+  const task=(await json('/spaces/'+pA+'/tasks','POST',{title:'Tâche liée',objective:'o'})).body,dec=(await json('/spaces/'+pA+'/decisions','POST',{title:'Décision liée',status:'proposed'})).body;
+  const l1=await json('/model/'+pA+'/features/'+fA.id+'/links','POST',{target_kind:'task',target_id:task.id});expect(l1.status).toBe(201);await json('/model/'+pA+'/features/'+fA.id+'/links','POST',{target_kind:'decision',target_id:dec.id});
+  expect((await json('/model/'+pA+'/features')).body.items[0].links.map((l:any)=>l.target_kind).sort()).toEqual(['decision','task']);
+  const foreignTask=(await json('/spaces/'+pB+'/tasks','POST',{title:'Tâche de Bob',objective:'o'},b)).body;
+  expect((await json('/model/'+pA+'/features/'+fA.id+'/links','POST',{target_kind:'task',target_id:foreignTask.id})).status).toBe(400);
+  const list=(await json('/model/'+pA+'/features')).body;expect(list.items.map((i:any)=>i.code)).toEqual(['F-0001']);expect(list.hidden).toBe(1);// la proposée d'IA est masquée par défaut
+  expect((await json('/model/'+pA+'/features?all=1')).body.items.map((i:any)=>i.code).sort()).toEqual(['F-0001','F-0002']);
+ });
+ it('« Vérifié » est refusé sans source ou sans « adapté à ma demande » ; accepté avec les deux ; tout est tracé',async()=>{
+  const url='/model/'+pA+'/lifecycle/feature/'+fA.id;
+  const r1=await json(url,'POST',{to_reliability:'verified',reason:'je l’ai vu'});expect(r1.status).toBe(422);expect(r1.body.error||JSON.stringify(r1.body)).toContain('source précise');
+  expect((await json(url,'POST',{to_reliability:'verified',reason:'vu',source_ref:'tests/recherche.test.mjs'})).status).toBe(422);
+  expect((await json(url,'POST',{to_reliability:'verified',reason:'vu',fit_confirmed:true})).status).toBe(422);
+  expect((await json(url,'POST',{to_reliability:'verified',reason:'',source_ref:'x.md',fit_confirmed:true})).status).toBe(422);
+  expect((await json(url,'POST',{to_reliability:'verified',reason:'vu',source_ref:'tests/recherche.test.mjs',fit_confirmed:true,author_kind:'ai'})).status).toBe(422);
+  const feat=(await json('/model/'+pA+'/features')).body.items[0];expect(feat.life.reliability).toBe('confirmed');// rien n'a changé
+  const ok=await json(url,'POST',{to_reliability:'verified',reason:'Testé sur mon téléphone',source_ref:'tests/recherche.test.mjs',fit_confirmed:true});expect(ok.status).toBe(200);expect(ok.body).toMatchObject({reliability:'verified',proof_kind:'fit',status:'current'});expect(ok.body.fit_confirmed_at).toBeTruthy();
+  const hist=(await json(url+'/history')).body.items;expect(hist.map((h:any)=>h.to_reliability)).toEqual(['verified','confirmed']);expect(hist[0]).toMatchObject({reason:'Testé sur mon téléphone',source_ref:'tests/recherche.test.mjs',author_kind:'martin',from_reliability:'confirmed'});expect(hist[0].created_at).toBeTruthy();
+  // un test réussi suffit pour du code, avec une source
+  const f2=(await json('/model/'+pA+'/features','POST',{name:'Code testé'})).body;const t=await json('/model/'+pA+'/lifecycle/feature/'+f2.id,'POST',{to_reliability:'verified',reason:'test vert',source_ref:'tests/code.test.mjs',test_passed:true});expect(t.status).toBe(200);expect(t.body.proof_kind).toBe('test');
+  // le même refus pour un document et une décision (« Vérifié » ne s'obtient jamais sans preuve)
+  const d=(await json('/spaces/'+pA+'/decisions','POST',{title:'Décision à vérifier',status:'validated'})).body;
+  expect((await json('/model/'+pA+'/lifecycle/decision/'+d.id,'POST',{to_reliability:'verified',reason:'ok'})).status).toBe(422);
+ });
+ it('cycle de vie : proposée → actuelle (validation de Martin) → remplacée (avec remplaçante) ; transitions interdites ; jamais de suppression',async()=>{
+  const mk=async(title:string)=>(await json('/model/'+pA+'/features','POST',{name:title,author_kind:'ai'})).body;
+  const a=await mk('Proposée par IA'),b2=await mk('Seconde proposition');const u=(id:string)=>'/model/'+pA+'/lifecycle/feature/'+id;
+  expect((await json(u(a.id),'POST',{to_status:'current',reason:'ok'})).status).toBe(422);                              // pas de validation
+  expect((await json(u(a.id),'POST',{to_status:'current',reason:'ok',validated_by_martin:true,author_kind:'ai'})).status).toBe(422); // une IA ne valide pas
+  expect((await json(u(a.id),'POST',{to_status:'replaced',reason:'r',replaced_by_id:b2.id})).status).toBe(422);           // proposée → remplacée interdit
+  expect((await json(u(a.id),'POST',{to_status:'current',reason:'Je valide',validated_by_martin:true})).body).toMatchObject({status:'current'});
+  expect((await json(u(b2.id),'POST',{to_status:'current',reason:'Je valide',validated_by_martin:true})).status).toBe(200);
+  expect((await json(u(a.id),'POST',{to_status:'replaced',reason:'Remplacée'})).status).toBe(422);                         // remplaçante obligatoire
+  expect((await json(u(a.id),'POST',{to_status:'replaced',reason:'Remplacée',replaced_by_id:a.id})).status).toBe(422);
+  expect((await json(u(a.id),'POST',{to_status:'replaced',reason:'Remplacée',replaced_by_id:'11111111-1111-4111-8111-111111111111'})).status).toBe(422);
+  const rep=await json(u(a.id),'POST',{to_status:'replaced',reason:'La seconde la remplace',replaced_by_id:b2.id});expect(rep.status).toBe(200);expect(rep.body).toMatchObject({status:'replaced',reliability:'obsolete',replaced_by_id:b2.id});
+  expect((await json(u(a.id),'POST',{to_status:'current',reason:'retour',validated_by_martin:true})).status).toBe(422);        // une remplacée ne ressuscite pas
+  expect((await json(u(a.id),'POST',{to_reliability:'reported',reason:'x'})).status).toBe(422);
+  expect((await json('/model/'+pA+'/features/'+a.id,'PATCH',{name:'Modif',revision:1})).status).toBe(422);                  // une remplacée ne se modifie plus
+  const all=(await json('/model/'+pA+'/features?all=1')).body.items.map((i:any)=>i.id);expect(all).toContain(a.id);                // jamais supprimée
+  expect((await json('/model/'+pA+'/features/'+a.id,'DELETE')).status).toBe(404);                                              // aucune route de suppression
+  expect((await json('/model/'+pA+'/features')).body.items.map((i:any)=>i.id)).not.toContain(a.id);
+  const h=(await json(u(a.id)+'/history')).body.items;expect(h.map((x:any)=>x.to_status)).toEqual(['replaced','current','proposed']);expect(h[0].replaced_by_id).toBe(b2.id);
+  // abandonnée = sans remplaçante
+  const c=await mk('À abandonner');await json(u(c.id),'POST',{to_status:'current',reason:'ok',validated_by_martin:true});
+  expect((await json(u(c.id),'POST',{to_status:'abandoned',reason:'x',replaced_by_id:b2.id})).status).toBe(422);
+  expect((await json(u(c.id),'POST',{to_status:'abandoned',reason:'Plus utile'})).body).toMatchObject({status:'abandoned',reliability:'obsolete',replaced_by_id:null});
+ });
+ it('décisions : l’ancien écran et le nouveau cycle de vie restent d’accord ; une décision remplacée par l’ancien écran est tracée',async()=>{
+  const old=(await json('/spaces/'+pA+'/decisions','POST',{title:'Ancienne règle',status:'validated'})).body;
+  const neu=(await json('/spaces/'+pA+'/decisions','POST',{title:'Nouvelle règle',status:'validated',supersedes_id:old.id})).body;
+  const items=(await json('/model/'+pA+'/items?kind=decision&all=1')).body.items,by=Object.fromEntries(items.map((i:any)=>[i.title,i]));
+  expect(by['Ancienne règle']).toMatchObject({status:'replaced',reliability:'obsolete'});expect(by['Nouvelle règle']).toMatchObject({status:'current',reliability:'confirmed'});
+  expect((await json('/model/'+pA+'/lifecycle/decision/'+old.id+'/history')).body.items.map((h:any)=>h.to_status)).toEqual(['replaced','current']);
+  // transition interdite aussi par l'ancien écran : une décision actuelle ne devient pas « rejetée »
+  expect((await json('/spaces/'+pA+'/decisions/'+neu.id,'PATCH',{status:'rejected',revision:neu.revision})).status).toBe(422);
+  // nouveau cycle : une décision proposée ne devient « actuelle » qu'avec la validation, et l'ancienne colonne suit
+  const prop=(await json('/spaces/'+pA+'/decisions','POST',{title:'À valider',status:'proposed'})).body;
+  expect((await json('/model/'+pA+'/lifecycle/decision/'+prop.id,'POST',{to_status:'current',reason:'ok'})).status).toBe(422);
+  expect((await json('/model/'+pA+'/lifecycle/decision/'+prop.id,'POST',{to_status:'current',reason:'Je la décide',validated_by_martin:true})).body).toMatchObject({status:'current',reliability:'confirmed'});
+  expect((await json('/spaces/'+pA+'/decisions')).body.items.find((x:any)=>x.id===prop.id).status).toBe('validated');
+  const ab=(await json('/spaces/'+pA+'/decisions','POST',{title:'À abandonner',status:'validated'})).body;
+  await json('/model/'+pA+'/lifecycle/decision/'+ab.id,'POST',{to_status:'abandoned',reason:'Plus d’actualité'});
+  expect((await json('/spaces/'+pA+'/decisions')).body.items.find((x:any)=>x.id===ab.id).status).toBe('superseded');  // miroir : les prompts n'y verront plus une règle validée
+ });
+ it('recherche unique : « actuelle » par défaut, tout à la demande, origine de chaque résultat, copie Git datée et sourcée',async()=>{
+  const db=await mf.getD1Database('DB');
+  await json('/spaces/'+pA+'/decisions','POST',{title:'Pomelo règle actuelle',status:'validated'});await json('/spaces/'+pA+'/decisions','POST',{title:'Pomelo idée proposée',status:'proposed'});
+  const fn=(await json('/model/'+pA+'/features','POST',{name:'Pomelo fonction',author_kind:'ai'})).body;
+  const conn=crypto.randomUUID(),repo=crypto.randomUUID();
+  await db.prepare("INSERT INTO connections(id,user_id,provider,label,secret,created_at) VALUES(?,?,'github','x','s','2026-11-01')").bind(conn,ownerA).run();
+  await db.prepare("INSERT INTO memory_repos(id,user_id,connection_id,full_name,branch,commit_sha,synced_at,status,created_at) VALUES(?,?,?,?,?,?,?,?,?)").bind(repo,ownerA,conn,'martinznt/Memoire-Projets-copie','main','af30cd0e0000000000000000000000000000000a','2026-11-14T08:00:00.000Z','ok','2026-11-01').run();
+  await db.prepare("INSERT INTO memory_docs(id,user_id,repo_id,path,blob_sha,size,doc_type,project_key,title,doc_date,indexed_commit,present,content,content_blob_sha) VALUES(?,?,?,?,?,?,?,?,?,?,?,1,?,?)").bind(crypto.randomUUID(),ownerA,repo,'00_PILOTAGE/pomelo.md','b1',40,'decision','atelier','Pomelo dans Git','2026-11-10','af30cd0e0000000000000000000000000000000a','Texte copié du dépôt : pomelo','b1').run();
+  const r=await json('/workbench/find?q=pomelo');expect(r.status).toBe(200);
+  const titles=r.body.groups.flatMap((g:any)=>g.items.map((i:any)=>i.title));expect(titles).toContain('Pomelo règle actuelle');expect(titles).not.toContain('Pomelo idée proposée');expect(titles.join('|')).not.toContain('Pomelo fonction');
+  expect(r.body).toMatchObject({showing:'current'});expect(r.body.hidden).toBe(2);
+  const all=await json('/workbench/find?q=pomelo&all=1');expect(all.body.showing).toBe('all');expect(all.body.hidden).toBe(0);const t2=all.body.groups.flatMap((g:any)=>g.items.map((i:any)=>i.title));expect(t2).toEqual(expect.arrayContaining(['Pomelo règle actuelle','Pomelo idée proposée',fn.code+' — Pomelo fonction']));
+  const dec=all.body.groups.find((g:any)=>g.kind==='decision').items;expect(dec.every((i:any)=>i.origin==='atelier'&&i.origin_label==='Atelier')).toBe(true);
+  expect(dec.find((i:any)=>i.title==='Pomelo règle actuelle').reliability).toMatchObject({word:'Confirmé par vous',symbol:'✔'});expect(dec.find((i:any)=>i.title==='Pomelo idée proposée').reliability).toMatchObject({word:'Hypothèse'});
+  const git=r.body.groups.find((g:any)=>g.kind==='gitdoc').items[0];expect(git).toMatchObject({origin:'git',title:'Pomelo dans Git'});expect(git.origin_note).toContain('martinznt/Memoire-Projets');expect(git.origin_note).toContain('af30cd0');expect(git.origin_note).toContain('2026-11-14');expect(git.origin_note).toContain('Copie');
+  // un filtre de statut explicite montre aussi les non actuelles ; le projet exclut Git avec une explication
+  expect((await json('/workbench/find?q=pomelo&kinds=decision&status=proposed')).body.groups[0].items.map((i:any)=>i.title)).toEqual(['Pomelo idée proposée']);
+  const scoped=await json('/workbench/find?q=pomelo&project='+pA);expect(scoped.body.not_searched.map((x:any)=>x.kind)).toEqual(['gitdoc']);expect(scoped.body.skipped.map((x:any)=>x.kind)).toEqual(['attachment']);
+  expect((await json('/workbench/find?q=pomelo&kinds=feature&all=1')).body.groups[0].label).toBe('Fonctionnalités');
+  // l'autre compte ne voit rien de tout cela
+  const bob=await json('/workbench/find?q=pomelo&all=1','GET',undefined,b);expect(bob.body.groups).toEqual([]);
+ });
+ it('le filtre SQL « actuelle » et les règles TypeScript disent la même chose (documents, notes, décisions)',async()=>{
+  const db=await mf.getD1Database('DB'),at='2026-11-02T00:00:00.000Z';
+  const rels=['user_confirmed','verified','reported','deduced','ai_proposed','to_confirm','superseded','unverified'];
+  for(const [i,rel] of rels.entries())await db.prepare("INSERT INTO project_documents(id,user_id,project_id,title,doc_type,source_kind,url,reliability,created_at,updated_at) VALUES(?,?,?,?,'reference','url','https://e.test/x',?,?,?)").bind(crypto.randomUUID(),ownerA,pA,'Kiwano doc '+rel,rel,at,at).run();
+  for(const src of ['Saisie utilisateur','saisie du soir','Résumé IA','Conversation'])await db.prepare('INSERT INTO memory(id,user_id,project_id,title,content,source,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?)').bind(crypto.randomUUID(),ownerA,pA,'Kiwano note '+src,'kiwano',src,at,at).run();
+  const {legacyDocument,legacyMemory}=await import('../server/lifecycle-core.ts');
+  const seen=(await json('/workbench/find?q=kiwano&kinds=document,memory&per=30')).body.groups.flatMap((g:any)=>g.items.map((i:any)=>i.title));
+  const expectedDocs=rels.filter(r=>legacyDocument(r).status==='current').map(r=>'Kiwano doc '+r),expectedMem=['Saisie utilisateur','saisie du soir','Résumé IA','Conversation'].filter(s=>legacyMemory(s).status==='current').map(s=>'Kiwano note '+s);
+  expect(seen.sort()).toEqual([...expectedDocs,...expectedMem].sort());
+  const ctx=(await json('/workbench/context?project='+pA+'&q=kiwano')).body.hits.map((h:any)=>h.title);expect(ctx.sort()).toEqual([...expectedDocs,...expectedMem].sort());
+  const ctxAll=(await json('/workbench/context?all=1&project='+pA+'&q=kiwano')).body.hits.map((h:any)=>h.title);expect(ctxAll.length).toBeGreaterThan(ctx.length);
+ });
+ it('isolation A contre B : état, historique, fonctionnalités et liste unifiée sont cloisonnés',async()=>{
+  const mine=(await json('/model/'+pA+'/features?all=1')).body.items[0];
+  for(const [path,method,body] of [
+   ['/model/'+pA+'/items','GET',undefined],['/model/'+pA+'/features','GET',undefined],['/model/'+pA+'/features?all=1','GET',undefined],['/model/'+pA+'/features','POST',{name:'Intrusion'}],
+   ['/model/'+pA+'/features/'+mine.id,'PATCH',{name:'Pirate',revision:1}],['/model/'+pA+'/features/'+mine.id+'/links','POST',{target_kind:'task',target_id:crypto.randomUUID()}],
+   ['/model/'+pA+'/lifecycle/feature/'+mine.id,'POST',{to_status:'abandoned',reason:'intrus'}],['/model/'+pA+'/lifecycle/feature/'+mine.id+'/history','GET',undefined],['/model/'+pA+'/modules','PUT',{modules:{features:false}}]
+  ] as const)expect((await json(path,method,body as any,b)).status,method+' '+path).toBe(404);
+  // Bob a son propre projet : mêmes routes, mais ses données seulement ; un identifiant d'Alice y est introuvable.
+  expect((await json('/model/'+pB+'/modules','PUT',{modules:{features:true}},b)).status).toBe(200);
+  expect((await json('/model/'+pB+'/features','POST',{name:'Fonction de Bob'},b)).body.code).toBe('F-0001');       // son propre compteur
+  expect((await json('/model/'+pB+'/lifecycle/feature/'+mine.id,'POST',{to_status:'abandoned',reason:'intrus'},b)).status).toBe(404);
+  expect((await json('/model/'+pB+'/lifecycle/feature/'+mine.id+'/history','GET',undefined,b)).body.items).toEqual([]);
+  expect((await json('/model/'+pB+'/features?all=1','GET',undefined,b)).body.items.map((i:any)=>i.name)).toEqual(['Fonction de Bob']);
+  expect(JSON.stringify((await json('/model/'+pB+'/items?all=1','GET',undefined,b)).body)).not.toContain('Recherche par ingrédient');
+  expect((await json('/model/'+pA+'/features?all=1')).body.items.find((i:any)=>i.id===mine.id).life.status).toBe('current');// rien n'a bougé chez Alice
+  // l'export du compte contient les nouvelles tables de son propriétaire seulement
+  const exp=(await json('/account/export?metadata=true')).body,expB=(await json('/account/export?metadata=true','GET',undefined,b)).body;
+  expect(exp.project_features.map((f:any)=>f.name)).toContain('Recherche par ingrédient');expect(JSON.stringify(expB.project_features)).not.toContain('Recherche par ingrédient');expect(expB.lifecycle_events.every((e:any)=>e.project_id===pB)).toBe(true);
  });
 });

@@ -5,7 +5,7 @@ import {credentialsFor} from './connections.ts';
 import {jsonRequest} from '../connectors/http.ts';
 import {event,fail,jsonBody,many,now,one,owned,run,uid,userId} from '../core.ts';
 import {OWNERS,TASK_STATUSES,effectiveStatus,parseIds,pickNextTask,progressOf,statusAllowed,wouldCycle,isVerifiedDone,type PlanTask,type TaskStatus} from '../plan-core.ts';
-import {nextAction} from '../project-guide.ts';
+import {nextAction} from '../project-guide.ts';import {recordLegacyDecisionChange} from './model.ts';import {canMove,legacyDecision,LIFE_LABEL} from '../lifecycle-core.ts';
 import {ciSummary,prNextAction,trackRepository,type Tracked} from '../github-tracking.ts';
 import type {AppEnv,Env,Row} from '../types.ts';
 export const spaces=new Hono<AppEnv>();
@@ -203,7 +203,10 @@ spaces.post('/:project/decisions',async c=>{
  await checkDecision(c.env,user,p.id,d);
  const id=uid(),at=now(),status=d.status||'proposed';
  await run(c.env,'INSERT INTO project_decisions(id,user_id,project_id,title,reason,status,source_kind,source_ref,supersedes_id,decided_at,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)',id,user,p.id,d.title,d.reason||'',status,d.source_kind||'other',d.source_ref||'',d.supersedes_id??null,status==='validated'?at:null,at,at);
- if(d.supersedes_id)await run(c.env,"UPDATE project_decisions SET status='superseded',updated_at=? WHERE id=? AND user_id=? AND project_id=?",at,d.supersedes_id,user,p.id);
+ await recordLegacyDecisionChange(c.env,user,p.id,id,null,status,'Création de la décision.');
+ if(d.supersedes_id){const old=await one<Row>(c.env,'SELECT status FROM project_decisions WHERE id=? AND user_id=? AND project_id=?',d.supersedes_id,user,p.id);
+  await run(c.env,"UPDATE project_decisions SET status='superseded',updated_at=? WHERE id=? AND user_id=? AND project_id=?",at,d.supersedes_id,user,p.id);
+  await recordLegacyDecisionChange(c.env,user,p.id,d.supersedes_id,old?.status??null,'superseded','Remplacée par la décision « '+d.title+' ».');}
  return c.json(await one(c.env,'SELECT * FROM project_decisions WHERE id=? AND user_id=?',id,user),201);
 });
 spaces.patch('/:project/decisions/:id',async c=>{
@@ -212,9 +215,17 @@ spaces.patch('/:project/decisions/:id',async c=>{
  if(!cur)fail(404,'Cette décision est introuvable dans ce projet.');
  await checkDecision(c.env,user,p.id,d,cur.id);
  const status=d.status??cur.status,at=now();
+ if(d.revision!==cur.revision)fail(409,'Cette décision a changé sur un autre appareil. Rechargez-la avant de réappliquer vos changements.');
+ if(status!==cur.status){
+  const lc=await one<Row>(c.env,"SELECT status FROM item_lifecycle WHERE user_id=? AND kind='decision' AND item_id=?",user,cur.id),from=(lc?.status||legacyDecision(cur.status).status) as any,to=legacyDecision(status).status;
+  if(from!==to&&!canMove(from,to))fail(422,'Ce changement n’est pas permis : une décision « '+LIFE_LABEL[from as keyof typeof LIFE_LABEL].toLowerCase()+' » ne peut pas devenir « '+LIFE_LABEL[to].toLowerCase()+' ».');
+ }
  const r=await run(c.env,'UPDATE project_decisions SET title=?,reason=?,status=?,source_kind=?,source_ref=?,supersedes_id=?,decided_at=?,revision=revision+1,updated_at=? WHERE id=? AND user_id=? AND project_id=? AND revision=?',d.title??cur.title,d.reason??cur.reason,status,d.source_kind??cur.source_kind,d.source_ref??cur.source_ref,d.supersedes_id===undefined?cur.supersedes_id:d.supersedes_id,status==='validated'&&cur.status!=='validated'?at:cur.decided_at,at,cur.id,user,p.id,d.revision);
  if(!r.meta.changes)fail(409,'Cette décision a changé sur un autre appareil. Rechargez-la avant de réappliquer vos changements.');
- if(d.supersedes_id)await run(c.env,"UPDATE project_decisions SET status='superseded',updated_at=? WHERE id=? AND user_id=? AND project_id=?",at,d.supersedes_id,user,p.id);
+ await recordLegacyDecisionChange(c.env,user,p.id,cur.id,cur.status,status,'Changement d’état depuis l’écran des décisions.');
+ if(d.supersedes_id){const old=await one<Row>(c.env,'SELECT status FROM project_decisions WHERE id=? AND user_id=? AND project_id=?',d.supersedes_id,user,p.id);
+  await run(c.env,"UPDATE project_decisions SET status='superseded',updated_at=? WHERE id=? AND user_id=? AND project_id=?",at,d.supersedes_id,user,p.id);
+  await recordLegacyDecisionChange(c.env,user,p.id,d.supersedes_id,old?.status??null,'superseded','Remplacée par la décision « '+(d.title??cur.title)+' ».');}
  return c.json(await one(c.env,'SELECT * FROM project_decisions WHERE id=? AND user_id=?',cur.id,user));
 });
 

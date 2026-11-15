@@ -31,7 +31,7 @@ export function Home({onOpen,refresh}:{onOpen:(tab:string,projectId?:string)=>vo
    <div className="next-step"><span className="eyebrow">PROCHAINE ACTION</span><strong>{p.next_action.title}</strong><span>{p.next_action.do}</span><small className="muted">{p.next_action.where}</small></div>
    {p.blockers.length>0&&<p className="notice"><strong>Bloqué :</strong> {p.blockers.map((b:any)=>b.title+(b.question?' — '+b.question:'')).join(' · ')}</p>}
    <p className="muted">{[p.counts.actions&&p.counts.actions+' action(s) pour vous'+(p.counts.blocking_actions?' dont '+p.counts.blocking_actions+' bloquante(s)':''),p.counts.questions&&p.counts.questions+' question(s)',p.counts.awaiting_responses&&p.counts.awaiting_responses+' retour(s) d’IA attendu(s)',p.counts.responses_to_process&&p.counts.responses_to_process+' réponse(s) à traiter',p.counts.ready_for_ai&&p.counts.ready_for_ai+' tâche(s) prête(s) à transmettre'].filter(Boolean).join(' · ')||'Rien en attente.'}</p>
-   <p className="muted">{p.repositories.length?p.repositories.map((r:any)=>r.full_name+(r.verified?'':' (non vérifié)')).join(', '):'Aucun dépôt associé'}{p.last_activity&&' · dernière activité : '+date(p.last_activity.at)}</p>
+   <p className="muted">{p.repositories.length?p.repositories.map((r:any)=>r.full_name+(r.verified?'':' (pas encore contrôlé chez GitHub)')).join(', '):'Aucun dépôt associé'}{p.last_activity&&' · dernière activité : '+date(p.last_activity.at)}</p>
    <div className="stack"><Button onClick={()=>onOpen('pilotage',p.id)}>Ouvrir le pilotage</Button><Button kind="secondary" onClick={()=>onOpen('chat',p.id)}>Discussions</Button></div>
   </article>)}</div>
   <article className="panel"><h3>Référentiel mémoire</h3>
