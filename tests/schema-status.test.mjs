@@ -11,7 +11,8 @@ const tables={
  users:['id','email'],review_runs:['head_sha','report','stage','diagnostic','resume_at','resume_state'],
  review_configs:['daily_limit','post_comment','review_mode','relay','relay_max_attempts','auto_scope','no_daily_cap','auto_mark'],ai_usage:['connection_id','outcome'],
  handoff_packages:['content_hash','status'],plan_tasks:['depends_on','proof','work_kind','do_not_touch'],repositories:['verified_at'],
- conversations:['category','status'],export_conversations:['segment','meta','source_index'],export_attachment_refs:['link_source','note'],export_nodes:[...N0022.export_nodes],export_segments:[...N0022.export_segments],export_annexes:[...N0022.export_annexes],export_links:[...N0022.export_links],atelier_questions:['dedupe_key'],prompt_versions:['locked','sent_at'],ref_audit_files:['read_status'],quota_readings:['used_percent','source'],checkpoints:['next_action'],export_batches:['ai_consent_at'],analysis_items:['quote_verified','agreement'],export_files:['sniff_kind','sha256','group_name']
+ conversations:['category','status'],export_conversations:['segment','meta','source_index'],export_attachment_refs:['link_source','note'],export_nodes:[...N0022.export_nodes],export_segments:[...N0022.export_segments],export_annexes:[...N0022.export_annexes],export_links:[...N0022.export_links],atelier_questions:['dedupe_key'],prompt_versions:['locked','sent_at'],ref_audit_files:['read_status'],quota_readings:['used_percent','source'],checkpoints:['next_action'],export_batches:['ai_consent_at'],analysis_items:['quote_verified','agreement'],export_files:['sniff_kind','sha256','group_name'],
+ project_setup:['project_id','template','feature_seq'],project_modules:['project_id','module_key','enabled'],item_lifecycle:['kind','item_id','status','reliability','source_ref','proof_kind','replaced_by_id'],lifecycle_events:['kind','item_id','to_status','to_reliability','reason','author_kind'],project_features:['code','name','state','group_name'],feature_links:['feature_id','target_kind','target_id']
 };
 const fake=(t)=>({prepare:sql=>({all:async()=>{const m=/table_info\((\w+)\)/.exec(sql);return {results:(t[m[1]]||[]).map(name=>({name}))};}})});
 test('toutes les migrations présentes : complet, liste appliquée, rien de manquant',async()=>{
@@ -62,4 +63,12 @@ test('0022 : plusieurs éléments manquants à la fois → une seule entrée « 
 test('base d’avant 0021 et 0022 (colonnes absentes) : 0021 et 0022 manquantes, antérieures appliquées',async()=>{
  const s=await status({...tables,export_files:['id'],export_conversations:['id'],export_nodes:undefined,export_links:undefined,export_annexes:undefined,export_segments:undefined,export_attachment_refs:undefined});
  assert.deepEqual(s.missing,['0021','0022']);assert.ok(s.applied.includes('0020'));
+});
+
+test('0023 : tout présent → appliquée ; une table manquante → seule 0023 manquante, 0022 intacte',async()=>{
+ let s=await status(tables);assert.ok(s.applied.includes('0023'));assert.equal(s.complete,true);
+ for(const t of ['project_setup','project_modules','item_lifecycle','lifecycle_events','project_features','feature_links']){
+  s=await status({...tables,[t]:undefined});assert.equal(s.complete,false);assert.deepEqual(s.missing,['0023']);assert.ok(s.applied.includes('0022'));
+ }
+ s=await status(without('item_lifecycle','proof_kind'));assert.deepEqual(s.missing,['0023']);
 });

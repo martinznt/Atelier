@@ -4393,5 +4393,167 @@
     "statut": "réalisé",
     "preuve": "tests/schema-status.test.mjs",
     "limite": "Non appliquée en production."
+  },
+  {
+    "id": "SIT-33-001",
+    "section": 33,
+    "source": "Lot 1 du 15 novembre 2026 (modèle de projet : où vit quoi, statuts, modules, fonctionnalités, fiabilité)",
+    "exigence": "Table « quelle information vit où » (Git = rédigé et durable, Atelier = vivant), un fait = une source, copies marquées avec date et commit.",
+    "statut": "réalisé",
+    "preuve": "docs/OU_VIT_QUOI.md ; server/info-placement.ts ; tests/info-placement.test.mjs",
+    "limite": ""
+  },
+  {
+    "id": "SIT-33-002",
+    "section": 33,
+    "source": "Lot 1 du 15 novembre 2026 (modèle de projet : où vit quoi, statuts, modules, fonctionnalités, fiabilité)",
+    "exigence": "Recherche unique devant Git (copie lue) et Atelier : chaque résultat dit sa source ; une copie Git dit dépôt, commit et date.",
+    "statut": "réalisé",
+    "preuve": "server/routes/workbench.ts ; tests/integration.test.ts (lot 1 recherche unique)",
+    "limite": "Documents Git trouvés par titre, chemin ou texte déjà copié ; statut écrit dans le document non interprété."
+  },
+  {
+    "id": "SIT-33-003",
+    "section": 33,
+    "source": "Lot 1 du 15 novembre 2026 (modèle de projet : où vit quoi, statuts, modules, fonctionnalités, fiabilité)",
+    "exigence": "Écriture dans Git interdite pour l'instant (lecture seule).",
+    "statut": "réalisé",
+    "preuve": "server/info-placement.ts ; tests/info-placement.test.mjs",
+    "limite": ""
+  },
+  {
+    "id": "SIT-33-004",
+    "section": 33,
+    "source": "Lot 1 du 15 novembre 2026 (modèle de projet : où vit quoi, statuts, modules, fonctionnalités, fiabilité)",
+    "exigence": "Cycle de vie sans suppression : proposée, actuelle, remplacée (avec lien), abandonnée, rejetée, hypothèse ; transitions interdites refusées.",
+    "statut": "réalisé",
+    "preuve": "server/lifecycle-core.ts ; tests/lifecycle-core.test.mjs ; tests/integration.test.ts (lot 1 cycle de vie)",
+    "limite": ""
+  },
+  {
+    "id": "SIT-33-005",
+    "section": 33,
+    "source": "Lot 1 du 15 novembre 2026 (modèle de projet : où vit quoi, statuts, modules, fonctionnalités, fiabilité)",
+    "exigence": "Chaque changement garde date, raison, source et auteur (Martin ou IA) ; la raison est obligatoire.",
+    "statut": "réalisé",
+    "preuve": "migrations/0023_project_model.sql ; tests/integration.test.ts (lot 1 fiabilité)",
+    "limite": ""
+  },
+  {
+    "id": "SIT-33-006",
+    "section": 33,
+    "source": "Lot 1 du 15 novembre 2026 (modèle de projet : où vit quoi, statuts, modules, fonctionnalités, fiabilité)",
+    "exigence": "Recherche et contexte envoyé aux IA : seulement l'état « actuelle » par défaut ; le reste à la demande, avec le nombre de masqués.",
+    "statut": "réalisé",
+    "preuve": "server/routes/workbench.ts ; tests/integration.test.ts (lot 1 filtre SQL, contexte)",
+    "limite": ""
+  },
+  {
+    "id": "SIT-33-007",
+    "section": 33,
+    "source": "Lot 1 du 15 novembre 2026 (modèle de projet : où vit quoi, statuts, modules, fonctionnalités, fiabilité)",
+    "exigence": "Une proposition d'IA n'est jamais une décision : passage à « actuelle » réservé à Martin avec sa validation explicite.",
+    "statut": "réalisé",
+    "preuve": "tests/lifecycle-core.test.mjs ; tests/integration.test.ts (lot 1 cycle de vie)",
+    "limite": ""
+  },
+  {
+    "id": "SIT-33-008",
+    "section": 33,
+    "source": "Lot 1 du 15 novembre 2026 (modèle de projet : où vit quoi, statuts, modules, fonctionnalités, fiabilité)",
+    "exigence": "Table de correspondance des trois vocabulaires et de Memoire-Projets, migration de l'existant sans perte.",
+    "statut": "réalisé",
+    "preuve": "docs/CORRESPONDANCE_STATUTS.md ; tests/lifecycle-core.test.mjs ; tests/migration-0023.test.ts",
+    "limite": "La correspondance Memoire-Projets est codée et testée mais pas encore branchée à la lecture des documents Git (lot 5A)."
+  },
+  {
+    "id": "SIT-33-009",
+    "section": 33,
+    "source": "Lot 1 du 15 novembre 2026 (modèle de projet : où vit quoi, statuts, modules, fonctionnalités, fiabilité)",
+    "exigence": "Échelle de fiabilité unique à 5 niveaux, un seul composant d'affichage (pastille + mot).",
+    "statut": "réalisé",
+    "preuve": "server/lifecycle-core.ts ; web/Lifecycle.tsx ; tests/lifecycle-core.test.mjs",
+    "limite": "Rendu navigateur contrôlé à 360 et 390 px sur ordinateur ; téléphone non essayé."
+  },
+  {
+    "id": "SIT-33-010",
+    "section": 33,
+    "source": "Lot 1 du 15 novembre 2026 (modèle de projet : où vit quoi, statuts, modules, fonctionnalités, fiabilité)",
+    "exigence": "« Vérifié » refusé sans source précise ET sans « adapté à ma demande » (ou test réussi pour du code avec source).",
+    "statut": "réalisé",
+    "preuve": "tests/lifecycle-core.test.mjs ; tests/integration.test.ts (lot 1 fiabilité) ; tests/e2e/lot1.spec.ts",
+    "limite": ""
+  },
+  {
+    "id": "SIT-33-011",
+    "section": 33,
+    "source": "Lot 1 du 15 novembre 2026 (modèle de projet : où vit quoi, statuts, modules, fonctionnalités, fiabilité)",
+    "exigence": "Le contenu écrit par une IA reste « Hypothèse » jusqu'à relecture ; une IA ne peut produire ni vérifié ni confirmé.",
+    "statut": "réalisé",
+    "preuve": "tests/lifecycle-core.test.mjs",
+    "limite": ""
+  },
+  {
+    "id": "SIT-33-012",
+    "section": 33,
+    "source": "Lot 1 du 15 novembre 2026 (modèle de projet : où vit quoi, statuts, modules, fonctionnalités, fiabilité)",
+    "exigence": "Les autres usages du mot « vérifié » sont renommés (dépôt : existe chez GitHub).",
+    "statut": "réalisé",
+    "preuve": "web/ProjectSpace.tsx ; docs/CORRESPONDANCE_STATUTS.md",
+    "limite": "Extension aux tâches : seulement la fiabilité déduite existante ; pas d'éditeur d'état pour les tâches."
+  },
+  {
+    "id": "SIT-33-013",
+    "section": 33,
+    "source": "Lot 1 du 15 novembre 2026 (modèle de projet : où vit quoi, statuts, modules, fonctionnalités, fiabilité)",
+    "exigence": "Noyau commun et trois modules activables (Code et déploiement, Suivi des fonctionnalités, Parcours pédagogique en squelette vide) ; le gabarit n'est qu'un point de départ.",
+    "statut": "réalisé",
+    "preuve": "server/routes/model.ts ; tests/integration.test.ts (lot 1 gabarit et modules) ; tests/lifecycle-core.test.mjs",
+    "limite": "Le module « Code et déploiement » ne fait que s'activer : aucune nouvelle fonction."
+  },
+  {
+    "id": "SIT-33-014",
+    "section": 33,
+    "source": "Lot 1 du 15 novembre 2026 (modèle de projet : où vit quoi, statuts, modules, fonctionnalités, fiabilité)",
+    "exigence": "Contournement de la contrainte à 2 types de project_profiles par une migration additive, sans reconstruire la table.",
+    "statut": "réalisé",
+    "preuve": "migrations/0023_project_model.sql ; tests/migration-0023.test.ts",
+    "limite": ""
+  },
+  {
+    "id": "SIT-33-015",
+    "section": 33,
+    "source": "Lot 1 du 15 novembre 2026 (modèle de projet : où vit quoi, statuts, modules, fonctionnalités, fiabilité)",
+    "exigence": "Suivi des fonctionnalités séparé des tâches : état, source, fiabilité, projet, liens vers tâches et décisions, identifiant stable F-0001 jamais réutilisé, regroupement.",
+    "statut": "réalisé",
+    "preuve": "server/routes/model.ts ; tests/integration.test.ts (lot 1 fonctionnalité)",
+    "limite": ""
+  },
+  {
+    "id": "SIT-33-016",
+    "section": 33,
+    "source": "Lot 1 du 15 novembre 2026 (modèle de projet : où vit quoi, statuts, modules, fonctionnalités, fiabilité)",
+    "exigence": "Projets existants rouverts à l'identique, 0 suppression, migration testée sur base remplie.",
+    "statut": "réalisé",
+    "preuve": "tests/migration-0023.test.ts",
+    "limite": "Testé en local sur données synthétiques ; migration 0023 non appliquée en production."
+  },
+  {
+    "id": "SIT-33-017",
+    "section": 33,
+    "source": "Lot 1 du 15 novembre 2026 (modèle de projet : où vit quoi, statuts, modules, fonctionnalités, fiabilité)",
+    "exigence": "Isolation A contre B sur toutes les routes du lot et dans l'export du compte.",
+    "statut": "réalisé",
+    "preuve": "tests/integration.test.ts (lot 1 isolation A contre B)",
+    "limite": ""
+  },
+  {
+    "id": "SIT-33-018",
+    "section": 33,
+    "source": "Lot 1 du 15 novembre 2026 (modèle de projet : où vit quoi, statuts, modules, fonctionnalités, fiabilité)",
+    "exigence": "Essai sur le Galaxy A05s préparé pas à pas ; jamais déclaré validé sans réponse de Martin.",
+    "statut": "à faire",
+    "preuve": "docs/PROTOCOLE_TELEPHONE_LOT1.md",
+    "limite": "Téléphone non essayé : à faire par Martin."
   }
 ]

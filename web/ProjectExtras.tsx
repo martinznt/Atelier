@@ -3,32 +3,35 @@ import {useCallback,useEffect,useState} from 'react';
 import {api,post,patch,remove,date,download} from './api';
 import {Button,Field,ErrorBox,Loading} from './ui';
 import {AdviceCard,KIND,COMPLEXITY,IMPORTANCE} from './ClaudePilot';
+import {LifeBadge,LifecycleEditor,ReliabilityBadge} from './Lifecycle';
 export function Fold({title,summary,open,children,onOpen}:{title:string;summary?:string;open?:boolean;children:React.ReactNode;onOpen?:()=>void}){
  return <details className="fold" open={open} onToggle={e=>{if((e.target as HTMLDetailsElement).open)onOpen?.();}}><summary className="fold-summary"><strong>{title}</strong>{summary&&<small className="muted">{summary}</small>}</summary><div className="fold-body">{children}</div></details>;
 }
 const DOC_TYPE:Record<string,string>={vision:'Vision',cahier:'Cahier des charges',exigences:'Exigences',architecture:'Architecture',decisions:'Décisions',problemes:'Problèmes connus',questions:'Questions ouvertes',reference:'Fichier de référence',audit:'Audit',rapport:'Rapport',consigne:'Consigne',test:'Rapport de tests',autre:'Autre'};
-const RELIABILITY:Record<string,string>={user_confirmed:'Confirmé par vous',verified:'Vérifié directement',reported:'Rapporté, non reproduit',deduced:'Déduit',ai_proposed:'Proposé par une IA',to_confirm:'À confirmer',superseded:'Remplacé ou obsolète',unverified:'Non vérifié'};
+/* Niveau de départ à la création. « Vérifié » n'existe pas ici : il se gagne avec une source ET votre contrôle (éditeur d'état). */
+const RELIABILITY:Record<string,string>={user_confirmed:'Confirmé par vous',reported:'Rapporté (source tierce, non reproduite)',deduced:'Hypothèse (déduit)',ai_proposed:'Hypothèse (proposé par une IA)',to_confirm:'Hypothèse (à confirmer)',unverified:'Rapporté (rien de contrôlé)'};
 const READ:Record<string,string>={full:'Lu intégralement',segments:'Lu par segments',metadata:'Métadonnées seulement',tool:'Analysé par outil',excluded:'Exclu (motif)',failed:'Échec de lecture',not_started:'Non commencé'};
 const CI:Record<string,string>={success:'réussi',failure:'échec',pending:'en attente',unknown:'inconnu'};
 
 export function DocumentsSection({id}:{id:string}){
  const [docs,setDocs]=useState<any[]|null>(null),[files,setFiles]=useState<any[]>([]),[mem,setMem]=useState<any[]>([]),[repos,setRepos]=useState<any[]>([]),[mq,setMq]=useState(''),[error,setError]=useState<unknown>(null),[busy,setBusy]=useState(false);
- const [form,setForm]=useState({title:'',doc_type:'reference',source_kind:'file',file_id:'',memory_doc_id:'',url:'',version_label:'',reliability:'unverified',origin:''});
+ const [form,setForm]=useState({title:'',doc_type:'reference',source_kind:'file',file_id:'',memory_doc_id:'',url:'',version_label:'',reliability:'unverified',origin:''}),[states,setStates]=useState<Record<string,any>>({});
+ const loadStates=()=>api(`/model/${id}/items?kind=document&all=1`).then(r=>setStates(Object.fromEntries(r.items.map((i:any)=>[i.id,i])))).catch(()=>{});
  const load=useCallback(()=>api(`/workbench/documents?project=${id}`).then(d=>setDocs(d.items)).catch(setError),[id]);
  const start=()=>{void load();api(`/files?project=${id}`).then(r=>setFiles(r.items||[])).catch(()=>{});api('/memory-repo').then(r=>setRepos(r.items)).catch(()=>{});};
- useEffect(()=>{void load();},[load]);
+ useEffect(()=>{void load();void loadStates();},[load]);
  useEffect(()=>{if(form.source_kind!=='memory_doc'||!repos[0])return;const t=setTimeout(()=>api(`/memory-repo/${repos[0].id}/docs?q=${encodeURIComponent(mq)}&limit=30`).then(r=>setMem(r.items)).catch(()=>{}),250);return()=>clearTimeout(t);},[mq,form.source_kind,repos]);
- const run=async(fn:()=>Promise<any>)=>{setBusy(true);setError(null);try{await fn();await load();}catch(e){setError(e);}finally{setBusy(false);}};
+ const run=async(fn:()=>Promise<any>)=>{setBusy(true);setError(null);try{await fn();await load();void loadStates();}catch(e){setError(e);}finally{setBusy(false);}};
  const groups=new Map<string,any[]>();for(const d of docs||[])groups.set(d.doc_type,[...(groups.get(d.doc_type)||[]),d]);
  return <Fold title="Dossier documentaire" summary={docs?docs.length+' document(s) de référence':'…'} onOpen={start}>
   <ErrorBox error={error}/>
   {!docs?<Loading/>:!docs.length&&<p className="muted">Aucun document de référence. Reliez ici le cahier des charges, l’architecture, les audits ou les rapports du projet.</p>}
-  {[...groups.entries()].map(([type,list])=><div key={type}><h4>{DOC_TYPE[type]||type}</h4>{list.map(d=><details className="fold" key={d.id}><summary className="fold-summary"><strong>{d.title}</strong><small className="muted">{RELIABILITY[d.reliability]}{d.version_label?' · '+d.version_label:''} · {d.source_kind==='file'?'bibliothèque':d.source_kind==='memory_doc'?'référentiel mémoire':'lien'}</small></summary><div className="fold-body stack">
+  {[...groups.entries()].map(([type,list])=><div key={type}><h4>{DOC_TYPE[type]||type}</h4>{list.map(d=><details className="fold" key={d.id}><summary className="fold-summary"><strong>{d.title}</strong><small className="muted">{states[d.id]?<><LifeBadge status={states[d.id].status}/> <ReliabilityBadge level={states[d.id].reliability}/></>:null}{d.version_label?' · '+d.version_label:''} · {d.source_kind==='file'?'bibliothèque':d.source_kind==='memory_doc'?'référentiel mémoire':'lien'}</small></summary><div className="fold-body stack">
     {d.source_kind==='file'&&<p className="muted">Fichier « {d.file_name} » · version {d.file_version} · modifié le {d.file_updated_at?date(d.file_updated_at):'?'}{d.file_sha256&&<> · sha256 <code>{String(d.file_sha256).slice(0,12)}…</code></>} · à ouvrir dans Fichiers</p>}
     {d.source_kind==='memory_doc'&&<p className="muted">{d.memory_repo} · <code>{d.memory_path}</code> · commit <code>{String(d.memory_commit||'').slice(0,8)}</code> · blob <code>{String(d.memory_blob_sha||'').slice(0,8)}</code>{d.memory_synced_at&&' · synchronisé le '+date(d.memory_synced_at)}{!d.memory_present&&' · ce fichier n’est plus dans le dépôt'} · à lire dans Mémoire</p>}
     {d.source_kind==='url'&&<p><a href={d.url} target="_blank" rel="noreferrer">{d.url}</a> <span className="muted">(référence externe : contenu non conservé par Atelier)</span></p>}
     {d.origin&&<p className="muted">Origine : {d.origin}</p>}{d.note&&<p>{d.note}</p>}
-    <Field label="Fiabilité"><select value={d.reliability} onChange={e=>void run(()=>patch(`/workbench/documents/${d.id}`,{reliability:e.target.value}))}>{Object.entries(RELIABILITY).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></Field>
+    {states[d.id]&&<LifecycleEditor project={id} kind="document" item={states[d.id]} candidates={Object.values(states).map((x:any)=>({id:x.id,title:x.title,status:x.status}))} onChanged={()=>void loadStates()}/>}
     <Button kind="text danger" disabled={busy} onClick={()=>void run(()=>remove(`/workbench/documents/${d.id}`))}>Retirer du dossier (le fichier n’est pas supprimé)</Button></div></details>)}</div>)}
   <details className="fold"><summary className="fold-summary"><strong>Ajouter un document de référence</strong><small className="muted">depuis la bibliothèque, le référentiel mémoire ou un lien</small></summary><div className="fold-body stack">
    <Field label="Titre"><input value={form.title} maxLength={200} onChange={e=>setForm({...form,title:e.target.value})}/></Field>

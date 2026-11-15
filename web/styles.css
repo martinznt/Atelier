@@ -132,3 +132,12 @@ input:not([type=checkbox]),select,textarea{border-radius:14px}
 [data-theme=dark] .brand-mark{background:#f5f5f6;color:#000}
 [data-theme=dark] .progress-line{background:#2a2a2e}
 .welcome-symbol{color:var(--muted)}
+/* Lot 1 — fiabilité (pastille + mot) et état de vie : jamais la couleur seule ; thème noir/blanc inchangé. */
+.rel,.life{display:inline-flex;align-items:center;gap:4px;padding:1px 8px;border-radius:999px;border:1px solid var(--ink);color:var(--ink);background:transparent;font-size:12px;line-height:1.5;white-space:nowrap}
+.rel-verified,.rel-confirmed{font-weight:700}
+.rel-reported{border-style:dashed}.rel-hypothesis{border-style:dotted}
+.rel-obsolete{text-decoration:line-through;text-decoration-thickness:1px}
+.life{border-color:var(--line)}
+.life-replaced,.life-abandoned,.life-rejected{text-decoration:line-through;text-decoration-thickness:1px}
+.search-results .origin{display:block;color:var(--muted)}
+.lifecycle-editor textarea,.lifecycle-editor select,.lifecycle-editor input[type=text],.lifecycle-editor input:not([type]){max-width:100%}
