@@ -28,6 +28,13 @@ Missions fabriquées avec les fichiers réels des copies locales, dont le commit
 - Les deux **tâches d'essai ont été rédigées par moi** d'après les fichiers des dépôts (Recettes : « purées comptées en plus du fruit », `CE_QUI_MANQUE.txt` 4.15.0 ; Sport : « Refaire ma dernière séance », `docs/ANALYSE_8_30.md`). Ce ne sont pas des tâches saisies par Martin : **à confirmer ou remplacer**.
 - Constat : la liste « Reste à faire » de `docs/PROGRESSION.md` de Recettes est périmée (fuseau/lieu/journée entière de l'export .ics existent déjà dans `ics.js`) ; j'ai donc pris l'item du `CE_QUI_MANQUE.txt` le plus récent.
 
+## 4 bis. Contrat avec la vraie API GitHub (V, 15 novembre, après la fusion)
+Rejoué avec `gh api` (REST, lecture seule), c'est-à-dire les mêmes appels que `readRepoRules`, mais **pas** avec la connexion GitHub d'Atelier :
+- `branches/main` renvoie le commit et l'arbre attendus (Recettes `92ec7c5`, Sport `f0ef3b0`) ; `git/trees/<arbre>` n'est pas tronqué et liste `AGENTS.md`, `CLAUDE.md`, `package.json` (Recettes) et `package.json` seul (Sport) avec leur SHA et leur taille.
+- `git/blobs/<sha>` renvoie du `base64` ; le contenu décodé de `CLAUDE.md` est **identique** à la copie locale utilisée pour les missions d'essai.
+- `commits/<sha>/check-runs?per_page=30` renvoie `name`, `status`, `conclusion` comme `loadChecks` les attend ; une même PR peut avoir deux contrôles du même nom (un en cours, un terminé) : Atelier affiche alors « en cours », prudemment.
+**Reste non vérifié :** la lecture avec le vrai jeton enregistré dans Atelier (droits, dépôt privé) ; Martin la testera à la fin.
+
 ## 5. Critère « terminé » — état honnête
 | Critère | État |
 |---|---|
@@ -35,7 +42,7 @@ Missions fabriquées avec les fichiers réels des copies locales, dont le commit
 | Lues par Martin et données à Claude Code sans question de clarification | **NON FAIT** : dépend de Martin. Qualité non mesurée. |
 | Verdict enregistré sur une vraie mission | **NON FAIT** (testé en simulation seulement) |
 | Aucune écriture dans les dépôts | **Oui** (V : Atelier ne fait que des lectures ; copies locales lues sans modification) |
-| Lecture GitHub réelle par Atelier | **Non essayée** : simulation |
+| Lecture GitHub réelle par Atelier | **Non essayée avec le jeton d'Atelier** (simulation) ; forme des réponses vérifiée avec la vraie API (section 4 bis) |
 | Réponse réelle d'une IA gratuite | **Non essayée** : simulation |
 | Téléphone | **Téléphone non essayé** : protocole `docs/PROTOCOLE_TELEPHONE_LOT3.md` |
 
