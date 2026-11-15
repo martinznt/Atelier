@@ -638,11 +638,11 @@
   {
    "key": "int-34",
    "name": "Interface lisible, étape A (exigences du lot 2)",
-   "description": "8 exigence(s) : 5 réalisé, 2 partiel, 1 à faire (statuts déclarés dans docs/EXIGENCES.json). Contrôle mécanique des preuves : 5 VALIDÉ, 1 NON VÉRIFIÉ, 1 PARTIEL, 1 À FAIRE. Limite déclarée : Mesuré dans Chromium de bureau, pas sur le Galaxy A05s. Les seuils WCAG n'ont pas pu être relus à la source (w3.org injoignable).",
+   "description": "14 exigence(s) : 9 réalisé, 3 partiel, 2 à faire (statuts déclarés dans docs/EXIGENCES.json). Contrôle mécanique des preuves : 8 VALIDÉ, 2 NON VÉRIFIÉ, 2 PARTIEL, 2 À FAIRE. Limite déclarée : Mesuré dans Chromium de bureau, pas sur le Galaxy A05s. Les seuils WCAG n'ont pas pu être relus à la source (w3.org injoignable).",
    "state": "in_progress",
    "group": "Missions et lots",
    "source_kind": "repo_file",
-   "source_ref": "docs/EXIGENCES.json (INT-34-001 à INT-34-008)",
+   "source_ref": "docs/EXIGENCES.json (INT-34-001 à INT-34-014)",
    "reliability": "reported",
    "test_ref": ""
   },
@@ -692,12 +692,12 @@
   },
   {
    "key": "lot-2b-interface",
-   "name": "Lot 2, étape B — Regrouper les rubriques",
-   "description": "Non commencée : elle attend l’accord « étape A validée, lance B ».",
-   "state": "to_design",
+   "name": "Lot 2, étape B — 4 entrées par intention",
+   "description": "Navigation regroupée en 4 entrées, barre du bas sans élément caché ; fusionnée dans main (PR 48). Non essayée sur téléphone.",
+   "state": "done",
    "group": "Lots déjà faits",
    "source_kind": "repo_file",
-   "source_ref": "docs/audits/RAPPORT_LOT_2_2026-11-15.md",
+   "source_ref": "docs/AVANCEMENT.md (entrée « Lot 2, étape B »)",
    "reliability": "reported",
    "test_ref": ""
   },

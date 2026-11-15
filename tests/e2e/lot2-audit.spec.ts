@@ -13,11 +13,14 @@ async function register(page:Page,tag:string){
  await expect(page.getByRole('button',{name:'Recherche globale'})).toBeVisible({timeout:20000});
  await page.request.post('/api/spaces/init',{data:{template:'sport'},headers:{Origin:ORIGIN}});
 }
+const ENTRY:Record<string,string>={Accueil:'Aujourd’hui','À traiter':'Aujourd’hui','Mes projets':'Projets',Pilotage:'Projets',Discussions:'Projets',Fichiers:'Projets',Activité:'Projets',Mémoire:'Savoir',Réglages:'Réglages et aide','Quotas Claude Code':'Réglages et aide',Aide:'Réglages et aide'};
+/* Étape B : on ouvre l'entrée de la barre, puis l'onglet de l'écran s'il y en a plusieurs. */
 async function open(page:Page,label:string){
- const btn=page.locator('.sidebar nav button',{hasText:label}).first();
- if(!(await btn.isVisible())){await page.locator('.nav-more').click();}
- await page.locator('.sidebar nav button',{hasText:label}).first().click();
- await page.waitForTimeout(500);
+ const entry=ENTRY[label]||label;
+ await page.locator('.sidebar nav button',{hasText:entry}).first().click();
+ const tabs=page.locator('.screen-tabs');
+ if(await tabs.count()&&label!==entry)await tabs.getByRole('button',{name:label,exact:true}).click();
+ await page.waitForTimeout(400);
 }
 const MEASURE=()=>{
  const parse=(c:string)=>{const m:string[]=c.match(/[\d.]+/g)||[];return {r:+(m[0]||0),g:+(m[1]||0),b:+(m[2]||0),a:m[3]===undefined?1:+m[3]};};
@@ -40,7 +43,7 @@ const MEASURE=()=>{
  return {texts,minPx,sizes,small,low:low.slice(0,10),lowCount:low.length,tiny:tiny.slice(0,10),tinyCount:tiny.length,overflow:document.documentElement.scrollWidth>innerWidth,
   h1:(document.querySelector('main h1,main h2')?.textContent||'').trim().slice(0,60),guide:!!document.querySelector('[data-guide]'),guideText:(document.querySelector('[data-guide]')?.textContent||'').slice(0,160)};
 };
-const MODULES=['Accueil','Pilotage','Discussions','À traiter','Mémoire','Claude','Projets','Fichiers','Activité','Aide','Réglages'];
+const MODULES=['Accueil','À traiter','Mes projets','Pilotage','Discussions','Fichiers','Activité','Mémoire','Réglages','Quotas Claude Code','Aide'];
 test('audit de lisibilité des rubriques',async({page,browser})=>{
  test.setTimeout(240000);
  const out:any={etiquette:LABEL,date:new Date().toISOString(),largeurs:{}};

@@ -64,7 +64,7 @@ export function ResumeSection({id}:{id:string}){
 /** Le journal n'a plus qu'un endroit : « Activité » (même table d'événements, filtre par projet). Ici, un raccourci. */
 export function JournalSection({id}:{id:string}){
  return <Fold title="Journal du projet" summary="dans « Activité »" open>
-  <Shortcut to="activity" store={['atelier:journal-projet',id]} label="Ouvrir le journal de ce projet">Décisions, tâches, questions, prompts et synchronisations sont dans « Activité », avec un filtre par projet.</Shortcut>
+  <Shortcut to="activity" store={['atelier:journal-projet',id]} label="Ouvrir le journal de ce projet">Décisions, tâches, questions, prompts et synchronisations sont dans « Projets » → « Activité », avec un filtre par projet.</Shortcut>
  </Fold>;
 }
 

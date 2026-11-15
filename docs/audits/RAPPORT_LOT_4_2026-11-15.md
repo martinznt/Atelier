@@ -20,7 +20,7 @@ Environnement : Node 22 (le dépôt demande Node 24), Chromium préinstallé pil
 ### Contenu du fichier de départ (aucun état inventé)
 - **Un groupe d’exigences = une fonctionnalité** (27 sections du cahier, 24 « RF », 8 groupes de missions) : état déduit des statuts **déclarés** dans `EXIGENCES.json`, niveau **« Rapporté »**, source = identifiants d’exigences. 69 fonctionnalités au total sont « Rapporté ».
 - **11 fonctionnalités « Vérifié »** (lots 1 à 3 et import) : chacune cite un **test existant** (le fichier est contrôlé par le script) ; ces tests ont tous réussi dans mon exécution complète (§3).
-- Lots 0 à 3 « Fait » (Rapporté, source = rapport du lot), lot 2 étape B, lot 5A, lot 5B, studio « À concevoir » ; D7 « Bloqué ».
+- Lots 0 à 3 et lot 2 étape B (fusionnée pendant ce lot, PR 48) « Fait » (Rapporté, source = rapport ou avancement), lot 5A, lot 5B, studio « À concevoir » ; D7 « Bloqué ».
 - **Aucune** fonctionnalité « Vérifié sur téléphone » (l’import le refuse).
 - **14 constats** de ce banc d’essai (§5), en « À concevoir ».
 - **12 décisions « Proposées »** (pas « actuelles ») : D1 à D12 comme données par Martin. Seuls les sens retrouvés dans le dépôt sont écrits (D2, D3, D4, D5, D6, D8). Pour D1, D9, D10, D10 bis, D11, D12, **le texte de la question n’existe nulle part dans le dépôt** (V, recherche) : le fichier le dit au lieu de l’inventer.

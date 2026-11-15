@@ -5,6 +5,15 @@
 - Import du fichier de départ : aperçu sans écriture, création, second import = 0 ajout, 3 imports simultanés = 0 doublon, un fichier plus court ne supprime rien, élément déjà modifié non écrasé ; isolation A/B (aperçu, import, lecture, recherche, missions).
 - **Aucune migration** dans ce lot. **Simulé** : GitHub (règles d’Atelier lues avec les vrais fichiers au commit `fb195ce`). **Réel** : aucun appel à GitHub, aucune IA, aucune production, aucun téléphone.
 
+# Lot 2 (étape B) — contrôles du 15 novembre 2026 (exécutés en local, Node 22)
+
+- `tsc` OK ; vitest **113/113** ; build OK ; régressions, stockage, core OK ; `node --test tests/*.test.mjs` **358/358** ; 5 fichiers demandés 38/38 ; audit des exigences 567, 0 preuve cassée.
+- Playwright (Chromium bureau et Android 360 px) : `flow`, `lot1`, `lot2` — 11 tests par projet, verts (barre du bas à 360/390/1280 px, 4 entrées, onglets visibles, dernier écran gardé, parcours 1, 2, 3, 11, 12, 29, 31–34, 38).
+- Mesures : 0 texte sous 12 px, 0 contraste sous 3:1, 0 case sous 24 px, 0 débordement.
+- **Non validé** : téléphone, 28 parcours non rejoués, seuils WCAG à la source, Firefox/WebKit.
+
+---
+
 # Lot 3 — contrôles du 15 novembre 2026 (exécutés en local, Node 22)
 
 - `tsc` OK ; vitest **126/126** (dont 12 de `tests/missions.test.ts` et 1 de `tests/migration-0024.test.ts`) ; build OK ; régressions OK ; `node --test tests/*.test.mjs` **376/376** (dont 17 de `tests/mission-core.test.mjs`) ; 5 fichiers demandés 38/38 ; audit des exigences : voir rapport.

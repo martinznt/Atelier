@@ -4755,6 +4755,60 @@
     "limite": "D7 = C non validée explicitement par Martin : non réalisé. Le choix automatique reste non réalisé (aucun classement ni benchmark inventé)."
   },
   {
+    "id": "INT-34-009",
+    "section": 34,
+    "source": "Lot 2 du 15 novembre 2026 (interface lisible, étape B : 4 entrées)",
+    "exigence": "4 entrées par intention (Aujourd'hui, Projets, Savoir, Réglages et aide) regroupant les 11 écrans existants ; l'entrée rouvre le dernier écran utilisé.",
+    "statut": "réalisé",
+    "preuve": "web/App.tsx ; tests/e2e/lot2.spec.ts",
+    "limite": ""
+  },
+  {
+    "id": "INT-34-010",
+    "section": 34,
+    "source": "Lot 2 du 15 novembre 2026 (interface lisible, étape B : 4 entrées)",
+    "exigence": "Barre du bas sur téléphone = 4 entrées + recherche, rien de caché (plus de « Plus »), chaque bouton dans l'écran et d'au moins 44 px.",
+    "statut": "réalisé",
+    "preuve": "web/App.tsx ; web/styles.css ; tests/e2e/lot2.spec.ts",
+    "limite": "Mesuré dans Chromium (360, 390 px), pas sur le Galaxy A05s."
+  },
+  {
+    "id": "INT-34-011",
+    "section": 34,
+    "source": "Lot 2 du 15 novembre 2026 (interface lisible, étape B : 4 entrées)",
+    "exigence": "Les onglets d'une entrée sont tous visibles (retour à la ligne, aucun défilement caché).",
+    "statut": "réalisé",
+    "preuve": "web/styles.css ; tests/e2e/lot2.spec.ts",
+    "limite": ""
+  },
+  {
+    "id": "INT-34-012",
+    "section": 34,
+    "source": "Lot 2 du 15 novembre 2026 (interface lisible, étape B : 4 entrées)",
+    "exigence": "Étape B sans changement de données ni de routes serveur : déplacements d'écrans seulement.",
+    "statut": "réalisé",
+    "preuve": "git diff : seuls web/, tests/e2e/ et docs/ changent",
+    "limite": "Vérifié par la liste des fichiers modifiés, pas par un outil."
+  },
+  {
+    "id": "INT-34-013",
+    "section": 34,
+    "source": "Lot 2 du 15 novembre 2026 (interface lisible, étape B : 4 entrées)",
+    "exigence": "Parcours rejoués avec la nouvelle navigation (1, 2, 3, 11, 12, 29, 31, 32, 33, 34, 38 et le parcours du lot 1).",
+    "statut": "partiel",
+    "preuve": "tests/e2e/lot2.spec.ts ; tests/e2e/lot1.spec.ts ; tests/e2e/flow.spec.ts",
+    "limite": "Les autres parcours du 13 novembre n'ont pas de script versionné : non rejoués."
+  },
+  {
+    "id": "INT-34-014",
+    "section": 34,
+    "source": "Lot 2 du 15 novembre 2026 (interface lisible, étape B : 4 entrées)",
+    "exigence": "Essai sur le Galaxy A05s de la nouvelle barre du bas préparé pas à pas ; jamais déclaré validé sans réponse de Martin.",
+    "statut": "à faire",
+    "preuve": "docs/PROTOCOLE_TELEPHONE_LOT2.md",
+    "limite": "Téléphone non essayé : à faire par Martin."
+  },
+  {
     "id": "ADA-36-001",
     "section": 36,
     "source": "Lot 4 du 15 novembre 2026 (Atelier dans Atelier, banc d’essai)",

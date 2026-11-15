@@ -3,6 +3,11 @@
 **Fait (exécuté en local, GitHub simulé) :** fichier de départ importable (94 fonctionnalités avec source et niveau réels, 12 décisions « Proposées »), import avec aperçu, sans doublon ni suppression ni modification, guide pas à pas, protocole téléphone, parcours complet testé à 360 et 390 px, mission du lot 5A générée localement et non envoyée, 14 manques listés comme fonctionnalités « à concevoir », 3 défauts corrigés avec tests. Vitest 146/146, `node --test` 376/376, Playwright 2/2.
 **Non fait / non vérifié :** import réel en production (Martin), téléphone (`docs/PROTOCOLE_TELEPHONE_LOT4.md`), lecture GitHub avec le jeton réel, jugement de Martin sur la mission du lot 5A, contenu des lots 5B et studio, texte des décisions D1 et D9 à D12. Rapport : `docs/audits/RAPPORT_LOT_4_2026-11-15.md` ; guide : `docs/atelier-dans-atelier/GUIDE_MARTIN.md`.
 
+# 15 novembre 2026 — Lot 2, étape B : 4 entrées par intention (branche `claude/atelier-lot2-interface-bgvx58`, PR en brouillon)
+
+**Réalisé (navigation seulement, aucune migration, aucune route, aucune donnée) :** les 11 écrans sont regroupés en 4 entrées (Aujourd'hui · Projets · Savoir · Réglages et aide) avec une rangée d'onglets par entrée ; barre du bas du téléphone = 4 entrées + Recherche, plus de « Plus ». L'étape A (PR n°46) est fusionnée et en ligne (`5e196d4`).
+**Vérifié en local :** tsc ; vitest 113/113 ; `node --test` 358/358 ; régressions, stockage, core ; build ; Playwright 11 tests par projet (bureau et Android 360 px) ; 0 texte sous 12 px, 0 contraste sous 3:1. **Non vérifié :** téléphone (protocole : `docs/PROTOCOLE_TELEPHONE_LOT2.md`), 28 parcours sans script versionné, seuils WCAG à la source. Doublons de l'étape A non tranchés. Rapport : `docs/audits/RAPPORT_LOT_2B_2026-11-15.md`.
+
 ---
 
 # 15 novembre 2026 — Lot 3 : missions pour Claude Code, registre des travaux, retour (branche `ccr-42fa5a0b-aqmogn`, migration 0024 non appliquée)

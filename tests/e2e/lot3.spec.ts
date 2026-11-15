@@ -20,7 +20,7 @@ for(const width of [360,390])test(`missions pour Claude Code à ${width} px`,asy
   +`INSERT INTO plan_tasks(id,user_id,project_id,title,objective,acceptance,created_at,updated_at) VALUES('${task}','${me}','${project}','Ajouter la liste de courses','Pouvoir cocher des ingrédients.','La liste se garde hors connexion.','${at}','${at}');`
   +`INSERT INTO missions(id,user_id,project_id,task_id,repository_id,repo_full_name,branch,title,fields,created_at,updated_at) VALUES('${mission}','${me}','${project}','${task}','${repo}','martinznt/Livre-de-recettes','main','Ajouter la liste de courses','{"objective":"Pouvoir cocher des ingrédients.","done":"La liste se garde hors connexion.","files":"public/js/courses.js"}','${at}','${at}');`);
  await page.reload();
- await page.locator('.sidebar nav button',{hasText:'Pilotage'}).first().click();
+ await page.locator('.sidebar nav button',{hasText:'Projets'}).first().click();await page.locator('.screen-tabs').getByRole('button',{name:'Pilotage',exact:true}).click();
  await page.locator('summary:has(> strong:text-is("Missions pour Claude Code"))').click();
  const sec=page.locator('details.fold',{has:page.locator(':scope > summary > strong:text-is("Missions pour Claude Code")')}).first();
  await expect(sec.getByText('Une mission est un texte court et complet')).toBeVisible();
