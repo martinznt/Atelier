@@ -25,7 +25,7 @@ function RepoTab({refresh}:{refresh:number}){
  return <div className="stack"><ErrorBox error={error}/>{notice&&<p className="notice" role="status">{notice}</p>}
   {data.items.map((r:any)=><RepoCard key={r.id} r={r} labels={data} busy={busy} run={run}/>)}
   <details className="fold" open={!data.items.length}><summary className="fold-summary"><strong>Connecter un référentiel mémoire</strong><small className="muted">lecture seule : Atelier n’écrit jamais dans ce dépôt</small></summary><div className="fold-body stack">
-   {!conns.length?<Shortcut to="settings" label="Ouvrir « Connexions »">Ajoutez d’abord une connexion GitHub (lecture) dans « Réglages » → « Connexions », avec un jeton qui voit le dépôt mémoire.</Shortcut>:<>
+   {!conns.length?<Shortcut to="settings" label="Ouvrir « Connexions »">Ajoutez d’abord une connexion GitHub (lecture) dans « Réglages et aide » → « Réglages » → « Connexions », avec un jeton qui voit le dépôt mémoire.</Shortcut>:<>
     <Field label="Connexion GitHub"><select value={conn} onChange={e=>setConn(e.target.value)}>{conns.map(c=><option key={c.id} value={c.id}>{c.label}</option>)}</select></Field>
     <Field label="Dépôt (propriétaire/dépôt)"><input value={full} onChange={e=>setFull(e.target.value.trim())}/></Field>
     <Field label="Branche (vide = branche principale lue chez GitHub)"><input value={branch} onChange={e=>setBranch(e.target.value.trim())}/></Field>

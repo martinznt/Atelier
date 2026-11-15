@@ -63,7 +63,7 @@
 .link-button{color:var(--green);text-decoration:underline;padding:6px 4px;min-height:32px;font:inherit}.link-button.danger{color:var(--danger)}
 .message-focus{outline:3px solid #bd9152;outline-offset:3px;border-radius:14px}
 /* Poste de pilotage : accueil, boîte à traiter, mémoire, navigation « Plus ». */
-.nav-more{display:none}
+.nav-search{display:none}
 .home-counters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:20px}
 .home-counters>button,.home-counters>div{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 12px;text-align:left;min-height:64px;min-width:0;overflow-wrap:anywhere}
 .home-counters strong{display:block;font-size:22px}
@@ -81,11 +81,8 @@ label.button{display:inline-flex;align-items:center;justify-content:center;curso
 @media(max-width:640px){
  .home-counters{grid-template-columns:1fr 1fr}
  .sidebar nav{grid-template-columns:repeat(5,1fr)}
- .sidebar nav button.nav-more{display:flex}
- .sidebar nav button.nav-secondary{display:none}
- .sidebar nav button.nav-secondary.nav-open{display:flex;grid-row:1}
- .sidebar nav button.nav-more{grid-row:2;grid-column:5}
- .sidebar nav button:not(.nav-secondary):not(.nav-more){grid-row:2}
+ .sidebar nav button.nav-search{display:flex}
+ .sidebar nav button>span:not(.nav-dot){white-space:normal;text-align:center;line-height:1.15;overflow-wrap:anywhere}
 }
 .next-step>*{display:block}.next-step>.eyebrow{margin-bottom:4px}.next-step>small{margin-top:4px}
 .advice ul{margin:6px 0;padding-left:18px}.advice details{margin-top:4px}
@@ -149,3 +146,6 @@ input:not([type=checkbox]),select,textarea{border-radius:14px}
 .activity-filter{max-width:360px;margin-bottom:16px}
 .help-path ol{margin:10px 0 0;padding-left:22px;line-height:1.6;font-size:14px}.help-path li{margin-bottom:8px}
 .help-intro,.help-path{margin-bottom:16px}
+
+/* Lot 2, étape B — sous-onglets d'une entrée : tous visibles (retour à la ligne, rien de caché) */
+.screen-tabs{flex-wrap:wrap;overflow:visible;white-space:normal;gap:2px 18px;margin:0 0 16px}

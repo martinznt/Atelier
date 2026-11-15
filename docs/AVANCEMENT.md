@@ -1,3 +1,10 @@
+# 15 novembre 2026 — Lot 2, étape B : 4 entrées par intention (branche `claude/atelier-lot2-interface-bgvx58`, PR en brouillon)
+
+**Réalisé (navigation seulement, aucune migration, aucune route, aucune donnée) :** les 11 écrans sont regroupés en 4 entrées (Aujourd'hui · Projets · Savoir · Réglages et aide) avec une rangée d'onglets par entrée ; barre du bas du téléphone = 4 entrées + Recherche, plus de « Plus ». L'étape A (PR n°46) est fusionnée et en ligne (`5e196d4`).
+**Vérifié en local :** tsc ; vitest 113/113 ; `node --test` 358/358 ; régressions, stockage, core ; build ; Playwright 11 tests par projet (bureau et Android 360 px) ; 0 texte sous 12 px, 0 contraste sous 3:1. **Non vérifié :** téléphone (protocole : `docs/PROTOCOLE_TELEPHONE_LOT2.md`), 28 parcours sans script versionné, seuils WCAG à la source. Doublons de l'étape A non tranchés. Rapport : `docs/audits/RAPPORT_LOT_2B_2026-11-15.md`.
+
+---
+
 # 15 novembre 2026 — Lot 2, étape A : interface lisible (branche `claude/atelier-lot2-interface-bgvx58`, PR en brouillon)
 
 **Réalisé (interface seulement, aucune migration, aucune route serveur) :** textes agrandis (plus aucun texte sous 12 px, cases à cocher de 24 px), libellés corrigés (« Quotas Claude Code », « À faire par vous »), journal d'activité unique dans « Activité » (filtre par projet), raccourcis vers l'endroit principal de GitHub, de l'import ChatGPT, des consignes et de la mémoire, ligne d'aide « À quoi ça sert / La suite logique » sur chaque écran (G1), page « Bien utiliser Atelier » avec 5 parcours (G2).

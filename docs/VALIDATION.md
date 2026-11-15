@@ -1,3 +1,12 @@
+# Lot 2 (étape B) — contrôles du 15 novembre 2026 (exécutés en local, Node 22)
+
+- `tsc` OK ; vitest **113/113** ; build OK ; régressions, stockage, core OK ; `node --test tests/*.test.mjs` **358/358** ; 5 fichiers demandés 38/38 ; audit des exigences 567, 0 preuve cassée.
+- Playwright (Chromium bureau et Android 360 px) : `flow`, `lot1`, `lot2` — 11 tests par projet, verts (barre du bas à 360/390/1280 px, 4 entrées, onglets visibles, dernier écran gardé, parcours 1, 2, 3, 11, 12, 29, 31–34, 38).
+- Mesures : 0 texte sous 12 px, 0 contraste sous 3:1, 0 case sous 24 px, 0 débordement.
+- **Non validé** : téléphone, 28 parcours non rejoués, seuils WCAG à la source, Firefox/WebKit.
+
+---
+
 # Lot 2 (étape A) — contrôles du 15 novembre 2026 (exécutés en local, Node 22)
 
 - `tsc` OK ; vitest **113/113** ; build OK ; régressions, stockage, core OK ; `node --test tests/*.test.mjs` **358/358** ; 5 fichiers demandés 38/38.
