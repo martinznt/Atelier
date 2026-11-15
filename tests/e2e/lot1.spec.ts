@@ -20,7 +20,10 @@ for(const width of [360,390])test(`modèle de projet et fonctionnalités à ${wi
  await page.locator('summary',{hasText:'F-0001 — Recherche de test'}).click();
  await page.locator('label.field',{hasText:/^ÉtatÀ concevoir/}).locator('select').selectOption('in_progress');await expect(page.locator('summary',{hasText:'F-0001'}).getByText('En cours')).toBeVisible();
  // « Vérifié » sans source : refusé avec un message clair
- await page.getByLabel('Niveau de fiabilité').selectOption('verified');await page.getByLabel('Pourquoi ce changement ?').fill('Je l’ai vu');
+ await page.getByLabel('Niveau de fiabilité').selectOption('verified');
+ // Le bouton est grisé tant que la raison manque, et l'écran le dit (défaut vu sur téléphone le 15 novembre).
+ await expect(page.getByRole('button',{name:'Enregistrer le changement'})).toBeDisabled();await expect(page.getByText('Le bouton est grisé tant que le champ « Pourquoi ce changement ? » est vide')).toBeVisible();
+ await page.getByLabel('Pourquoi ce changement ?').fill('Je l’ai vu');await expect(page.getByText('Le bouton est grisé')).toHaveCount(0);
  await page.getByRole('button',{name:'Enregistrer le changement'}).click();
  await expect(page.getByRole('alert')).toContainText('source précise');await expect(page.locator('summary',{hasText:'F-0001'}).getByText('Confirmé par vous')).toBeVisible();
  await noOverflow('fonctionnalité');await page.screenshot({path:`test-results/lot1-fonction-${width}.png`,fullPage:true});
