@@ -1,3 +1,11 @@
+# Lot 5B (5B-1) — contrôles du 16 novembre 2026 (exécutés en local, Node 22)
+
+- `tsc` OK ; vitest **185/185** ; build OK ; régressions OK ; `test:storage` 11/11 ; 5 fichiers demandés 38/38 ; `node --test tests/*.test.mjs` **396/396** ; Playwright `tests/e2e/lot5b.spec.ts` (Chromium de bureau, 360 et 390 px) **3/3**.
+- **Simulé / local** : D1 locale (Miniflare), aucun réseau. **Réel** : aucun. **Non essayé** : téléphone, production, migration 0025 appliquée.
+- Migration 0025 additive, testée sur base remplie. Audit des exigences : 612, **0 preuve cassée** (14 nouvelles `MAQ-38-*`; matrice `docs/audits/MATRICE_*` non régénérée).
+
+---
+
 # Lot 5A — contrôles du 16 novembre 2026 (exécutés en local, Node 22)
 
 - `tsc` OK ; vitest **168/168** (dont 22 de `tests/lot5a-parcours.test.ts`) ; build OK ; régressions OK ; `test:storage` 11/11 ; 5 fichiers demandés 38/38 ; `node --test tests/*.test.mjs` **376/376** ; audit des exigences 598, 0 preuve cassée.

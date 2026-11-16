@@ -4960,5 +4960,131 @@
     "statut": "à faire",
     "preuve": "docs/sites/MISSION_RECETTES_generee.md ; docs/sites/MISSION_SPORT_generee.md",
     "limite": "Réponse de Martin attendue."
+  },
+  {
+    "id": "MAQ-38-001",
+    "section": 38,
+    "source": "Lot 5B, étape 5B-1 du 16 novembre 2026 (maquette d'écran, modèle et affichage)",
+    "exigence": "Migration 0025 additive : quatre tables nouvelles (mockups, mockup_images, mockup_groups, mockup_blocks), aucune table existante modifiée, sur une base remplie ; cascade par projet, détachement d'un bloc si sa fonctionnalité ou son groupe disparaît.",
+    "statut": "réalisé",
+    "preuve": "migrations/0025_mockups.sql ; tests/migration-0025.test.ts ; tests/schema-status.test.mjs",
+    "limite": "Non appliquée en production (la fusion l'applique : sauvegarde d'abord, décision de Martin)."
+  },
+  {
+    "id": "MAQ-38-002",
+    "section": 38,
+    "source": "Lot 5B, étape 5B-1 du 16 novembre 2026 (maquette d'écran, modèle et affichage)",
+    "exigence": "Capture de départ gardée sans R2 : texte base64 dans D1, 180 000 octets au plus avant codage (moins de 256 Kio de texte), 20 Mo par compte, format lu dans l'en-tête réel (WebP, JPEG, PNG), type annoncé comparé au contenu.",
+    "statut": "réalisé",
+    "preuve": "server/mockup-core.ts ; server/routes/mockups.ts ; tests/mockup-core.test.mjs ; tests/mockups.test.ts",
+    "limite": "Aucun test sur le vrai Workers/D1 distant : D1 locale (Miniflare) seulement."
+  },
+  {
+    "id": "MAQ-38-003",
+    "section": 38,
+    "source": "Lot 5B, étape 5B-1 du 16 novembre 2026 (maquette d'écran, modèle et affichage)",
+    "exigence": "Compression de la capture dans le navigateur (WebP, 720 px puis plus petit) ; mesures réelles écrites : capture d'écran de 360 px 102 Ko PNG → 39,9 Ko WebP ; bruit pur d'un écran → 145,6 Ko ; page entière très longue refusée sans rien perdre.",
+    "statut": "réalisé",
+    "preuve": "web/mockup-image.ts ; tests/e2e/lot5b.spec.ts",
+    "limite": "Mesuré avec le Chromium de bureau préinstallé, pas avec Chrome du Galaxy A05s."
+  },
+  {
+    "id": "MAQ-38-004",
+    "section": 38,
+    "source": "Lot 5B, étape 5B-1 du 16 novembre 2026 (maquette d'écran, modèle et affichage)",
+    "exigence": "Blocs calqués sur la capture (titre, texte, liste, carte, bouton, champ, barre du bas, image, autre) : position, taille, groupe, couleurs #rrggbb, lien vers une fonctionnalité du suivi, comportement ; refus lisibles d'un bloc hors écran, de couleur ou de lien invalides.",
+    "statut": "réalisé",
+    "preuve": "server/mockup-core.ts ; server/routes/mockups.ts ; tests/mockup-core.test.mjs ; tests/mockups.test.ts",
+    "limite": "Couleurs libres : la palette du site (jetons lus dans les dépôts) n'est pas encore reprise (5B-2)."
+  },
+  {
+    "id": "MAQ-38-005",
+    "section": 38,
+    "source": "Lot 5B, étape 5B-1 du 16 novembre 2026 (maquette d'écran, modèle et affichage)",
+    "exigence": "Écran de départ fixé une seule fois (copie figée des blocs, base des écarts de la fiche) ; ensuite plus d'ajout de bloc, de groupe ni de nouvelle capture à cette étape.",
+    "statut": "réalisé",
+    "preuve": "server/routes/mockups.ts ; tests/mockups.test.ts ; tests/e2e/lot5b.spec.ts",
+    "limite": "Le calcul des écarts est prévu en 5B-3."
+  },
+  {
+    "id": "MAQ-38-006",
+    "section": 38,
+    "source": "Lot 5B, étape 5B-1 du 16 novembre 2026 (maquette d'écran, modèle et affichage)",
+    "exigence": "Affichage sur téléphone (360 et 390 px) : capture en fond, blocs numérotés, détail d'un bloc au toucher ou par la liste (cibles de 44 px), aucun débordement horizontal, aucun texte sous 12 px.",
+    "statut": "réalisé",
+    "preuve": "web/Mockups.tsx ; tests/e2e/lot5b.spec.ts",
+    "limite": "Chromium de bureau émulant 360 et 390 px ; téléphone non essayé."
+  },
+  {
+    "id": "MAQ-38-007",
+    "section": 38,
+    "source": "Lot 5B, étape 5B-1 du 16 novembre 2026 (maquette d'écran, modèle et affichage)",
+    "exigence": "Contexte du projet en lecture seule à l'ouverture : décisions actuelles et fonctionnalités, avec niveau de fiabilité ; les décisions seulement proposées n'y figurent pas.",
+    "statut": "réalisé",
+    "preuve": "server/routes/mockups.ts ; tests/mockups.test.ts",
+    "limite": "Passages utiles de l'export ChatGPT : non branchés (prévu 5B-5)."
+  },
+  {
+    "id": "MAQ-38-008",
+    "section": 38,
+    "source": "Lot 5B, étape 5B-1 du 16 novembre 2026 (maquette d'écran, modèle et affichage)",
+    "exigence": "Isolation entre comptes : l'utilisateur B ne lit, ne modifie ni ne complète rien de A (lecture, image, bloc, groupe, fixation) ; l'export du compte contient les maquettes de A seulement.",
+    "statut": "réalisé",
+    "preuve": "server/routes/mockups.ts ; tests/mockups.test.ts",
+    "limite": "Test sur D1 locale, deux comptes fabriqués."
+  },
+  {
+    "id": "MAQ-38-009",
+    "section": 38,
+    "source": "Lot 5B, étape 5B-1 du 16 novembre 2026 (maquette d'écran, modèle et affichage)",
+    "exigence": "Limites : 100 blocs, 30 groupes par maquette ; 40 maquettes par projet ; 20 Mo de captures par compte, avec message clair et sans suppression.",
+    "statut": "réalisé",
+    "preuve": "server/routes/mockups.ts ; tests/mockups.test.ts",
+    "limite": "Limites choisies par l'assistant (H), à ajuster par Martin si trop justes."
+  },
+  {
+    "id": "MAQ-38-010",
+    "section": 38,
+    "source": "Lot 5B, étape 5B-1 du 16 novembre 2026 (maquette d'écran, modèle et affichage)",
+    "exigence": "Modifier au doigt et par boutons (déplacer, monter/descendre, grouper/séparer, couleurs), annuler/rétablir.",
+    "statut": "à faire",
+    "preuve": "tests/e2e/lot5b.spec.ts",
+    "limite": "Étape 5B-2 : rien de modifiable à cette étape (suppression de bloc incluse)."
+  },
+  {
+    "id": "MAQ-38-011",
+    "section": 38,
+    "source": "Lot 5B, étape 5B-1 du 16 novembre 2026 (maquette d'écran, modèle et affichage)",
+    "exigence": "Fiche de mise en page, texte de mission par règles fixes, export, essai décisif de Martin sur une vraie page.",
+    "statut": "à faire",
+    "preuve": "docs/audits/RAPPORT_LOT_5B_2026-11-16.md",
+    "limite": "Étape 5B-3 puis essai de Martin."
+  },
+  {
+    "id": "MAQ-38-012",
+    "section": 38,
+    "source": "Lot 5B, étape 5B-1 du 16 novembre 2026 (maquette d'écran, modèle et affichage)",
+    "exigence": "Guidage par règles vérifiables avec suggestions acceptables ou refusables.",
+    "statut": "à faire",
+    "preuve": "docs/audits/RAPPORT_LOT_5B_2026-11-16.md",
+    "limite": "Étape 5B-4 ; seuils à vérifier à la source officielle (WCAG 2.2) avant affichage."
+  },
+  {
+    "id": "MAQ-38-013",
+    "section": 38,
+    "source": "Lot 5B, étape 5B-1 du 16 novembre 2026 (maquette d'écran, modèle et affichage)",
+    "exigence": "Espace de discussion lié à la maquette.",
+    "statut": "à faire",
+    "preuve": "docs/audits/RAPPORT_LOT_5B_2026-11-16.md",
+    "limite": "Étape 5B-5."
+  },
+  {
+    "id": "MAQ-38-014",
+    "section": 38,
+    "source": "Lot 5B, étape 5B-1 du 16 novembre 2026 (maquette d'écran, modèle et affichage)",
+    "exigence": "Essai sur le Galaxy A05s selon le protocole numéroté de l'étape 5B-1.",
+    "statut": "à faire",
+    "preuve": "docs/PROTOCOLE_TELEPHONE_LOT5B.md",
+    "limite": "Téléphone non essayé."
   }
 ]
