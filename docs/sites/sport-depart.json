@@ -1,0 +1,416 @@
+{
+ "format": "atelier-depart",
+ "version": 1,
+ "project": {
+  "name": "Sport",
+  "repo": "martinznt/Sport",
+  "pinned_commit": "f0ef3b008e38f54b28c49d8f1ae9605d07298f29",
+  "note": "Dépôt à relier en LECTURE SEULE. Gabarit « Sport / Mes séances ». Aucun AGENTS.md ni CLAUDE.md dans ce dépôt : aucune règle propre n’est inventée. Fichier fabriqué par scripts/build-sites-seed.mjs (lot 5A)."
+ },
+ "features": [
+  {
+   "key": "dem-79705b5c35",
+   "name": "Ajouter des phases très simplement dans mon profil",
+   "description": "Étiquette d’origine : ✅\nOù le voir (selon le document) : Profil › Mes phases (à l'accueil du Profil) › « ＋ Ajouter une phase »\nSens du symbole « ✅ » dans ce document : fait et vérifié dans le navigateur.\nNiveau Atelier : Rapporté (écrit dans le dépôt, non rejoué par Atelier).",
+   "state": "done",
+   "group": "Demandes (DEMANDES_8_35) — Phases",
+   "source_kind": "repo_file",
+   "source_ref": "martinznt/Sport : docs/DEMANDES_8_35.md, ligne 10 (section « Phases »), commit f0ef3b0",
+   "reliability": "reported",
+   "test_ref": ""
+  },
+  {
+   "key": "dem-9a0c79d507",
+   "name": "Quand je crée une séance du sport de la phase, l'app me propose toutes mes phases",
+   "description": "Étiquette d’origine : ✅\nOù le voir (selon le document) : Créer une séance › Ta structure › « 🧩 Mes phases »\nSens du symbole « ✅ » dans ce document : fait et vérifié dans le navigateur.\nNiveau Atelier : Rapporté (écrit dans le dépôt, non rejoué par Atelier).",
+   "state": "done",
+   "group": "Demandes (DEMANDES_8_35) — Phases",
+   "source_kind": "repo_file",
+   "source_ref": "martinznt/Sport : docs/DEMANDES_8_35.md, ligne 11 (section « Phases »), commit f0ef3b0",
+   "reliability": "reported",
+   "test_ref": ""
+  },
+  {
+   "key": "dem-8092aded64",
+   "name": "Simple à programmer",
+   "description": "Étiquette d’origine : ✅\nOù le voir (selon le document) : même endroit : un bouton ＋ par phase\nSens du symbole « ✅ » dans ce document : fait et vérifié dans le navigateur.\nNiveau Atelier : Rapporté (écrit dans le dépôt, non rejoué par Atelier).",
+   "state": "done",
+   "group": "Demandes (DEMANDES_8_35) — Phases",
+   "source_kind": "repo_file",
+   "source_ref": "martinznt/Sport : docs/DEMANDES_8_35.md, ligne 12 (section « Phases »), commit f0ef3b0",
+   "reliability": "reported",
+   "test_ref": ""
+  },
+  {
+   "key": "dem-1a9c0152e8",
+   "name": "Supprimer des exercices ou des phases après coup, sans revenir en arrière",
+   "description": "Étiquette d’origine : ✅\nOù le voir (selon le document) : Structure finale et séance proposée : ✕ sur un exercice, « Retirer cette phase »\nSens du symbole « ✅ » dans ce document : fait et vérifié dans le navigateur.\nNiveau Atelier : Rapporté (écrit dans le dépôt, non rejoué par Atelier).",
+   "state": "done",
+   "group": "Demandes (DEMANDES_8_35) — Phases",
+   "source_kind": "repo_file",
+   "source_ref": "martinznt/Sport : docs/DEMANDES_8_35.md, ligne 13 (section « Phases »), commit f0ef3b0",
+   "reliability": "reported",
+   "test_ref": ""
+  },
+  {
+   "key": "dem-48262aeb19",
+   "name": "Revenir en arrière garde exactement la même organisation",
+   "description": "Étiquette d’origine : ✅\nOù le voir (selon le document) : boutons ‹ / › du créateur\nSens du symbole « ✅ » dans ce document : fait et vérifié dans le navigateur.\nNiveau Atelier : Rapporté (écrit dans le dépôt, non rejoué par Atelier).",
+   "state": "done",
+   "group": "Demandes (DEMANDES_8_35) — Phases",
+   "source_kind": "repo_file",
+   "source_ref": "martinznt/Sport : docs/DEMANDES_8_35.md, ligne 14 (section « Phases »), commit f0ef3b0",
+   "reliability": "reported",
+   "test_ref": ""
+  },
+  {
+   "key": "dem-b5081ad433",
+   "name": "Une phase sans exercices, avec un message proposé par l'app et modifiable (ex. spray wall)",
+   "description": "Étiquette d’origine : ✅\nOù le voir (selon le document) : « Pas d'exercices pour cette phase » sur chaque phase\nSens du symbole « ✅ » dans ce document : fait et vérifié dans le navigateur.\nNiveau Atelier : Rapporté (écrit dans le dépôt, non rejoué par Atelier).",
+   "state": "done",
+   "group": "Demandes (DEMANDES_8_35) — Phases",
+   "source_kind": "repo_file",
+   "source_ref": "martinznt/Sport : docs/DEMANDES_8_35.md, ligne 15 (section « Phases »), commit f0ef3b0",
+   "reliability": "reported",
+   "test_ref": ""
+  },
+  {
+   "key": "dem-a09fd494de",
+   "name": "Un endroit « Étirements » à part des exercices",
+   "description": "Étiquette d’origine : ✅\nOù le voir (selon le document) : Bibliothèque › Étirements\nSens du symbole « ✅ » dans ce document : fait et vérifié dans le navigateur.\nNiveau Atelier : Rapporté (écrit dans le dépôt, non rejoué par Atelier).",
+   "state": "done",
+   "group": "Demandes (DEMANDES_8_35) — Étirements",
+   "source_kind": "repo_file",
+   "source_ref": "martinznt/Sport : docs/DEMANDES_8_35.md, ligne 21 (section « Étirements »), commit f0ef3b0",
+   "reliability": "reported",
+   "test_ref": ""
+  },
+  {
+   "key": "dem-553bc237dd",
+   "name": "En créant une séance, l'app dit où aller pour les étirements",
+   "description": "Étiquette d’origine : ✅\nOù le voir (selon le document) : dernière étape du créateur : petit message cliquable\nSens du symbole « ✅ » dans ce document : fait et vérifié dans le navigateur.\nNiveau Atelier : Rapporté (écrit dans le dépôt, non rejoué par Atelier).",
+   "state": "done",
+   "group": "Demandes (DEMANDES_8_35) — Étirements",
+   "source_kind": "repo_file",
+   "source_ref": "martinznt/Sport : docs/DEMANDES_8_35.md, ligne 22 (section « Étirements »), commit f0ef3b0",
+   "reliability": "reported",
+   "test_ref": ""
+  },
+  {
+   "key": "dem-9f091c868c",
+   "name": "Choisir muscles, matériel, lieu, et la séance après laquelle s'étirer",
+   "description": "Étiquette d’origine : ✅\nOù le voir (selon le document) : Bibliothèque › Étirements, étapes 1 à 3\nSens du symbole « ✅ » dans ce document : fait et vérifié dans le navigateur.\nNiveau Atelier : Rapporté (écrit dans le dépôt, non rejoué par Atelier).",
+   "state": "done",
+   "group": "Demandes (DEMANDES_8_35) — Étirements",
+   "source_kind": "repo_file",
+   "source_ref": "martinznt/Sport : docs/DEMANDES_8_35.md, ligne 23 (section « Étirements »), commit f0ef3b0",
+   "reliability": "reported",
+   "test_ref": ""
+  },
+  {
+   "key": "dem-6299928ff6",
+   "name": "Combien de temps après et pendant combien de temps",
+   "description": "Étiquette d’origine : ✅\nOù le voir (selon le document) : étapes 4 et 5\nSens du symbole « ✅ » dans ce document : fait et vérifié dans le navigateur.\nNiveau Atelier : Rapporté (écrit dans le dépôt, non rejoué par Atelier).",
+   "state": "done",
+   "group": "Demandes (DEMANDES_8_35) — Étirements",
+   "source_kind": "repo_file",
+   "source_ref": "martinznt/Sport : docs/DEMANDES_8_35.md, ligne 24 (section « Étirements »), commit f0ef3b0",
+   "reliability": "reported",
+   "test_ref": ""
+  },
+  {
+   "key": "dem-b4ef03d8b8",
+   "name": "L'app fait la séance d'étirement adaptée",
+   "description": "Étiquette d’origine : ✅\nOù le voir (selon le document) : « 🧘 Préparer mes étirements »\nSens du symbole « ✅ » dans ce document : fait et vérifié dans le navigateur.\nNiveau Atelier : Rapporté (écrit dans le dépôt, non rejoué par Atelier).",
+   "state": "done",
+   "group": "Demandes (DEMANDES_8_35) — Étirements",
+   "source_kind": "repo_file",
+   "source_ref": "martinznt/Sport : docs/DEMANDES_8_35.md, ligne 25 (section « Étirements »), commit f0ef3b0",
+   "reliability": "reported",
+   "test_ref": ""
+  },
+  {
+   "key": "dem-eea8ea528f",
+   "name": "Si elle me plaît : « après telle séance je veux ça »",
+   "description": "Étiquette d’origine : ✅\nOù le voir (selon le document) : « 📌 Me la proposer après … »\nSens du symbole « ✅ » dans ce document : fait et vérifié dans le navigateur.\nNiveau Atelier : Rapporté (écrit dans le dépôt, non rejoué par Atelier).",
+   "state": "done",
+   "group": "Demandes (DEMANDES_8_35) — Étirements",
+   "source_kind": "repo_file",
+   "source_ref": "martinznt/Sport : docs/DEMANDES_8_35.md, ligne 26 (section « Étirements »), commit f0ef3b0",
+   "reliability": "reported",
+   "test_ref": ""
+  },
+  {
+   "key": "dem-f4ef91206e",
+   "name": "Plusieurs séances d'étirement disponibles sur la séance",
+   "description": "Étiquette d’origine : ✅\nOù le voir (selon le document) : page de la séance : « 🧘 Étirements après cette séance »\nSens du symbole « ✅ » dans ce document : fait et vérifié dans le navigateur.\nNiveau Atelier : Rapporté (écrit dans le dépôt, non rejoué par Atelier).",
+   "state": "done",
+   "group": "Demandes (DEMANDES_8_35) — Étirements",
+   "source_kind": "repo_file",
+   "source_ref": "martinznt/Sport : docs/DEMANDES_8_35.md, ligne 27 (section « Étirements »), commit f0ef3b0",
+   "reliability": "reported",
+   "test_ref": ""
+  },
+  {
+   "key": "dem-548ae8f9e8",
+   "name": "À la fin de ma séance : « dans X minutes », programmé dans le calendrier",
+   "description": "Étiquette d’origine : ✅\nOù le voir (selon le document) : écran de fin de séance\nSens du symbole « ✅ » dans ce document : fait et vérifié dans le navigateur.\nNiveau Atelier : Rapporté (écrit dans le dépôt, non rejoué par Atelier).",
+   "state": "done",
+   "group": "Demandes (DEMANDES_8_35) — Étirements",
+   "source_kind": "repo_file",
+   "source_ref": "martinznt/Sport : docs/DEMANDES_8_35.md, ligne 28 (section « Étirements »), commit f0ef3b0",
+   "reliability": "reported",
+   "test_ref": ""
+  },
+  {
+   "key": "dem-6c23e1090f",
+   "name": "Quand je suis chez moi, ça me la lance",
+   "description": "Étiquette d’origine : ⚠️\nOù le voir (selon le document) : une app web ne peut pas suivre la position en arrière-plan : le rappel arrive à l'heure choisie et le toucher lance la séance ; app ouverte, elle propose de la lancer\nSens du symbole « ⚠️ » dans ce document : limite (pas possible).\nNiveau Atelier : Rapporté (écrit dans le dépôt, non rejoué par Atelier).",
+   "state": "blocked",
+   "group": "Demandes (DEMANDES_8_35) — Étirements",
+   "source_kind": "repo_file",
+   "source_ref": "martinznt/Sport : docs/DEMANDES_8_35.md, ligne 29 (section « Étirements »), commit f0ef3b0",
+   "reliability": "reported",
+   "test_ref": ""
+  },
+  {
+   "key": "dem-81e27e868a",
+   "name": "Métriques : expliquer ce que c'est",
+   "description": "Étiquette d’origine : ✅\nOù le voir (selon le document) : Profil › Records et mesures (texte d'aide), formulaire « Nouvelle mesure »\nSens du symbole « ✅ » dans ce document : fait et vérifié dans le navigateur.\nNiveau Atelier : Rapporté (écrit dans le dépôt, non rejoué par Atelier).",
+   "state": "done",
+   "group": "Demandes (DEMANDES_8_35) — Clarté",
+   "source_kind": "repo_file",
+   "source_ref": "martinznt/Sport : docs/DEMANDES_8_35.md, ligne 35 (section « Clarté »), commit f0ef3b0",
+   "reliability": "reported",
+   "test_ref": ""
+  },
+  {
+   "key": "dem-fa3a8eafaa",
+   "name": "Aucun doublon dans l'app",
+   "description": "Étiquette d’origine : ✅\nOù le voir (selon le document) : Progrès, Mes sports, À mesurer, poids et mensurations, noms des rubriques de la Bibliothèque ; les raccourcis de l'accueil restent des raccourcis\nSens du symbole « ✅ » dans ce document : fait et vérifié dans le navigateur.\nNiveau Atelier : Rapporté (écrit dans le dépôt, non rejoué par Atelier).",
+   "state": "done",
+   "group": "Demandes (DEMANDES_8_35) — Clarté",
+   "source_kind": "repo_file",
+   "source_ref": "martinznt/Sport : docs/DEMANDES_8_35.md, ligne 36 (section « Clarté »), commit f0ef3b0",
+   "reliability": "reported",
+   "test_ref": ""
+  },
+  {
+   "key": "dem-2665ae7f06",
+   "name": "Petits messages en italique « si tu as besoin de …, va dans … » avec le chemin, cliquables",
+   "description": "Étiquette d’origine : ✅\nOù le voir (selon le document) : une vingtaine d'endroits ; « ‹ Retour » ramène à la page de départ ; un test vérifie que chaque chemin mène à la bonne page\nSens du symbole « ✅ » dans ce document : fait et vérifié dans le navigateur.\nNiveau Atelier : Rapporté (écrit dans le dépôt, non rejoué par Atelier).",
+   "state": "done",
+   "group": "Demandes (DEMANDES_8_35) — Clarté",
+   "source_kind": "repo_file",
+   "source_ref": "martinznt/Sport : docs/DEMANDES_8_35.md, ligne 37 (section « Clarté »), commit f0ef3b0",
+   "reliability": "reported",
+   "test_ref": ""
+  },
+  {
+   "key": "dem-266985d692",
+   "name": "Les mettre à tous les endroits liés",
+   "description": "Étiquette d’origine : 🟡\nOù le voir (selon le document) : lieux, objectifs, phases, étirements, mesures, poids, bilan, exercices, zones à ménager, Progrès ; à compléter selon ton retour\nSens du symbole « 🟡 » dans ce document : fait, vérification à finir.\nNiveau Atelier : Rapporté (écrit dans le dépôt, non rejoué par Atelier).",
+   "state": "in_progress",
+   "group": "Demandes (DEMANDES_8_35) — Clarté",
+   "source_kind": "repo_file",
+   "source_ref": "martinznt/Sport : docs/DEMANDES_8_35.md, ligne 38 (section « Clarté »), commit f0ef3b0",
+   "reliability": "reported",
+   "test_ref": ""
+  },
+  {
+   "key": "dem-44676e9639",
+   "name": "App bien organisée, boutons rangés, petits messages pour les choses pas évidentes",
+   "description": "Étiquette d’origine : 🟡\nOù le voir (selon le document) : boutons longs qui passent à la ligne, réglages fins repliés, explications ajoutées ; à juger sur ton téléphone\nSens du symbole « 🟡 » dans ce document : fait, vérification à finir.\nNiveau Atelier : Rapporté (écrit dans le dépôt, non rejoué par Atelier).",
+   "state": "in_progress",
+   "group": "Demandes (DEMANDES_8_35) — Clarté",
+   "source_kind": "repo_file",
+   "source_ref": "martinznt/Sport : docs/DEMANDES_8_35.md, ligne 39 (section « Clarté »), commit f0ef3b0",
+   "reliability": "reported",
+   "test_ref": ""
+  },
+  {
+   "key": "dem-ec935ba261",
+   "name": "À l'étape 1, plus de « précis / très précis » : des cases à cocher (durées des phases, phases, objectifs…)",
+   "description": "Étiquette d’origine : ✅\nOù le voir (selon le document) : Créer une séance, étape 1\nSens du symbole « ✅ » dans ce document : fait et vérifié dans le navigateur.\nNiveau Atelier : Rapporté (écrit dans le dépôt, non rejoué par Atelier).",
+   "state": "done",
+   "group": "Demandes (DEMANDES_8_35) — Créateur de séance",
+   "source_kind": "repo_file",
+   "source_ref": "martinznt/Sport : docs/DEMANDES_8_35.md, ligne 45 (section « Créateur de séance »), commit f0ef3b0",
+   "reliability": "reported",
+   "test_ref": ""
+  },
+  {
+   "key": "dem-677511cbf6",
+   "name": "Ces cases en bas de chaque étape, pour changer mes choix",
+   "description": "Étiquette d’origine : ✅\nOù le voir (selon le document) : bas de chaque étape\nSens du symbole « ✅ » dans ce document : fait et vérifié dans le navigateur.\nNiveau Atelier : Rapporté (écrit dans le dépôt, non rejoué par Atelier).",
+   "state": "done",
+   "group": "Demandes (DEMANDES_8_35) — Créateur de séance",
+   "source_kind": "repo_file",
+   "source_ref": "martinznt/Sport : docs/DEMANDES_8_35.md, ligne 46 (section « Créateur de séance »), commit f0ef3b0",
+   "reliability": "reported",
+   "test_ref": ""
+  },
+  {
+   "key": "dem-37bebb66f1",
+   "name": "« Modifiable / l'app choisit / bloqué » remplacé par quelque chose de clair",
+   "description": "Étiquette d’origine : ✅\nOù le voir (selon le document) : tout se modifie ; « ✏️ modifié par toi »\nSens du symbole « ✅ » dans ce document : fait et vérifié dans le navigateur.\nNiveau Atelier : Rapporté (écrit dans le dépôt, non rejoué par Atelier).",
+   "state": "done",
+   "group": "Demandes (DEMANDES_8_35) — Créateur de séance",
+   "source_kind": "repo_file",
+   "source_ref": "martinznt/Sport : docs/DEMANDES_8_35.md, ligne 47 (section « Créateur de séance »), commit f0ef3b0",
+   "reliability": "reported",
+   "test_ref": ""
+  },
+  {
+   "key": "dem-bd7c1ae2ea",
+   "name": "« Faire avec l'app » : l'app propose, je modifie tout simplement",
+   "description": "Étiquette d’origine : ✅\nOù le voir (selon le document) : « ⚡ Proposer ma séance » donne la séance entière, prête à modifier (✕) ; « ↺ » rend un réglage à l'app\nSens du symbole « ✅ » dans ce document : fait et vérifié dans le navigateur.\nNiveau Atelier : Rapporté (écrit dans le dépôt, non rejoué par Atelier).",
+   "state": "done",
+   "group": "Demandes (DEMANDES_8_35) — Créateur de séance",
+   "source_kind": "repo_file",
+   "source_ref": "martinznt/Sport : docs/DEMANDES_8_35.md, ligne 48 (section « Créateur de séance »), commit f0ef3b0",
+   "reliability": "reported",
+   "test_ref": ""
+  },
+  {
+   "key": "dem-e5d2da66c5",
+   "name": "Objectifs beaucoup mieux faits et beaucoup plus simples à paramétrer",
+   "description": "Étiquette d’origine : ✅\nOù le voir (selon le document) : Profil › Objectifs › « ＋ Ajouter un objectif » (en deux temps) ; étape « Tes objectifs » allégée\nSens du symbole « ✅ » dans ce document : fait et vérifié dans le navigateur.\nNiveau Atelier : Rapporté (écrit dans le dépôt, non rejoué par Atelier).",
+   "state": "done",
+   "group": "Demandes (DEMANDES_8_35) — Créateur de séance",
+   "source_kind": "repo_file",
+   "source_ref": "martinznt/Sport : docs/DEMANDES_8_35.md, ligne 49 (section « Créateur de séance »), commit f0ef3b0",
+   "reliability": "reported",
+   "test_ref": ""
+  },
+  {
+   "key": "dem-21fa00716b",
+   "name": "En bas de l'écran, même pendant l'effort : prochain exercice et nombre de séries",
+   "description": "Étiquette d’origine : ✅\nOù le voir (selon le document) : lecteur de séance\nSens du symbole « ✅ » dans ce document : fait et vérifié dans le navigateur.\nNiveau Atelier : Rapporté (écrit dans le dépôt, non rejoué par Atelier).",
+   "state": "done",
+   "group": "Demandes (DEMANDES_8_35) — Séance en cours",
+   "source_kind": "repo_file",
+   "source_ref": "martinznt/Sport : docs/DEMANDES_8_35.md, ligne 55 (section « Séance en cours »), commit f0ef3b0",
+   "reliability": "reported",
+   "test_ref": ""
+  },
+  {
+   "key": "dem-66b8a269ef",
+   "name": "Qu'on ne voie pas que c'est une IA ni que c'est Gemini (côté membres)",
+   "description": "Étiquette d’origine : ✅ (sauf une ligne)\nOù le voir (selon le document) : « l'assistant » partout ; le destinataire des données (Google ou Cloudflare) reste nommé dans « Qui reçoit ta demande ? », replié : c'est une obligation de transparence ; l'assistant ne prétend jamais être une personne\nSens du symbole « ✅ » dans ce document : fait et vérifié dans le navigateur.\nÉTAT MIXTE dans le document (plusieurs symboles ou une exception) : l’état d’Atelier suit le premier symbole ; à trancher par Martin.\nNiveau Atelier : Rapporté (écrit dans le dépôt, non rejoué par Atelier).",
+   "state": "done",
+   "group": "Demandes (DEMANDES_8_35) — Assistant et captures",
+   "source_kind": "repo_file",
+   "source_ref": "martinznt/Sport : docs/DEMANDES_8_35.md, ligne 61 (section « Assistant et captures »), commit f0ef3b0",
+   "reliability": "reported",
+   "test_ref": ""
+  },
+  {
+   "key": "dem-0e3095bae0",
+   "name": "Étapes pour relier Gemini, à faire moi-même",
+   "description": "Étiquette d’origine : ✅\nOù le voir (selon le document) : DELIVERY_8_35.md et message final\nSens du symbole « ✅ » dans ce document : fait et vérifié dans le navigateur.\nNiveau Atelier : Rapporté (écrit dans le dépôt, non rejoué par Atelier).",
+   "state": "done",
+   "group": "Demandes (DEMANDES_8_35) — Assistant et captures",
+   "source_kind": "repo_file",
+   "source_ref": "martinznt/Sport : docs/DEMANDES_8_35.md, ligne 62 (section « Assistant et captures »), commit f0ef3b0",
+   "reliability": "reported",
+   "test_ref": ""
+  },
+  {
+   "key": "dem-6e713c2373",
+   "name": "Assistant admin aussi efficace qu'une vraie conversation (« rends ça plus clair », « ajoute ça »)",
+   "description": "Étiquette d’origine : 🟡\nOù le voir (selon le document) : Paramètres › Administration › Assistant du site (consignes revues ; à essayer avec la vraie clé Gemini)\nSens du symbole « 🟡 » dans ce document : fait, vérification à finir.\nNiveau Atelier : Rapporté (écrit dans le dépôt, non rejoué par Atelier).",
+   "state": "in_progress",
+   "group": "Demandes (DEMANDES_8_35) — Assistant et captures",
+   "source_kind": "repo_file",
+   "source_ref": "martinznt/Sport : docs/DEMANDES_8_35.md, ligne 63 (section « Assistant et captures »), commit f0ef3b0",
+   "reliability": "reported",
+   "test_ref": ""
+  },
+  {
+   "key": "dem-8144efd2fc",
+   "name": "Joindre une capture d'écran à l'assistant admin, analysée",
+   "description": "Étiquette d’origine : ✅ (avec Gemini)\nOù le voir (selon le document) : même endroit ; vérifié avec une réponse Gemini simulée, pas avec la vraie\nSens du symbole « ✅ » dans ce document : fait et vérifié dans le navigateur.\nNiveau Atelier : Rapporté (écrit dans le dépôt, non rejoué par Atelier).",
+   "state": "done",
+   "group": "Demandes (DEMANDES_8_35) — Assistant et captures",
+   "source_kind": "repo_file",
+   "source_ref": "martinznt/Sport : docs/DEMANDES_8_35.md, ligne 64 (section « Assistant et captures »), commit f0ef3b0",
+   "reliability": "reported",
+   "test_ref": ""
+  },
+  {
+   "key": "dem-9cdeddfc0d",
+   "name": "Capture d'écran jointe aux signalements de bug et aux propositions",
+   "description": "Étiquette d’origine : ✅\nOù le voir (selon le document) : Paramètres › Signaler un bug ; « Proposer une amélioration » ; chez les admins : 📎 et « 🔎 Analyser avec l'assistant »\nSens du symbole « ✅ » dans ce document : fait et vérifié dans le navigateur.\nNiveau Atelier : Rapporté (écrit dans le dépôt, non rejoué par Atelier).",
+   "state": "done",
+   "group": "Demandes (DEMANDES_8_35) — Assistant et captures",
+   "source_kind": "repo_file",
+   "source_ref": "martinznt/Sport : docs/DEMANDES_8_35.md, ligne 65 (section « Assistant et captures »), commit f0ef3b0",
+   "reliability": "reported",
+   "test_ref": ""
+  },
+  {
+   "key": "dem-c05a36866a",
+   "name": "Ne rien oublier de tout ce que j'ai dit",
+   "description": "Étiquette d’origine : ✅\nOù le voir (selon le document) : cette liste\nSens du symbole « ✅ » dans ce document : fait et vérifié dans le navigateur.\nNiveau Atelier : Rapporté (écrit dans le dépôt, non rejoué par Atelier).",
+   "state": "done",
+   "group": "Demandes (DEMANDES_8_35) — Ajoutées ensuite",
+   "source_kind": "repo_file",
+   "source_ref": "martinznt/Sport : docs/DEMANDES_8_35.md, ligne 71 (section « Ajoutées ensuite »), commit f0ef3b0",
+   "reliability": "reported",
+   "test_ref": ""
+  },
+  {
+   "key": "dem-e50f7d9a71",
+   "name": "Sources fiables pour les exercices, l'assistant…, citées dans l'app : repère « Sources » avec les icônes des sources ; un clic montre tous…",
+   "description": "Étiquette d’origine : ✅ / ⚠️\nOù le voir (selon le document) : « 📚 Sources » partout où une source est citée, et sur chaque exercice ; « 🎯 Voir le passage » mène à la phrase exacte lue par le serveur sur PubMed. Limite : PubMed est bloqué depuis l'environnement de travail, donc c'est vérifié avec un faux résumé, et la vraie phrase n'apparaîtra qu'en ligne. Pour 102 exercices sur 315 (technique pure), aucune étude n'est citée, et l'app le dit au lieu d'en inventer une\nSens du symbole « ✅ » dans ce document : fait et vérifié dans le navigateur.\nÉTAT MIXTE dans le document (plusieurs symboles ou une exception) : l’état d’Atelier suit le premier symbole ; à trancher par Martin.\nNiveau Atelier : Rapporté (écrit dans le dépôt, non rejoué par Atelier).",
+   "state": "done",
+   "group": "Demandes (DEMANDES_8_35) — Ajoutées ensuite",
+   "source_kind": "repo_file",
+   "source_ref": "martinznt/Sport : docs/DEMANDES_8_35.md, ligne 72 (section « Ajoutées ensuite »), commit f0ef3b0",
+   "reliability": "reported",
+   "test_ref": ""
+  },
+  {
+   "key": "dem-2a23431cd3",
+   "name": "Supprimer le choix interface simple / avancée : garder seulement l'interface simple",
+   "description": "Étiquette d’origine : ✅\nOù le voir (selon le document) : plus aucun choix dans les Paramètres ; un ancien réglage « Avancée » est sans effet\nSens du symbole « ✅ » dans ce document : fait et vérifié dans le navigateur.\nNiveau Atelier : Rapporté (écrit dans le dépôt, non rejoué par Atelier).",
+   "state": "done",
+   "group": "Demandes (DEMANDES_8_35) — Ajoutées ensuite",
+   "source_kind": "repo_file",
+   "source_ref": "martinznt/Sport : docs/DEMANDES_8_35.md, ligne 73 (section « Ajoutées ensuite »), commit f0ef3b0",
+   "reliability": "reported",
+   "test_ref": ""
+  },
+  {
+   "key": "nonverif-1",
+   "name": "Non vérifié : Les vraies sources en ligne",
+   "state": "to_design",
+   "group": "Non vérifié (DELIVERY_8_35)",
+   "description": "Étiquette d’origine : section « Ce qui n’a pas pu être vérifié ici ».\nTexte du document : Les vraies sources en ligne : le réseau de cet environnement bloque PubMed et les éditeurs. La recherche du passage exact est vérifiée avec un faux résumé PubMed (tests), pas sur le vrai site. En ligne, si PubMed ne répond pas, le lien ouvre simplement le résumé de l'article.\nÉtat d’Atelier « À concevoir » : le document dit que ce point n’a pas pu être vérifié ; aucun état plus précis n’est écrit.\nNiveau Atelier : Rapporté.",
+   "source_kind": "repo_file",
+   "source_ref": "martinznt/Sport : DELIVERY_8_35.md, ligne 56 (« Ce qui n’a pas pu être vérifié ici »), commit f0ef3b0",
+   "reliability": "reported",
+   "test_ref": ""
+  },
+  {
+   "key": "nonverif-2",
+   "name": "Non vérifié : Firefox et Safari (WebKit)",
+   "state": "to_design",
+   "group": "Non vérifié (DELIVERY_8_35)",
+   "description": "Étiquette d’origine : section « Ce qui n’a pas pu être vérifié ici ».\nTexte du document : Firefox et Safari (WebKit) : non installés ici. Le vrai site, la vraie base D1, Gemini et Workers AI réels, les notifications sur de vrais téléphones, un vrai lecteur d'écran.\nÉtat d’Atelier « À concevoir » : le document dit que ce point n’a pas pu être vérifié ; aucun état plus précis n’est écrit.\nNiveau Atelier : Rapporté.",
+   "source_kind": "repo_file",
+   "source_ref": "martinznt/Sport : DELIVERY_8_35.md, ligne 57 (« Ce qui n’a pas pu être vérifié ici »), commit f0ef3b0",
+   "reliability": "reported",
+   "test_ref": ""
+  }
+ ],
+ "decisions": [
+  {
+   "key": "spt-toujours-valables",
+   "title": "Sport — règles « toujours valables » du dernier livrable (pas de déploiement sans Martin, base : ajouts seulement)",
+   "reason": "Pas de déploiement ni de fusion dans main : le ZIP « site sport final » est remis pour relecture. Aucune opération Cloudflare à ta place, pas d'annonce « Envoyer à tous ». Base de données : seulement des ajouts, rien de supprimé. Lien du site : https://seances-sport.pages.dev/",
+   "source_ref": "martinznt/Sport : docs/DEMANDES_8_35.md, ligne 100 (« Toujours valables »), commit f0ef3b0"
+  }
+ ]
+}

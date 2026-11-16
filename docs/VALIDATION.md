@@ -1,3 +1,11 @@
+# Lot 5A — contrôles du 16 novembre 2026 (exécutés en local, Node 22)
+
+- `tsc` OK ; vitest **168/168** (dont 22 de `tests/lot5a-parcours.test.ts`) ; build OK ; régressions OK ; `test:storage` 11/11 ; 5 fichiers demandés 38/38 ; `node --test tests/*.test.mjs` **376/376** ; audit des exigences 598, 0 preuve cassée.
+- Playwright (Chromium préinstallé, 360 et 390 px) : `tests/e2e/lot5a.spec.ts` 2/2, sans débordement ni texte sous 12 px.
+- Contrôle d'extraction : 156 lignes sur 156 retrouvées dans Git (`scripts/check-sites-seed.mjs`) ; 20 lignes tirées au hasard relues à la main : 20/20.
+- **Simulé** : GitHub (vrais fichiers des deux dépôts, requêtes GET seulement). **Réel** : aucun appel à GitHub, aucune IA, aucune production. **Non essayé** : jeton réel, import de l'export, téléphone.
+- Aucune migration ; aucune écriture dans Livre-de-recettes ni Sport.
+
 # Lot 4 — contrôles du 15 novembre 2026 (exécutés en local, Node 22)
 
 - `tsc` OK ; vitest **146/146** (dont 20 de `tests/lot4-parcours.test.ts`) ; build OK ; régressions OK ; `test:storage` 11/11 ; 5 fichiers demandés 38/38 ; `node --test tests/*.test.mjs` **376/376**.

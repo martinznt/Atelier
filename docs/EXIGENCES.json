@@ -4870,5 +4870,95 @@
     "statut": "à faire",
     "preuve": "docs/audits/RAPPORT_LOT_4_2026-11-15.md",
     "limite": "Réponse de Martin attendue (oui ou non avec raisons)."
+  },
+  {
+    "id": "SPR-37-001",
+    "section": 37,
+    "source": "Lot 5A du 16 novembre 2026 (Sport et Livre de recettes suivis dans Atelier, lecture seule)",
+    "exigence": "Fichiers de départ importables pour Livre de recettes (120 fonctionnalités, 4 règles proposées) et Sport (36 fonctionnalités, 1 règle proposée) : source de chaque ligne (fichier, ligne, commit épinglé), étiquette d’origine recopiée, niveau « Rapporté » partout.",
+    "statut": "réalisé",
+    "preuve": "docs/sites/recettes-depart.json ; docs/sites/sport-depart.json ; scripts/build-sites-seed.mjs ; tests/lot5a-parcours.test.ts",
+    "limite": "Table d’états (⚠️ → Bloqué, ⏳ → À concevoir pour Recettes mais En cours pour Sport) = lecture d’Atelier, à valider par Martin. Blocs historiques d’octobre de CE_QUI_MANQUE.txt non repris. Import réel en production : à faire par Martin."
+  },
+  {
+    "id": "SPR-37-002",
+    "section": 37,
+    "source": "Lot 5A du 16 novembre 2026 (Sport et Livre de recettes suivis dans Atelier, lecture seule)",
+    "exigence": "Contrôle d’extraction : chaque ligne reprise est retrouvée dans son texte d’origine (Git, commit épinglé) ; 10 lignes tirées au hasard par site comparées à la main.",
+    "statut": "réalisé",
+    "preuve": "scripts/check-sites-seed.mjs ; docs/audits/RAPPORT_LOT_5A_2026-11-16.md",
+    "limite": "Les 20 lignes tirées sont exactes ; le contrôle automatique compare nom, ligne et étiquette, pas le sens complet des phrases."
+  },
+  {
+    "id": "SPR-37-003",
+    "section": 37,
+    "source": "Lot 5A du 16 novembre 2026 (Sport et Livre de recettes suivis dans Atelier, lecture seule)",
+    "exigence": "Contradictions entre documents des deux dépôts listées « à trancher par Martin » sans choisir.",
+    "statut": "réalisé",
+    "preuve": "docs/sites/A_TRANCHER.md",
+    "limite": "Liste établie par lecture ; d’autres contradictions peuvent exister dans des fichiers non lus."
+  },
+  {
+    "id": "SPR-37-004",
+    "section": 37,
+    "source": "Lot 5A du 16 novembre 2026 (Sport et Livre de recettes suivis dans Atelier, lecture seule)",
+    "exigence": "Une mission réelle par site générée avec le générateur du lot 3, règles propres au dépôt citées au commit épinglé, non envoyée.",
+    "statut": "réalisé",
+    "preuve": "docs/sites/MISSION_RECETTES_generee.md ; docs/sites/MISSION_SPORT_generee.md ; tests/lot5a-parcours.test.ts",
+    "limite": "GitHub simulé avec les vrais fichiers racine ; champs Périmètre, Interdits, Fichiers, Tests écrits par Claude sans lire le code des sites ; qualité non mesurée."
+  },
+  {
+    "id": "SPR-37-005",
+    "section": 37,
+    "source": "Lot 5A du 16 novembre 2026 (Sport et Livre de recettes suivis dans Atelier, lecture seule)",
+    "exigence": "Aucune écriture dans Livre-de-recettes ni Sport : GitHub simulé en GET seulement, clones inchangés, historique GitHub relu.",
+    "statut": "réalisé",
+    "preuve": "tests/lot5a-parcours.test.ts ; docs/audits/RAPPORT_LOT_5A_2026-11-16.md §6",
+    "limite": "Preuve GitHub = tête de main inchangée et absence de branche de cette session le 16 novembre ; ne couvre pas l’avenir."
+  },
+  {
+    "id": "SPR-37-006",
+    "section": 37,
+    "source": "Lot 5A du 16 novembre 2026 (Sport et Livre de recettes suivis dans Atelier, lecture seule)",
+    "exigence": "Isolation A/B : B ne lit, n’aperçoit ni n’importe rien dans les projets de A ; mission de A invisible pour B.",
+    "statut": "réalisé",
+    "preuve": "tests/lot5a-parcours.test.ts",
+    "limite": "Simulation Miniflare, pas la production."
+  },
+  {
+    "id": "SPR-37-007",
+    "section": 37,
+    "source": "Lot 5A du 16 novembre 2026 (Sport et Livre de recettes suivis dans Atelier, lecture seule)",
+    "exigence": "Lecture GitHub réelle des deux dépôts avec le jeton de Martin.",
+    "statut": "à faire",
+    "preuve": "docs/sites/GUIDE_MARTIN_5A.md",
+    "limite": "Jamais essayée : à faire par Martin (dépôt relié en lecture seule)."
+  },
+  {
+    "id": "SPR-37-008",
+    "section": 37,
+    "source": "Lot 5A du 16 novembre 2026 (Sport et Livre de recettes suivis dans Atelier, lecture seule)",
+    "exigence": "Tri de l’export ChatGPT : choisir les conversations de chaque site (outil « Conversations et lots »).",
+    "statut": "à faire",
+    "preuve": "docs/sites/GUIDE_MARTIN_5A.md",
+    "limite": "Conversations de l’export : non importées en production ; aucun contenu de conversation lu ni copié."
+  },
+  {
+    "id": "SPR-37-009",
+    "section": 37,
+    "source": "Lot 5A du 16 novembre 2026 (Sport et Livre de recettes suivis dans Atelier, lecture seule)",
+    "exigence": "Essai sur le Galaxy A05s selon le protocole numéroté.",
+    "statut": "à faire",
+    "preuve": "docs/PROTOCOLE_TELEPHONE_LOT5A.md",
+    "limite": "Téléphone non essayé."
+  },
+  {
+    "id": "SPR-37-010",
+    "section": 37,
+    "source": "Lot 5A du 16 novembre 2026 (Sport et Livre de recettes suivis dans Atelier, lecture seule)",
+    "exigence": "Lecture complète et jugement des deux missions par Martin.",
+    "statut": "à faire",
+    "preuve": "docs/sites/MISSION_RECETTES_generee.md ; docs/sites/MISSION_SPORT_generee.md",
+    "limite": "Réponse de Martin attendue."
   }
 ]
