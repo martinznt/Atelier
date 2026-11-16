@@ -1,0 +1,275 @@
+{
+ "commits": {
+  "martinznt/Livre-de-recettes": "92ec7c54c9987d52fcaa0f838dce01d60c3c7f50",
+  "martinznt/Sport": "f0ef3b008e38f54b28c49d8f1ae9605d07298f29"
+ },
+ "table_etats": {
+  "recettes": {
+   "✅": "done",
+   "🟡": "in_progress",
+   "⏳": "to_design",
+   "⚠️": "blocked"
+  },
+  "sport": {
+   "✅": "done",
+   "🟡": "in_progress",
+   "⏳": "in_progress",
+   "⚠️": "blocked"
+  }
+ },
+ "sens_des_symboles": {
+  "recettes": {
+   "✅": "fait et vérifié dans le navigateur",
+   "🟡": "fait, vérification à finir",
+   "⏳": "à faire",
+   "⚠️": "limite (pas possible)"
+  },
+  "sport": {
+   "✅": "fait et vérifié dans le navigateur",
+   "🟡": "fait, vérification à finir",
+   "⏳": "en cours",
+   "⚠️": "limite (pas possible)"
+  }
+ },
+ "recettes": {
+  "features": 120,
+  "decisions": 4,
+  "lignes_non_reprises": [
+   {
+    "where": "docs/DEMANDES_4_0.md, ligne 123",
+    "section": "Vérification complète (version 4.0.1)",
+    "texte": "Relevé",
+    "raison": "tableau sans colonne « État » : aucun état d’origine, ligne non reprise"
+   },
+   {
+    "where": "docs/DEMANDES_4_0.md, ligne 125",
+    "section": "Vérification complète (version 4.0.1)",
+    "texte": "« Une barre de progression dans une notification de l'app » : elle n'était visible qu'en…",
+    "raison": "tableau sans colonne « État » : aucun état d’origine, ligne non reprise"
+   },
+   {
+    "where": "docs/DEMANDES_4_0.md, ligne 126",
+    "section": "Vérification complète (version 4.0.1)",
+    "texte": "Cette notification était cachée par le message « C'est parti » sur téléphone, et…",
+    "raison": "tableau sans colonne « État » : aucun état d’origine, ligne non reprise"
+   },
+   {
+    "where": "docs/DEMANDES_4_0.md, ligne 127",
+    "section": "Vérification complète (version 4.0.1)",
+    "texte": "Tâche coupée par un redémarrage du serveur : restait « en cours » jusqu'à la tâche…",
+    "raison": "tableau sans colonne « État » : aucun état d’origine, ligne non reprise"
+   },
+   {
+    "where": "docs/DEMANDES_4_0.md, ligne 128",
+    "section": "Vérification complète (version 4.0.1)",
+    "texte": "Annulation au moment précis d'un changement d'étape : pouvait s'afficher « Arrêtée » ou…",
+    "raison": "tableau sans colonne « État » : aucun état d’origine, ligne non reprise"
+   },
+   {
+    "where": "docs/DEMANDES_4_0.md, ligne 129",
+    "section": "Vérification complète (version 4.0.1)",
+    "texte": "Plus de 200 recettes annotées (ou 100 avec des variantes) : la plus ancienne note était…",
+    "raison": "tableau sans colonne « État » : aucun état d’origine, ligne non reprise"
+   },
+   {
+    "where": "docs/DEMANDES_4_0.md, ligne 130",
+    "section": "Vérification complète (version 4.0.1)",
+    "texte": "« Voir comme » : activer les notifications abonnait le téléphone de l'administrateur à…",
+    "raison": "tableau sans colonne « État » : aucun état d’origine, ligne non reprise"
+   },
+   {
+    "where": "docs/DEMANDES_4_0.md, ligne 131",
+    "section": "Vérification complète (version 4.0.1)",
+    "texte": "Clés des notifications : un envoi pouvait les recréer si la lecture était en retard, et…",
+    "raison": "tableau sans colonne « État » : aucun état d’origine, ligne non reprise"
+   },
+   {
+    "where": "docs/DEMANDES_4_0.md, ligne 140",
+    "section": "Inspection (2ᵉ passe, version 4.0.0)",
+    "texte": "Relevé",
+    "raison": "tableau sans colonne « État » : aucun état d’origine, ligne non reprise"
+   },
+   {
+    "where": "docs/DEMANDES_4_0.md, ligne 142",
+    "section": "Inspection (2ᵉ passe, version 4.0.0)",
+    "texte": "Réglages › Affichage : le titre de l'aperçu (« Tarte aux pommes ») presque invisible…",
+    "raison": "tableau sans colonne « État » : aucun état d’origine, ligne non reprise"
+   },
+   {
+    "where": "docs/DEMANDES_4_0.md, ligne 143",
+    "section": "Inspection (2ᵉ passe, version 4.0.0)",
+    "texte": "Fiche : « Quantités » et le nombre de parts en cuivre sur la carte des curseurs,…",
+    "raison": "tableau sans colonne « État » : aucun état d’origine, ligne non reprise"
+   },
+   {
+    "where": "docs/DEMANDES_4_0.md, ligne 144",
+    "section": "Inspection (2ᵉ passe, version 4.0.0)",
+    "texte": "Texte « Très grand » à 320 px : la barre du haut dépassait de 5 px avec la pastille «…",
+    "raison": "tableau sans colonne « État » : aucun état d’origine, ligne non reprise"
+   },
+   {
+    "where": "docs/DEMANDES_4_0.md, ligne 145",
+    "section": "Inspection (2ᵉ passe, version 4.0.0)",
+    "texte": "Texte « Très grand » à 320 px : dans l'éditeur, « Coller plusieurs lignes », « Groupe…",
+    "raison": "tableau sans colonne « État » : aucun état d’origine, ligne non reprise"
+   },
+   {
+    "where": "docs/DEMANDES_4_0.md, ligne 146",
+    "section": "Inspection (2ᵉ passe, version 4.0.0)",
+    "texte": "Texte grand ou très grand sur téléphone : l'en-tête de l'éditeur (qui reste en haut)…",
+    "raison": "tableau sans colonne « État » : aucun état d’origine, ligne non reprise"
+   },
+   {
+    "where": "docs/DEMANDES_4_0.md, ligne 147",
+    "section": "Inspection (2ᵉ passe, version 4.0.0)",
+    "texte": "Texte « Très grand » à 320 px : « Courses », « Planning », « Réglages » collés dans la…",
+    "raison": "tableau sans colonne « État » : aucun état d’origine, ligne non reprise"
+   },
+   {
+    "where": "docs/DEMANDES_4_0.md, ligne 153",
+    "section": "Inspection (1ʳᵉ passe, version 3.6.0)",
+    "texte": "Relevé",
+    "raison": "tableau sans colonne « État » : aucun état d’origine, ligne non reprise"
+   },
+   {
+    "where": "docs/DEMANDES_4_0.md, ligne 155",
+    "section": "Inspection (1ʳᵉ passe, version 3.6.0)",
+    "texte": "8 entrées dans la barre du haut, dont plusieurs pour « ajouter » (Importer, Idées, Sport…)",
+    "raison": "tableau sans colonne « État » : aucun état d’origine, ligne non reprise"
+   },
+   {
+    "where": "docs/DEMANDES_4_0.md, ligne 156",
+    "section": "Inspection (1ʳᵉ passe, version 3.6.0)",
+    "texte": "Profil, sauvegarde, aide, nouveautés, administration éparpillés",
+    "raison": "tableau sans colonne « État » : aucun état d’origine, ligne non reprise"
+   },
+   {
+    "where": "docs/DEMANDES_4_0.md, ligne 157",
+    "section": "Inspection (1ʳᵉ passe, version 3.6.0)",
+    "texte": "Accueil : boutons d'idées en double avec le menu",
+    "raison": "tableau sans colonne « État » : aucun état d’origine, ligne non reprise"
+   },
+   {
+    "where": "docs/DEMANDES_4_0.md, ligne 158",
+    "section": "Inspection (1ʳᵉ passe, version 3.6.0)",
+    "texte": "Fiche sur téléphone : libellés coupés (« Cuis… », « Cour… »), boutons hors de l'écran à…",
+    "raison": "tableau sans colonne « État » : aucun état d’origine, ligne non reprise"
+   },
+   {
+    "where": "docs/DEMANDES_4_0.md, ligne 159",
+    "section": "Inspection (1ʳᵉ passe, version 3.6.0)",
+    "texte": "Fiche : le nombre de parts affiché deux fois (pastille + curseur)",
+    "raison": "tableau sans colonne « État » : aucun état d’origine, ligne non reprise"
+   },
+   {
+    "where": "docs/DEMANDES_4_0.md, ligne 160",
+    "section": "Inspection (1ʳᵉ passe, version 3.6.0)",
+    "texte": "Fiche sur téléphone : curseurs repoussés en 2ᵉ page par la barre du haut",
+    "raison": "tableau sans colonne « État » : aucun état d’origine, ligne non reprise"
+   },
+   {
+    "where": "docs/DEMANDES_4_0.md, ligne 161",
+    "section": "Inspection (1ʳᵉ passe, version 3.6.0)",
+    "texte": "Menu « Plus » : Échap ne le fermait pas tout de suite",
+    "raison": "tableau sans colonne « État » : aucun état d’origine, ligne non reprise"
+   },
+   {
+    "where": "docs/DEMANDES_4_0.md, ligne 162",
+    "section": "Inspection (1ʳᵉ passe, version 3.6.0)",
+    "texte": "Mode cuisine : écran vide tant que le plein écran n'était pas accordé",
+    "raison": "tableau sans colonne « État » : aucun état d’origine, ligne non reprise"
+   },
+   {
+    "where": "docs/DEMANDES_4_0.md, ligne 163",
+    "section": "Inspection (1ʳᵉ passe, version 3.6.0)",
+    "texte": "Page à 390 px : un libellé trop long faisait déborder la page",
+    "raison": "tableau sans colonne « État » : aucun état d’origine, ligne non reprise"
+   },
+   {
+    "where": "docs/DEMANDES_4_0.md, ligne 164",
+    "section": "Inspection (1ʳᵉ passe, version 3.6.0)",
+    "texte": "Filtres de la liste des recettes trop serrés sur téléphone",
+    "raison": "tableau sans colonne « État » : aucun état d’origine, ligne non reprise"
+   },
+   {
+    "where": "docs/DEMANDES_4_0.md, ligne 199",
+    "section": "Demande du 16 octobre : « regarde les sites de recettes pour le sport et les pros, pour créer des recettes même hyper complexes, et dire simplement « je veux ajouter ça à la recette » » (version 4.3.0)",
+    "texte": "La suite",
+    "raison": "état illisible (aucun des quatre symboles) : ligne non reprise"
+   }
+  ],
+  "etats_mixtes": [
+   {
+    "where": "docs/DEMANDES_4_0.md, ligne 184",
+    "texte": "Tout ce qui peut améliorer le site",
+    "etiquette": "✅ 18 propositions classées (données et sécurité, téléphone, technique) ; « Fais tout » : fait en 4.4.0 (en ligne…"
+   }
+  ]
+ },
+ "sport": {
+  "features": 36,
+  "decisions": 1,
+  "lignes_non_reprises": [
+   {
+    "where": "docs/DEMANDES_8_35.md, ligne 79",
+    "section": "Trouvé et corrigé pendant la vérification finale",
+    "texte": "Ce qui manquait",
+    "raison": "tableau sans colonne « État » : aucun état d’origine, ligne non reprise"
+   },
+   {
+    "where": "docs/DEMANDES_8_35.md, ligne 81",
+    "section": "Trouvé et corrigé pendant la vérification finale",
+    "texte": "« Mes phases » et le Carnet d'escalade",
+    "raison": "tableau sans colonne « État » : aucun état d’origine, ligne non reprise"
+   },
+   {
+    "where": "docs/DEMANDES_8_35.md, ligne 82",
+    "section": "Trouvé et corrigé pendant la vérification finale",
+    "texte": "Le programme en cours",
+    "raison": "tableau sans colonne « État » : aucun état d’origine, ligne non reprise"
+   },
+   {
+    "where": "docs/DEMANDES_8_35.md, ligne 83",
+    "section": "Trouvé et corrigé pendant la vérification finale",
+    "texte": "« ✓ Séance enregistrée » : ce que la séance change pour la suite",
+    "raison": "tableau sans colonne « État » : aucun état d’origine, ligne non reprise"
+   },
+   {
+    "where": "docs/DEMANDES_8_35.md, ligne 84",
+    "section": "Trouvé et corrigé pendant la vérification finale",
+    "texte": "La « Petite question » du profil",
+    "raison": "tableau sans colonne « État » : aucun état d’origine, ligne non reprise"
+   },
+   {
+    "where": "docs/DEMANDES_8_35.md, ligne 85",
+    "section": "Trouvé et corrigé pendant la vérification finale",
+    "texte": "Le chrono",
+    "raison": "tableau sans colonne « État » : aucun état d’origine, ligne non reprise"
+   },
+   {
+    "where": "docs/DEMANDES_8_35.md, ligne 86",
+    "section": "Trouvé et corrigé pendant la vérification finale",
+    "texte": "« ✍️ Avec tes mots » dans le créateur sans « Mes objectifs » coché",
+    "raison": "tableau sans colonne « État » : aucun état d’origine, ligne non reprise"
+   },
+   {
+    "where": "docs/DEMANDES_8_35.md, ligne 87",
+    "section": "Trouvé et corrigé pendant la vérification finale",
+    "texte": "Les chiffres détaillés de Progrès (séances, minutes, séries sur 7, 30, 90 jours, charge,…",
+    "raison": "tableau sans colonne « État » : aucun état d’origine, ligne non reprise"
+   }
+  ],
+  "etats_mixtes": [
+   {
+    "where": "docs/DEMANDES_8_35.md, ligne 61",
+    "texte": "Qu'on ne voie pas que c'est une IA ni que c'est Gemini (côté membres)",
+    "etiquette": "✅ (sauf une ligne)"
+   },
+   {
+    "where": "docs/DEMANDES_8_35.md, ligne 72",
+    "texte": "Sources fiables pour les exercices, l'assistant…, citées dans l'app : repère « Sources »…",
+    "etiquette": "✅ / ⚠️"
+   }
+  ]
+ }
+}

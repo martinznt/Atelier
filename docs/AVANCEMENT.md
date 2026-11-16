@@ -1,3 +1,10 @@
+# 16 novembre 2026 — Lot 5A : Sport et Livre de recettes suivis dans Atelier, lecture seule (aucune migration)
+
+**Fait (exécuté en local, GitHub simulé) :** deux fichiers de départ importables (Recettes : 120 fonctionnalités + 4 règles proposées ; Sport : 36 + 1), chaque ligne avec fichier, ligne et commit épinglé, étiquette d'origine recopiée, niveau « Rapporté » ; contrôle de 20 lignes au hasard (20/20 exactes) et de 156 lignes automatiquement ; 13 contradictions listées « à trancher » ; une mission préparée par site, non envoyée ; guide de tri de l'export ; protocole téléphone ; aucune écriture dans les deux dépôts (têtes de `main` inchangées). Vitest 168/168, `node --test` 376/376, Playwright 360 et 390 px 2/2.
+**Non fait / non vérifié :** import réel (Martin), conversations de l'export non importées, lecture GitHub avec le jeton réel, lecture des missions par Martin, téléphone. Rapport : `docs/audits/RAPPORT_LOT_5A_2026-11-16.md` ; contradictions : `docs/sites/A_TRANCHER.md` ; guide : `docs/sites/GUIDE_MARTIN_5A.md`.
+
+---
+
 # 15 novembre 2026 — Lot 4 : Atelier dans Atelier, banc d'essai (aucune migration)
 
 **Fait (exécuté en local, GitHub simulé) :** fichier de départ importable (94 fonctionnalités avec source et niveau réels, 12 décisions « Proposées »), import avec aperçu, sans doublon ni suppression ni modification, guide pas à pas, protocole téléphone, parcours complet testé à 360 et 390 px, mission du lot 5A générée localement et non envoyée, 14 manques listés comme fonctionnalités « à concevoir », 3 défauts corrigés avec tests. Vitest 146/146, `node --test` 376/376, Playwright 2/2.
