@@ -13,7 +13,9 @@ const tables={
  handoff_packages:['content_hash','status'],plan_tasks:['depends_on','proof','work_kind','do_not_touch'],repositories:['verified_at'],
  conversations:['category','status'],export_conversations:['segment','meta','source_index'],export_attachment_refs:['link_source','note'],export_nodes:[...N0022.export_nodes],export_segments:[...N0022.export_segments],export_annexes:[...N0022.export_annexes],export_links:[...N0022.export_links],atelier_questions:['dedupe_key'],prompt_versions:['locked','sent_at'],ref_audit_files:['read_status'],quota_readings:['used_percent','source'],checkpoints:['next_action'],export_batches:['ai_consent_at'],analysis_items:['quote_verified','agreement'],export_files:['sniff_kind','sha256','group_name'],
  project_setup:['project_id','template','feature_seq'],project_modules:['project_id','module_key','enabled'],item_lifecycle:['kind','item_id','status','reliability','source_ref','proof_kind','replaced_by_id'],lifecycle_events:['kind','item_id','to_status','to_reliability','reason','author_kind'],project_features:['code','name','state','group_name'],feature_links:['feature_id','target_kind','target_id'],
- missions:['repo_full_name','rules_commit','executor_family','verdict','verdict_evidence']
+ missions:['repo_full_name','rules_commit','executor_family','verdict','verdict_evidence'],
+ mockups:['page_name','screen_height','palette','start_state'],mockup_images:['mime','bytes','sha256','data'],mockup_groups:['mockup_id','name','position'],
+ mockup_blocks:['kind','label','group_id','fill','text_color','feature_id','behavior']
 };
 const fake=(t)=>({prepare:sql=>({all:async()=>{const m=/table_info\((\w+)\)/.exec(sql);return {results:(t[m[1]]||[]).map(name=>({name}))};}})});
 test('toutes les migrations présentes : complet, liste appliquée, rien de manquant',async()=>{
@@ -78,4 +80,11 @@ test('0024 absente (table missions) : déclarée manquante, antérieures intacte
  const {missions:_m,...without}=tables;
  const s=await schemaStatus(fake(without));
  assert.equal(s.complete,false);assert.deepEqual(s.missing,['0024']);assert.ok(s.applied.includes('0023'));
+});
+test('0025 : tout présent → appliquée ; une table ou une colonne manquante → seule 0025 manquante, 0024 intacte',async()=>{
+ let s=await status(tables);assert.ok(s.applied.includes('0025'));assert.equal(s.complete,true);
+ for(const t of ['mockups','mockup_images','mockup_groups','mockup_blocks']){
+  s=await status({...tables,[t]:undefined});assert.equal(s.complete,false);assert.deepEqual(s.missing,['0025'],t);assert.ok(s.applied.includes('0024'));
+ }
+ s=await status(without('mockup_blocks','feature_id'));assert.deepEqual(s.missing,['0025']);
 });

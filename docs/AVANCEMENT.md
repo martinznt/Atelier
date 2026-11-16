@@ -1,3 +1,9 @@
+# 16 novembre 2026 — Lot 5B, étape 5B-1 : maquette d’écran (capture, blocs, affichage) — migration 0025 additive
+
+**Fait (exécuté en local, D1 locale) :** modèle de maquette (4 tables), capture de départ réduite dans le navigateur (39,9 Ko pour une vraie capture d’écran, 145,6 Ko au pire cas), blocs calqués avec groupe, couleurs et lien vers les fonctionnalités, écran de départ fixé une fois, contexte du projet en lecture seule, isolation A/B testée. **Non fait / non vérifié :** téléphone, migration en production, déplacement/groupement/couleurs (5B-2), fiche et mission (5B-3), guidage (5B-4), discussion (5B-5), essai décisif de Martin. Rapport : `docs/audits/RAPPORT_LOT_5B_2026-11-16.md`.
+
+---
+
 # 16 novembre 2026 — Lot 5A : Sport et Livre de recettes suivis dans Atelier, lecture seule (aucune migration)
 
 **Fait (exécuté en local, GitHub simulé) :** deux fichiers de départ importables (Recettes : 120 fonctionnalités + 4 règles proposées ; Sport : 36 + 1), chaque ligne avec fichier, ligne et commit épinglé, étiquette d'origine recopiée, niveau « Rapporté » ; contrôle de 20 lignes au hasard (20/20 exactes) et de 156 lignes automatiquement ; 13 contradictions listées « à trancher » ; une mission préparée par site, non envoyée ; guide de tri de l'export ; protocole téléphone ; aucune écriture dans les deux dépôts (têtes de `main` inchangées). Vitest 168/168, `node --test` 376/376, Playwright 360 et 390 px 2/2.
