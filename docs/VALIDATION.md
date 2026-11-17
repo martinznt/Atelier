@@ -1,3 +1,9 @@
+# Lot 5B (5B-2) — contrôles du 17 novembre 2026 (exécutés en local, Node 22)
+
+- `tsc` OK ; vitest **195/195** ; `node --test tests/*.test.mjs` **443/443** ; régressions OK ; `test:storage` 11/11 ; `test:core` OK ; `test:bridge` 7/7 ; build OK ; Playwright `lot5b-edit` 5/5 (Android et ordinateur), `lot5b` 3/3 ; audit des exigences 616, 0 preuve cassée.
+- **Utilisé en vrai** : application lancée en local, Chromium 360 et 390 px, souris et événements tactiles ; captures dans `docs/audits/preuves/lot5b/`. **NON PROUVÉ** : Galaxy A05s, production.
+
+---
 # Lot 5B (5B-1) — contrôles du 16 novembre 2026 (exécutés en local, Node 22)
 
 - `tsc` OK ; vitest **185/185** ; build OK ; régressions OK ; `test:storage` 11/11 ; 5 fichiers demandés 38/38 ; `node --test tests/*.test.mjs` **396/396** ; Playwright `tests/e2e/lot5b.spec.ts` (Chromium de bureau, 360 et 390 px) **3/3**.

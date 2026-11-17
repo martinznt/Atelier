@@ -1,3 +1,8 @@
+# 17 novembre 2026 — Lot 5B, étape 5B-2 : modifier la maquette (aucune migration)
+
+**Fait (utilisé en vrai dans l’application lancée en local, captures dans `docs/audits/preuves/lot5b/`) :** glisser à la souris et au doigt, pavé de flèches, placer sous un bloc, taille, grouper/séparer/déplacer un groupe, couleurs des palettes lues dans les dépôts des deux sites, supprimer, annuler/rétablir, protection contre deux écrans. **NON PROUVÉ :** Galaxy A05s, usage en production. Sauvegarde : point de restauration Time Travel 2026-11-17T15:52:54Z, aucun export SQL (jeton refusé par Martin). Rapport : `docs/audits/RAPPORT_LOT_5B_2026-11-17.md`.
+
+---
 # 16 novembre 2026 — Lot 5B, étape 5B-1 : maquette d’écran (capture, blocs, affichage) — migration 0025 additive
 
 **Fait (exécuté en local, D1 locale) :** modèle de maquette (4 tables), capture de départ réduite dans le navigateur (39,9 Ko pour une vraie capture d’écran, 145,6 Ko au pire cas), blocs calqués avec groupe, couleurs et lien vers les fonctionnalités, écran de départ fixé une fois, contexte du projet en lecture seule, isolation A/B testée. **Non fait / non vérifié :** téléphone, migration en production, déplacement/groupement/couleurs (5B-2), fiche et mission (5B-3), guidage (5B-4), discussion (5B-5), essai décisif de Martin. Rapport : `docs/audits/RAPPORT_LOT_5B_2026-11-16.md`.

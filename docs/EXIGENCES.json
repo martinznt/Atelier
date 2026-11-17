@@ -5045,11 +5045,11 @@
   {
     "id": "MAQ-38-010",
     "section": 38,
-    "source": "Lot 5B, étape 5B-1 du 16 novembre 2026 (maquette d'écran, modèle et affichage)",
+    "source": "Lot 5B, étape 5B-2 du 17 novembre 2026 (modifier la maquette)",
     "exigence": "Modifier au doigt et par boutons (déplacer, monter/descendre, grouper/séparer, couleurs), annuler/rétablir.",
-    "statut": "à faire",
-    "preuve": "tests/e2e/lot5b.spec.ts",
-    "limite": "Étape 5B-2 : rien de modifiable à cette étape (suppression de bloc incluse)."
+    "statut": "réalisé",
+    "preuve": "server/mockup-core.ts ; web/mockup-edit.ts ; web/MockupEditor.tsx ; tests/mockup-ops.test.mjs ; tests/mockup-edit.test.mjs ; tests/mockups.test.ts ; tests/e2e/lot5b-edit.spec.ts ; docs/audits/preuves/lot5b/5b2-06a-glisser-souris-pendant.png",
+    "limite": "Utilisé en vrai dans l'application lancée en local (Chromium, 360 et 390 px, souris et toucher envoyé par le protocole de Chromium). Galaxy A05s : NON PROUVÉ. Production : NON PROUVÉ (aucun compte d'essai). Annuler/rétablir est perdu si la page est rechargée."
   },
   {
     "id": "MAQ-38-011",
@@ -5086,5 +5086,41 @@
     "statut": "à faire",
     "preuve": "docs/PROTOCOLE_TELEPHONE_LOT5B.md",
     "limite": "Téléphone non essayé."
+  },
+  {
+    "id": "MAQ-38-015",
+    "section": 38,
+    "source": "Lot 5B, étape 5B-2 du 17 novembre 2026 (modifier la maquette)",
+    "exigence": "Palettes des deux sites lues en lecture seule dans les dépôts (fichier, ligne, commit épinglé) : Livre de recettes 22 couleurs (public/css/app.css), Sport 14 couleurs (public/style.css) ; couleur hors palette signalée.",
+    "statut": "réalisé",
+    "preuve": "scripts/build-palettes.mjs ; server/site-palettes.ts ; tests/mockup-ops.test.mjs ; docs/audits/preuves/lot5b/5b2-04b-palette-recettes.png",
+    "limite": "Thème sombre par défaut seulement ; les autres thèmes des sites ne sont pas repris. Commits figés : à régénérer si les sites changent."
+  },
+  {
+    "id": "MAQ-38-016",
+    "section": 38,
+    "source": "Lot 5B, étape 5B-2 du 17 novembre 2026 (modifier la maquette)",
+    "exigence": "Modifications en tout ou rien : un lot de 12 opérations au plus est validé en mémoire puis écrit en une transaction ; une opération fautive n'applique rien.",
+    "statut": "réalisé",
+    "preuve": "server/mockup-core.ts ; server/routes/mockups.ts ; tests/mockup-ops.test.mjs ; tests/mockups.test.ts",
+    "limite": "D1 locale (Miniflare) ; D1 de production : NON PROUVÉ."
+  },
+  {
+    "id": "MAQ-38-017",
+    "section": 38,
+    "source": "Lot 5B, étape 5B-2 du 17 novembre 2026 (modifier la maquette)",
+    "exigence": "Deux écrans ouverts en même temps : le numéro de version de la maquette empêche d'écraser une modification ; le second écran reçoit un message clair et se recharge.",
+    "statut": "réalisé",
+    "preuve": "server/routes/mockups.ts ; tests/mockups.test.ts ; tests/e2e/lot5b-edit.spec.ts ; docs/audits/preuves/lot5b/5b2-08-conflit-deux-ecrans.png",
+    "limite": "Vérifié en local avec deux requêtes simultanées."
+  },
+  {
+    "id": "MAQ-38-018",
+    "section": 38,
+    "source": "Lot 5B, étape 5B-2 du 17 novembre 2026 (modifier la maquette)",
+    "exigence": "Écriture économe pour l'offre gratuite de D1 : déplacer un groupe entier ou rattacher plusieurs blocs = une seule requête ; 45 requêtes au plus par lot.",
+    "statut": "réalisé",
+    "preuve": "server/mockup-core.ts ; tests/mockup-ops.test.mjs",
+    "limite": "Limite de 50 requêtes par appel de l'offre gratuite : lue dans docs/LIMITES_GRATUITES.md (R), non mesurée en production."
   }
 ]

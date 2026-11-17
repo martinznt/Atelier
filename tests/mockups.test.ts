@@ -83,7 +83,7 @@ describe('maquettes d’écran (5B-1)',()=>{
   const m=await newMockup('Capture courte');await put(m.id,webp(720,1560));await json(`/mockups/${m.id}/blocks`,'POST',block());
   const r=await put(m.id,webp(360,300));expect(r.status).toBe(409);expect((await json(`/mockups/${m.id}`)).body.image.height).toBe(1560);
  });
- it('fixe l’écran de départ une seule fois ; ensuite plus de bloc, de groupe ni de nouvelle capture',async()=>{
+ it('fixe l’écran de départ une seule fois ; ensuite la capture est figée mais les blocs restent modifiables (5B-2)',async()=>{
   const m=await newMockup('Départ');await put(m.id,webp(720,1560));
   expect((await json(`/mockups/${m.id}/lock-start`,'POST',{})).status).toBe(409); // aucun bloc
   await json(`/mockups/${m.id}/groups`,'POST',{name:'Haut'});const gid=(await json(`/mockups/${m.id}`)).body.groups[0].id;
@@ -92,17 +92,19 @@ describe('maquettes d’écran (5B-1)',()=>{
   const saved=JSON.parse((await db.prepare('SELECT start_state FROM mockups WHERE id=?').bind(m.id).first<any>())!.start_state);
   expect(saved).toHaveLength(1);expect(saved[0]).toMatchObject({kind:'button',label:'Bouton Enregistrer',x:16,y:600,w:328,h:48,group_name:'Haut',fill:'#ffffff',feature_id:featA});
   expect((await json(`/mockups/${m.id}/lock-start`,'POST',{})).status).toBe(409);
-  expect((await json(`/mockups/${m.id}/blocks`,'POST',block())).status).toBe(409);
-  expect((await json(`/mockups/${m.id}/groups`,'POST',{name:'Autre'})).status).toBe(409);
-  expect((await put(m.id,webp(720,1560))).status).toBe(409);
-  expect((await json(`/mockups/${m.id}`)).body.blocks).toHaveLength(1);
+  expect((await put(m.id,webp(720,1560))).status).toBe(409); // la capture de départ ne change plus
+  expect((await json(`/mockups/${m.id}/blocks`,'POST',block({label:'Après le départ',y:500}))).status).toBe(201); // on peut modifier
+  expect((await json(`/mockups/${m.id}/groups`,'POST',{name:'Autre'})).status).toBe(201);
+  // la copie de départ, elle, ne bouge plus : elle garde 1 bloc, même si la maquette en a maintenant 2
+  expect(JSON.parse((await db.prepare('SELECT start_state FROM mockups WHERE id=?').bind(m.id).first<any>())!.start_state)).toHaveLength(1);
+  expect((await json(`/mockups/${m.id}`)).body.blocks).toHaveLength(2);
  });
  it('refuse de fixer l’écran de départ sans capture',async()=>{
   const m=await newMockup('Sans image');expect((await json(`/mockups/${m.id}/lock-start`,'POST',{})).status).toBe(409);
  });
  it('liste les maquettes d’un projet avec leur état',async()=>{
   const r=await json(`/mockups?project=${projectA}`);expect(r.status).toBe(200);const names=r.body.items.map((x:any)=>x.title);expect(names).toContain('Départ');
-  const dep=r.body.items.find((x:any)=>x.title==='Départ');expect(dep).toMatchObject({has_image:true,block_count:1,start_fixed:true});expect(dep.image.bytes).toBe(64);expect('data' in (dep.image||{})).toBe(false);
+  const dep=r.body.items.find((x:any)=>x.title==='Départ');expect(dep).toMatchObject({has_image:true,block_count:2,start_fixed:true});expect(dep.image.bytes).toBe(64);expect('data' in (dep.image||{})).toBe(false);
  });
 });
 
@@ -160,5 +162,86 @@ describe('isolation entre comptes (A contre B)',()=>{
   expect(ex.body.mockups.some((m:any)=>m.title==='Secret de A')).toBe(true);expect(ex.body.mockup_blocks.some((x:any)=>x.label==='Bloc privé de A')).toBe(true);
   expect(ex.body.mockup_images.some((x:any)=>x.mockup_id===mid&&x.data.length>0)).toBe(true);
   const exB=await json('/account/export?metadata=true','GET',undefined,b);expect(JSON.stringify(exB.body)).not.toMatch(/Secret de A|Bloc privé de A/);expect(exB.body.mockups.map((m:any)=>m.title)).toEqual(['De Bob']);
+ });
+});
+
+describe('modifier la maquette (5B-2)',()=>{
+ const ops=(id:string,revision:number,o:any[],cookie=a)=>json(`/mockups/${id}/ops`,'POST',{revision,ops:o},cookie);
+ let m:any,b1:string,b2:string,b3:string;
+ beforeAll(async()=>{
+  m=await newMockup('Édition');await put(m.id,webp(720,1560));
+  for(const [label,y] of [['Un',100],['Deux',200],['Trois',300]] as [string,number][])await json(`/mockups/${m.id}/blocks`,'POST',block({label,y,h:40,w:100,x:16}));
+  const d=(await json(`/mockups/${m.id}`)).body;[b1,b2,b3]=d.blocks.map((x:any)=>x.id);m=d;
+ });
+ const cur=async()=>(await json(`/mockups/${m.id}`)).body;
+ it('palettes des deux sites : couleurs réelles, avec fichier, ligne et commit ; choix enregistré',async()=>{
+  const p=await json('/mockups/palettes');expect(p.status).toBe(200);expect(p.body.palettes.map((x:any)=>x.key)).toEqual(['recettes','sport']);
+  expect(p.body.palettes[0].colors.find((c:any)=>c.token==='--accent')).toMatchObject({hex:'#d39a62',line:49});expect(p.body.palettes[0].commit).toMatch(/^[0-9a-f]{40}$/);
+  const r=await json(`/mockups/${m.id}/palette`,'PUT',{site:'recettes'});expect(r.status).toBe(200);expect(r.body.palette.key).toBe('recettes');expect(r.body.palette.colors.length).toBeGreaterThan(10);
+  expect((await json(`/mockups/${m.id}/palette`,'PUT',{site:'inconnu'})).status).toBe(400);
+  expect((await json(`/mockups/${m.id}/palette`,'PUT',{site:'sport'},b)).status).toBe(404);
+  expect((await json(`/mockups/${m.id}`)).body.palette.key).toBe('recettes');
+ });
+ it('déplace, redimensionne et colorie en un lot ; la version augmente ; le résultat est relu tel quel',async()=>{
+  let d=await cur();const rev=d.revision;
+  const r=await ops(m.id,rev,[{op:'update',id:b1,patch:{x:40,y:150,w:200}},{op:'update',id:b2,patch:{fill:'#D39A62',text_color:'#14110e'}}]);
+  expect(r.status).toBe(200);expect(r.body.revision).toBe(rev+1);
+  const x=r.body.blocks.find((q:any)=>q.id===b1),y=r.body.blocks.find((q:any)=>q.id===b2);
+  expect(x).toMatchObject({x:40,y:150,w:200,h:40});expect(y).toMatchObject({fill:'#d39a62',text_color:'#14110e'});
+ });
+ it('annuler = rejouer l’inverse : on retrouve exactement l’état d’avant',async()=>{
+  let d=await cur();const before=JSON.stringify(d.blocks.map((q:any)=>[q.id,q.x,q.y,q.w,q.h,q.fill,q.group_name]));
+  let r=await ops(m.id,d.revision,[{op:'group',ids:[b1,b2],name:'Haut'},{op:'update',id:b3,patch:{x:60}}]);expect(r.status).toBe(200);
+  expect(r.body.groups.map((g:any)=>g.name)).toEqual(['Haut']);expect(r.body.blocks.find((q:any)=>q.id===b1).group_name).toBe('Haut');
+  r=await ops(m.id,r.body.revision,[{op:'ungroup',ids:[b1,b2]},{op:'delete_group',name:'Haut'},{op:'update',id:b3,patch:{x:16}}]);expect(r.status).toBe(200);
+  expect(JSON.stringify(r.body.blocks.map((q:any)=>[q.id,q.x,q.y,q.w,q.h,q.fill,q.group_name]))).toBe(before);expect(r.body.groups).toEqual([]);
+ });
+ it('déplace un groupe entier d’un coup (une seule requête) et refuse s’il sortirait de l’écran',async()=>{
+  let d=await cur();let r=await ops(m.id,d.revision,[{op:'group',ids:[b1,b2,b3],name:'Tout'}]);
+  const ys=r.body.blocks.map((q:any)=>q.y);r=await ops(m.id,r.body.revision,[{op:'move_group',name:'Tout',dx:10,dy:25}]);expect(r.status).toBe(200);
+  expect(r.body.blocks.map((q:any)=>q.y)).toEqual(ys.map((v:number)=>v+25));
+  const rev=r.body.revision;const bad=await ops(m.id,rev,[{op:'move_group',name:'Tout',dx:0,dy:5000}]);expect(bad.status).toBe(400);
+  expect((await cur()).revision).toBe(rev); // rien n'a bougé, la version non plus
+  const far=await ops(m.id,rev,[{op:'move_group',name:'Tout',dx:0,dy:600}]);expect(far.status).toBe(400);expect(far.body.error||far.body.message||JSON.stringify(far.body)).toMatch(/sortirait/);
+ });
+ it('tout ou rien : un lot dont la dernière opération est fautive ne change RIEN (ni blocs, ni version)',async()=>{
+  const d=await cur(),snap=JSON.stringify(d.blocks);
+  const r=await ops(m.id,d.revision,[{op:'update',id:b1,patch:{x:99}},{op:'update',id:b2,patch:{x:-4}}]);expect(r.status).toBe(400);
+  const after=await cur();expect(JSON.stringify(after.blocks)).toBe(snap);expect(after.revision).toBe(d.revision);
+ });
+ it('deux écrans en même temps : un seul lot passe, l’autre reçoit « a changé » et ne modifie rien',async()=>{
+  const d=await cur();
+  const [r1,r2]=await Promise.all([ops(m.id,d.revision,[{op:'update',id:b1,patch:{y:11}}]),ops(m.id,d.revision,[{op:'update',id:b1,patch:{y:22}}])]);
+  expect([r1.status,r2.status].sort()).toEqual([200,409]);
+  const final=(await cur());expect(final.revision).toBe(d.revision+1);expect([11,22]).toContain(final.blocks.find((q:any)=>q.id===b1).y);
+  const stale=await ops(m.id,d.revision,[{op:'update',id:b1,patch:{y:33}}]);expect(stale.status).toBe(409);expect(JSON.stringify(stale.body)).toMatch(/Rechargez/);
+ });
+ it('supprimer puis annuler (ajout avec le même identifiant) rend le même bloc ; ajouter crée un bloc',async()=>{
+  let d=await cur();const old=d.blocks.find((q:any)=>q.id===b3);
+  let r=await ops(m.id,d.revision,[{op:'delete',id:b3}]);expect(r.body.blocks.map((q:any)=>q.id)).not.toContain(b3);
+  r=await ops(m.id,r.body.revision,[{op:'add',block:{id:b3,kind:old.kind,label:old.label,x:old.x,y:old.y,w:old.w,h:old.h,fill:old.fill,text_color:old.text_color,behavior:old.behavior,group_name:old.group_name,feature_id:old.feature?.id??null}}]);
+  expect(r.status).toBe(200);expect(r.body.blocks.find((q:any)=>q.id===b3)).toMatchObject({label:old.label,x:old.x,y:old.y,w:old.w,h:old.h,group_name:old.group_name});
+  const n=await ops(m.id,r.body.revision,[{op:'add',block:{kind:'card',label:'Nouvelle carte',x:0,y:400,w:360,h:120,feature_id:featA}}]);expect(n.status).toBe(200);
+  expect(n.body.blocks.at(-1)).toMatchObject({label:'Nouvelle carte',feature:{code:'F-0001'}});
+ });
+ it('refus clairs : fonctionnalité d’un autre compte, bloc d’un autre compte, champ interdit, lot trop long',async()=>{
+  const d=await cur();
+  expect((await ops(m.id,d.revision,[{op:'update',id:b1,patch:{feature_id:featB}}])).status).toBe(400);
+  expect((await ops(m.id,d.revision,[{op:'update',id:crypto.randomUUID(),patch:{x:1}}])).status).toBe(400);
+  expect((await ops(m.id,d.revision,[{op:'update',id:b1,patch:{id:b2}}])).status).toBe(400);
+  expect((await ops(m.id,d.revision,Array.from({length:13},()=>({op:'update',id:b1,patch:{x:1}})))).status).toBe(400);
+  expect((await ops(m.id,d.revision,[])).status).toBe(400);
+ });
+ it('la copie de l’écran de départ ne change jamais, même après des modifications',async()=>{
+  const x=await newMockup('Référence');await put(x.id,webp(720,1560));const bl=(await json(`/mockups/${x.id}/blocks`,'POST',block({label:'Fixe',y:100,h:40}))).body.blocks[0];
+  await json(`/mockups/${x.id}/lock-start`,'POST',{});const rev=(await json(`/mockups/${x.id}`)).body.revision;
+  const r=await ops(x.id,rev,[{op:'update',id:bl.id,patch:{y:300,fill:'#c8914d'}}]);expect(r.status).toBe(200);
+  const start=JSON.parse((await db.prepare('SELECT start_state FROM mockups WHERE id=?').bind(x.id).first<any>())!.start_state);
+  expect(start[0]).toMatchObject({y:100,fill:''});expect(r.body.blocks[0]).toMatchObject({y:300,fill:'#c8914d'});
+ });
+ it('A contre B : B ne peut ni modifier ni lire la maquette de A par ops (404, rien ne change)',async()=>{
+  const d=await cur(),snap=JSON.stringify(d.blocks);
+  const r=await ops(m.id,d.revision,[{op:'delete',id:b1}],b);expect(r.status).toBe(404);expect(JSON.stringify(r.body)).not.toMatch(/Un|Deux/);
+  const after=await cur();expect(JSON.stringify(after.blocks)).toBe(snap);expect(after.revision).toBe(d.revision);
  });
 });

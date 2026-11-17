@@ -4,7 +4,8 @@
 import {Hono} from 'hono';import {z} from 'zod';
 import {event,fail,jsonBody,many,now,one,owned,run,uid,userId} from '../core.ts';
 import {legacyDecision,effectiveReliability,RELIABILITY_VIEW,LIFE_LABEL} from '../lifecycle-core.ts';
-import {BLOCK_KINDS,BLOCK_LABEL,MAX_BLOCKS,MAX_GROUPS,MAX_MOCKUPS_PER_PROJECT,MAX_USER_IMAGE_BYTES,MockupError,SCREEN_WIDTH,cleanBlock,cleanTitle,screenHeightFor,validateImage} from '../mockup-core.ts';
+import {BLOCK_KINDS,BLOCK_LABEL,MAX_BLOCKS,MAX_GROUPS,MAX_MOCKUPS_PER_PROJECT,MAX_OPS,MAX_USER_IMAGE_BYTES,MockupError,SCREEN_WIDTH,applyOps,cleanBlock,cleanTitle,planWrites,screenHeightFor,validateImage,type BlockState,type Layout} from '../mockup-core.ts';
+import {SITE_PALETTES} from '../site-palettes.ts';
 import {sha256Hex} from '../mission-core.ts';
 import type {AppEnv,Env,Row} from '../types.ts';
 export const mockups=new Hono<AppEnv>();
@@ -51,7 +52,8 @@ async function detail(env:Env,user:string,m:Row){
  // Une fonctionnalité liée puis retirée du suivi garde son nom : on la relit directement.
  const blocks=await many<Row>(env,'SELECT * FROM mockup_blocks WHERE user_id=? AND mockup_id=? ORDER BY position,created_at',user,m.id);
  for(const b of blocks)if(b.feature_id&&!fmap.has(b.feature_id)){const f=await one<Row>(env,'SELECT id,code,name FROM project_features WHERE id=? AND user_id=?',b.feature_id,user);if(f)fmap.set(f.id,f);}
- return {...await summary(env,user,m),palette:parse(m.palette,[]),groups,blocks:blocks.map(b=>blockView(b,gmap,fmap)),
+ const pal=parse<any>(m.palette,null);
+ return {...await summary(env,user,m),palette:pal&&!Array.isArray(pal)?pal:null,groups,blocks:blocks.map(b=>blockView(b,gmap,fmap)),
   kinds:BLOCK_KINDS.map(k=>({key:k,label:BLOCK_LABEL[k]})),context:ctx,
   start:m.start_state?{fixed_at:m.start_at,blocks:parse<any[]>(m.start_state,[]).length}:null};
 }
@@ -63,6 +65,7 @@ mockups.get('/',async c=>{
  const items=[];for(const m of rows)items.push(await summary(c.env,user,m));
  return c.json({items});
 });
+mockups.get('/palettes',c=>c.json({palettes:SITE_PALETTES,note:'Couleurs lues en lecture seule dans les dépôts des sites (fichier, ligne et commit indiqués). Aucune écriture dans ces dépôts.'}));
 const create=z.object({project_id:z.string().uuid(),title:z.string().max(400),page_name:z.string().max(160).default('')});
 mockups.post('/',async c=>{
  const user=userId(c),d=create.parse(await jsonBody(c)),p=await owned(c.env,'projects',d.project_id,user);
@@ -111,7 +114,6 @@ mockups.post('/:id/groups',async c=>{
   const name=d.name.trim();
   if(!name)fail(400,'Donnez un nom au groupe.');
   if(name.length>60)fail(400,'Le nom du groupe est trop long (60 caractères au plus).');
-  if(m.start_at)fail(409,'L’écran de départ est fixé : on ne peut plus ajouter de groupe à cette étape.');
   const at=now(),res=await run(c.env,`INSERT INTO mockup_groups(id,user_id,project_id,mockup_id,name,position,created_at)
    SELECT ?,?,?,?,?,COALESCE((SELECT MAX(position)+1 FROM mockup_groups WHERE mockup_id=?),0),?
    WHERE (SELECT COUNT(*) FROM mockup_groups WHERE mockup_id=?)<? AND NOT EXISTS(SELECT 1 FROM mockup_groups WHERE mockup_id=? AND name=?)`,uid(),user,m.project_id,m.id,name,m.id,at,m.id,MAX_GROUPS,m.id,name);
@@ -128,7 +130,6 @@ const blockInput=z.object({kind:z.string(),label:z.string().max(400),x:z.union([
 mockups.post('/:id/blocks',async c=>{
  const user=userId(c),m=await mine(c.env,user,c.req.param('id')),d=blockInput.parse(await jsonBody(c));
  return guard(async()=>{
-  if(m.start_at)fail(409,'L’écran de départ est fixé : modifier la maquette sera possible à l’étape suivante du lot.');
   if(!await one(c.env,'SELECT mockup_id FROM mockup_images WHERE mockup_id=? AND user_id=?',m.id,user))fail(409,'Ajoutez d’abord la capture de l’écran : les blocs se posent dessus.');
   const b=cleanBlock(d,m.screen_height,m.screen_width);
   if(d.group_id&&!await one(c.env,'SELECT id FROM mockup_groups WHERE id=? AND mockup_id=? AND user_id=?',d.group_id,m.id,user))fail(400,'Ce groupe n’appartient pas à cette maquette.');
@@ -154,6 +155,58 @@ mockups.post('/:id/lock-start',async c=>{
   const at=now(),res=await run(c.env,'UPDATE mockups SET start_state=?,start_at=?,revision=revision+1,updated_at=? WHERE id=? AND user_id=? AND start_at IS NULL',JSON.stringify(blocks),at,at,m.id,user);
   if(!res.meta.changes)fail(409,'L’écran de départ est déjà fixé.');
   await event(c.env,user,'mockup_start_fixed',m.title.slice(0,120),m.project_id);
+  return c.json(await detail(c.env,user,await mine(c.env,user,m.id)));
+ });
+});
+
+/* ───────── 5B-2 : modifier (déplacer, grouper, séparer, colorier, ajouter, supprimer) ───────── */
+const paletteInput=z.object({site:z.string().max(40)});
+mockups.put('/:id/palette',async c=>{
+ const user=userId(c),m=await mine(c.env,user,c.req.param('id')),d=paletteInput.parse(await jsonBody(c));
+ return guard(async()=>{
+  let value:string;
+  if(d.site==='')value='[]';else{const p=SITE_PALETTES.find(x=>x.key===d.site);if(!p)fail(400,'Cette palette n’existe pas.');value=JSON.stringify(p);}
+  await run(c.env,'UPDATE mockups SET palette=?,revision=revision+1,updated_at=? WHERE id=? AND user_id=?',value,now(),m.id,user);
+  return c.json(await detail(c.env,user,await mine(c.env,user,m.id)));
+ });
+});
+async function loadLayout(env:Env,user:string,m:Row):Promise<Layout>{
+ const groups=await many<Row>(env,'SELECT id,name FROM mockup_groups WHERE user_id=? AND mockup_id=? ORDER BY position,created_at',user,m.id);
+ const gname=new Map(groups.map(g=>[g.id as string,g.name as string]));
+ const rows=await many<Row>(env,'SELECT * FROM mockup_blocks WHERE user_id=? AND mockup_id=? ORDER BY position,created_at',user,m.id);
+ const blocks:BlockState[]=rows.map(b=>({id:b.id,kind:b.kind,label:b.label,x:b.x,y:b.y,w:b.w,h:b.h,position:b.position,group:b.group_id?gname.get(b.group_id)??null:null,fill:b.fill,text_color:b.text_color,behavior:b.behavior,feature_id:b.feature_id||null}));
+ return {blocks,groups:groups.map(g=>g.name as string)};
+}
+const opsInput=z.object({revision:z.number().int(),ops:z.array(z.record(z.string(),z.any())).min(1).max(MAX_OPS)});
+const chunks=<T>(a:T[],n:number)=>{const o:T[][]=[];for(let i=0;i<a.length;i+=n)o.push(a.slice(i,i+n));return o;};
+mockups.post('/:id/ops',async c=>{
+ const user=userId(c),m=await mine(c.env,user,c.req.param('id')),d=opsInput.parse(await jsonBody(c));
+ return guard(async()=>{
+  const stale='La maquette a changé depuis que vous l’avez ouverte (un autre écran ?). Rechargez-la : rien n’a été modifié.';
+  if(Number(m.revision)!==d.revision)fail(409,stale);
+  const before=await loadLayout(c.env,user,m);
+  const feats=new Set((await many<Row>(c.env,'SELECT id FROM project_features WHERE user_id=? AND project_id=?',user,m.project_id)).map(f=>f.id as string));
+  const after=applyOps(before,d.ops,{screen_width:m.screen_width,screen_height:m.screen_height,featureExists:id=>feats.has(id)});
+  const writes=planWrites(before,after);
+  if(!writes.length)return c.json(await detail(c.env,user,m));
+  const existing=await many<Row>(c.env,'SELECT id,name FROM mockup_groups WHERE user_id=? AND mockup_id=?',user,m.id),gid=new Map(existing.map(g=>[g.name as string,g.id as string]));
+  const at=now(),R=d.revision,G=' AND (SELECT revision FROM mockups WHERE id=?)=?',GW=' WHERE (SELECT revision FROM mockups WHERE id=?)=?',guard2=[m.id,R+1];
+  const DB=c.env.DB,st:D1PreparedStatement[]=[DB.prepare('UPDATE mockups SET revision=revision+1,updated_at=? WHERE id=? AND user_id=? AND revision=?').bind(at,m.id,user,R)];
+  const ids=(n:number)=>Array(n).fill('?').join(',');
+  for(const w of writes){
+   switch(w.t){
+    case 'group_add':{const id=uid();gid.set(w.name,id);st.push(DB.prepare(`INSERT INTO mockup_groups(id,user_id,project_id,mockup_id,name,position,created_at) SELECT ?,?,?,?,?,COALESCE((SELECT MAX(position)+1 FROM mockup_groups WHERE mockup_id=?),0),?${GW}`).bind(id,user,m.project_id,m.id,w.name,m.id,at,...guard2));break;}
+    case 'block_add':{const b=w.block;st.push(DB.prepare(`INSERT INTO mockup_blocks(id,user_id,project_id,mockup_id,kind,label,x,y,w,h,position,group_id,fill,text_color,feature_id,behavior,created_at,updated_at) SELECT ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?${GW}`).bind(b.id,user,m.project_id,m.id,b.kind,b.label,b.x,b.y,b.w,b.h,b.position,b.group?gid.get(b.group)??null:null,b.fill,b.text_color,b.feature_id,b.behavior,at,at,...guard2));break;}
+    case 'block_update':{const b=w.block;st.push(DB.prepare(`UPDATE mockup_blocks SET kind=?,label=?,x=?,y=?,w=?,h=?,group_id=?,fill=?,text_color=?,feature_id=?,behavior=?,updated_at=? WHERE id=? AND user_id=? AND mockup_id=?${G}`).bind(b.kind,b.label,b.x,b.y,b.w,b.h,b.group?gid.get(b.group)??null:null,b.fill,b.text_color,b.feature_id,b.behavior,at,b.id,user,m.id,...guard2));break;}
+    case 'translate':for(const part of chunks(w.ids,40))st.push(DB.prepare(`UPDATE mockup_blocks SET x=x+?,y=y+?,updated_at=? WHERE user_id=? AND mockup_id=? AND id IN (${ids(part.length)})${G}`).bind(w.dx,w.dy,at,user,m.id,...part,...guard2));break;
+    case 'set_group':for(const part of chunks(w.ids,40))st.push(DB.prepare(`UPDATE mockup_blocks SET group_id=?,updated_at=? WHERE user_id=? AND mockup_id=? AND id IN (${ids(part.length)})${G}`).bind(w.name?gid.get(w.name)??null:null,at,user,m.id,...part,...guard2));break;
+    case 'block_delete':for(const part of chunks(w.ids,40))st.push(DB.prepare(`DELETE FROM mockup_blocks WHERE user_id=? AND mockup_id=? AND id IN (${ids(part.length)})${G}`).bind(user,m.id,...part,...guard2));break;
+    case 'group_delete':st.push(DB.prepare(`DELETE FROM mockup_groups WHERE user_id=? AND mockup_id=? AND name=?${G}`).bind(user,m.id,w.name,...guard2));break;
+   }
+  }
+  if(st.length>45)fail(413,'Trop de changements différents d’un coup. Faites-en moins à la fois : rien n’a été modifié.');
+  const res=await DB.batch(st);
+  if(!res[0].meta.changes)fail(409,stale);
   return c.json(await detail(c.env,user,await mine(c.env,user,m.id)));
  });
 });
