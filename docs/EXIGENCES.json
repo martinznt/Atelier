@@ -5063,11 +5063,11 @@
   {
     "id": "MAQ-38-012",
     "section": 38,
-    "source": "Lot 5B, étape 5B-1 du 16 novembre 2026 (maquette d'écran, modèle et affichage)",
+    "source": "Lot 5B, étape 5B-4 du 17 novembre 2026 (guidage par règles)",
     "exigence": "Guidage par règles vérifiables avec suggestions acceptables ou refusables.",
-    "statut": "à faire",
-    "preuve": "docs/audits/RAPPORT_LOT_5B_2026-11-16.md",
-    "limite": "Étape 5B-4 ; seuils à vérifier à la source officielle (WCAG 2.2) avant affichage."
+    "statut": "réalisé",
+    "preuve": "server/mockup-guide.ts ; web/MockupGuide.tsx ; tests/mockup-guide.test.mjs ; tests/mockups.test.ts ; tests/e2e/lot5b-guide.spec.ts ; docs/audits/preuves/lot5b/5b4-01-conseils-trouves.png ; docs/audits/preuves/lot5b/5b4-sources-w3c.txt",
+    "limite": "Seuils WCAG 2.2 lus sur w3.org le 17 novembre 2026. Contraste des composants (1.4.11) avec la page derrière : non calculé (couleurs de la capture non lues). Exceptions de 2.5.8 (espacement…) non vérifiées. Galaxy A05s et production : NON PROUVÉ."
   },
   {
     "id": "MAQ-38-013",
@@ -5149,5 +5149,23 @@
     "statut": "réalisé",
     "preuve": "web/MockupSheet.tsx ; web/mockup-image.ts ; tests/e2e/lot5b-sheet.spec.ts ; docs/audits/preuves/lot5b/5b3-03-image-maquette.png",
     "limite": "Copier dans le presse-papiers : non essayé dans l'essai automatique (permission du navigateur) ; télécharger : essayé."
+  },
+  {
+    "id": "MAQ-38-022",
+    "section": 38,
+    "source": "Lot 5B, étape 5B-4 du 17 novembre 2026 (guidage par règles)",
+    "exigence": "Huit règles, chacune avec un cas qui la déclenche et un cas qui ne la déclenche pas : cible tactile 24 px (WCAG 2.5.8, AA) et 44 px (2.5.5, AAA), contraste du texte 4,5:1 (1.4.3), contraste non vérifiable, couleur hors palette, fonctionnalité abandonnée ou bloquée, décision qui cite le bloc (Hypothèse), chevauchement, trop d'éléments sans groupe (Hypothèse, repère d'Atelier).",
+    "statut": "réalisé",
+    "preuve": "server/mockup-guide.ts ; tests/mockup-guide.test.mjs",
+    "limite": "Les règles « décision » et « trop d'éléments » sont des hypothèses et le disent ; aucune n'utilise d'IA."
+  },
+  {
+    "id": "MAQ-38-023",
+    "section": 38,
+    "source": "Lot 5B, étape 5B-4 du 17 novembre 2026 (guidage par règles)",
+    "exigence": "Accepter ou refuser une suggestion (migration 0026 additive) : une refusée ne revient pas ; une acceptée entre dans la fiche et la mission ; une nouvelle situation redonne une suggestion.",
+    "statut": "réalisé",
+    "preuve": "migrations/0026_mockup_guidance.sql ; server/routes/mockups.ts ; tests/mockups.test.ts ; tests/migration-0026.test.ts ; tests/e2e/lot5b-guide.spec.ts ; docs/audits/preuves/lot5b/5b4-02-accepte-et-refuse.png ; docs/audits/preuves/lot5b/5b4-03-fiche-avec-conseil-accepte.png",
+    "limite": "Utilisé en local ; production : NON PROUVÉ (migration appliquée par la fusion)."
   }
 ]

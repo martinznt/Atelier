@@ -1,3 +1,8 @@
+# 17 novembre 2026 — Lot 5B, étape 5B-4 : conseils d’ergonomie par règles vérifiables (migration 0026 additive)
+
+**Fait (utilisé en local, captures dans `docs/audits/preuves/lot5b/5b4-*`) :** huit règles sans IA, seuils WCAG 2.2 lus sur w3.org, accepter/refuser, conseil accepté repris dans la fiche et la mission, conseil refusé qui ne revient pas. **NON PROUVÉ :** Galaxy A05s, production.
+
+---
 # 17 novembre 2026 — Lot 5B, étape 5B-3 : fiche, mission, export (aucune migration)
 
 **Fait (utilisé en local, captures et fichiers dans `docs/audits/preuves/lot5b/`) :** fiche par règles fixes (écarts, liste de contrôle, fichiers en Hypothèse), téléchargement de la fiche et de l’image, mission créée par le générateur du lot 3 puis figée et téléchargée. Deux défauts trouvés en utilisant l’écran et corrigés. **NON PROUVÉ :** lecture des vraies règles du dépôt (jeton GitHub), Galaxy A05s, production. **À faire par Martin :** l’essai décisif sur une vraie page.

@@ -1,3 +1,8 @@
+# Lot 5B (5B-4) — contrôles du 17 novembre 2026 (exécutés en local)
+
+- Voir `docs/audits/RAPPORT_LOT_5B_2026-11-17.md` §5 ; Playwright lot5b-guide 2/2 et tous les parcours lot5b et lot3 (28/28, Android et ordinateur). **NON PROUVÉ** : Galaxy A05s, production.
+
+---
 # Lot 5B (5B-3) — contrôles du 17 novembre 2026 (exécutés en local, Node 22)
 
 - Voir le rapport `docs/audits/RAPPORT_LOT_5B_2026-11-17.md` §3 pour les résultats chiffrés ; Playwright `lot5b-sheet` 2/2, `lot5b` 3/3, `lot5b-edit` 5/5, `lot3` 2/2 (Android et ordinateur).

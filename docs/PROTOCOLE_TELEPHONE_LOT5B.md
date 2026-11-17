@@ -33,3 +33,9 @@ Réponse attendue : une ligne par étape (« 5 OK », « 6 pas OK : trop long à
 22. Touchez **Télécharger l'image** puis **Télécharger la fiche** : les deux fichiers arrivent dans « Téléchargements ».
 23. Choisissez le dépôt et touchez **Créer la mission**. Ouvrez « Missions pour Claude Code », lisez les règles du dépôt, figez, copiez, puis donnez le texte (avec l'image et la fiche) à Claude Code.
 24. Quand la PR existe, comparez le résultat sur votre téléphone avec la **liste de contrôle**, point par point. Notez : conforme en une passe ? sinon, combien d'allers-retours.
+
+## Étape 5B-4 — conseils (après la fusion de la PR de l'étape 5B-4)
+25. Dans votre maquette, touchez **Vérifier la maquette** (section « 3. Conseils d'ergonomie »). *Vous voyez :* des conseils avec « ✔ Vérifié », « ◐ Rapporté » ou « ? Hypothèse » et la règle d'où ils viennent.
+26. **Refusez** un conseil. *Vous voyez :* il disparaît, et « 1 refusé(s), masqué(s) ». Rechargez : il ne revient pas.
+27. **Acceptez** un conseil, puis touchez **Préparer la fiche** : le conseil accepté y figure.
+28. Dites si un conseil vous paraît faux ou inutile (capture).

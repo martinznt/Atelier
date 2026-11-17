@@ -175,3 +175,8 @@ input:not([type=checkbox]),select,textarea{border-radius:14px}
 .mq-list{margin:6px 0 0;padding-left:20px;display:grid;gap:6px;overflow-wrap:anywhere}
 .mq-sheet code{overflow-wrap:anywhere}
 .mq-sheet h5{margin:10px 0 0;font-size:14px}
+/* Lot 5B (5B-4) — conseils. */
+.mq-tips{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.mq-tip{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--surface);display:grid;gap:6px;overflow-wrap:anywhere}.mq-tip.ok{border-color:var(--ink)}
+.mq-tip p{margin:0}.mq-level{font-size:13px;font-weight:600;color:var(--ink)}
+.mq-guide a{color:var(--ink)}

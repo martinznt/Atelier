@@ -15,7 +15,8 @@ const tables={
  project_setup:['project_id','template','feature_seq'],project_modules:['project_id','module_key','enabled'],item_lifecycle:['kind','item_id','status','reliability','source_ref','proof_kind','replaced_by_id'],lifecycle_events:['kind','item_id','to_status','to_reliability','reason','author_kind'],project_features:['code','name','state','group_name'],feature_links:['feature_id','target_kind','target_id'],
  missions:['repo_full_name','rules_commit','executor_family','verdict','verdict_evidence'],
  mockups:['page_name','screen_height','palette','start_state'],mockup_images:['mime','bytes','sha256','data'],mockup_groups:['mockup_id','name','position'],
- mockup_blocks:['kind','label','group_id','fill','text_color','feature_id','behavior']
+ mockup_blocks:['kind','label','group_id','fill','text_color','feature_id','behavior'],
+ mockup_suggestion_decisions:['mockup_id','rule','target_key','decision']
 };
 const fake=(t)=>({prepare:sql=>({all:async()=>{const m=/table_info\((\w+)\)/.exec(sql);return {results:(t[m[1]]||[]).map(name=>({name}))};}})});
 test('toutes les migrations présentes : complet, liste appliquée, rien de manquant',async()=>{
@@ -87,4 +88,8 @@ test('0025 : tout présent → appliquée ; une table ou une colonne manquante �
   s=await status({...tables,[t]:undefined});assert.equal(s.complete,false);assert.deepEqual(s.missing,['0025'],t);assert.ok(s.applied.includes('0024'));
  }
  s=await status(without('mockup_blocks','feature_id'));assert.deepEqual(s.missing,['0025']);
+});
+test('0026 : table présente → appliquée ; absente → seule 0026 manquante, 0025 intacte',async()=>{
+ let s=await status(tables);assert.ok(s.applied.includes('0026'));assert.equal(s.complete,true);
+ s=await status({...tables,mockup_suggestion_decisions:undefined});assert.deepEqual(s.missing,['0026']);assert.ok(s.applied.includes('0025'));
 });

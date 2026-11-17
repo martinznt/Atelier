@@ -7,6 +7,7 @@ import {legacyDecision,effectiveReliability,RELIABILITY_VIEW,LIFE_LABEL} from '.
 import {BLOCK_KINDS,BLOCK_LABEL,MAX_BLOCKS,MAX_GROUPS,MAX_MOCKUPS_PER_PROJECT,MAX_OPS,MAX_USER_IMAGE_BYTES,MockupError,SCREEN_WIDTH,applyOps,cleanBlock,cleanTitle,planWrites,screenHeightFor,validateImage,type BlockState,type Layout} from '../mockup-core.ts';
 import {SITE_PALETTES} from '../site-palettes.ts';
 import {SHEET_VERSION,buildSheet,missionFields,type SheetInput} from '../mockup-sheet.ts';
+import {LEVEL_WORD,suggestions,type GuideInput} from '../mockup-guide.ts';
 import {sha256Hex} from '../mission-core.ts';
 import type {AppEnv,Env,Row} from '../types.ts';
 export const mockups=new Hono<AppEnv>();
@@ -222,7 +223,46 @@ mockups.get('/:id/sheet',async c=>{
   palette:pal?{key:pal.key,label:pal.label,file:pal.file,commit:pal.commit,colors:pal.colors||[],files:pal.files||SITE_PALETTES.find(p=>p.key===pal.key)?.files||[]}:null,features:fmap,
   start:m.start_state?parse<any[]>(m.start_state,[]).map(b=>({id:b.id,kind:b.kind,label:b.label,x:b.x,y:b.y,w:b.w,h:b.h,group_name:b.group_name??null,fill:b.fill||'',text_color:b.text_color||'',behavior:b.behavior||'',feature_id:b.feature_id??null})):null,
   blocks:d.blocks.map((b:any)=>({id:b.id,kind:b.kind,label:b.label,x:b.x,y:b.y,w:b.w,h:b.h,group:b.group_name||'',fill:b.fill,text_color:b.text_color,behavior:b.behavior,feature:b.feature?{code:b.feature.code,name:b.feature.name}:null}))};
- const sheet=buildSheet(input),fields=missionFields(input,sheet);
+ const accepted=await acceptedInstructions(c.env,user,m);
+ const sheet=buildSheet({...input,accepted}),fields=missionFields({...input,accepted},sheet);
  const feature_ids=[...new Set(d.blocks.filter((b:any)=>b.feature).map((b:any)=>b.feature.id as string))].slice(0,10);
  return c.json({version:SHEET_VERSION,title:m.title,page_name:m.page_name,start_fixed:Boolean(m.start_at),...sheet,mission:{title:('Maquette : '+m.title).slice(0,160),fields,feature_ids},content_hash:await sha256Hex(sheet.markdown)});
+});
+
+/* ───────── 5B-4 : guidage par règles vérifiables ───────── */
+async function guideInput(env:Env,user:string,m:Row):Promise<GuideInput>{
+ const d=await detail(env,user,m);
+ const feats=[];
+ for(const f of await many<Row>(env,'SELECT id,code,name,state FROM project_features WHERE user_id=? AND project_id=?',user,m.project_id)){
+  const lc=await one<Row>(env,"SELECT status FROM item_lifecycle WHERE user_id=? AND kind='feature' AND item_id=?",user,f.id);
+  feats.push({id:f.id as string,code:f.code as string,name:f.name as string,state:f.state as string,life:(lc?.status as string)||'current'});
+ }
+ return {blocks:d.blocks.map((b:any)=>({id:b.id,kind:b.kind,label:b.label,x:b.x,y:b.y,w:b.w,h:b.h,group:b.group_name||'',fill:b.fill,text_color:b.text_color,feature_id:b.feature?.id??null})),
+  palette:(d.palette as any)?.colors?.map((c:any)=>({hex:c.hex,token:c.token}))??null,features:feats,
+  decisions:d.context.decisions.map((x:any)=>({id:x.id,title:x.title,reason:x.reason||''}))};
+}
+async function decisionsOf(env:Env,user:string,m:Row){return many<Row>(env,'SELECT rule,target_key,decision FROM mockup_suggestion_decisions WHERE user_id=? AND mockup_id=?',user,m.id);}
+/** Consignes des suggestions ACCEPTÉES et toujours valables : elles entrent dans la fiche et la mission. */
+async function acceptedInstructions(env:Env,user:string,m:Row):Promise<string[]>{
+ const dec=await decisionsOf(env,user,m),ok=new Set(dec.filter(x=>x.decision==='accepted').map(x=>x.rule+'|'+x.target_key));
+ if(!ok.size)return [];
+ return suggestions(await guideInput(env,user,m)).filter(s=>ok.has(s.rule+'|'+s.key)).map(s=>s.instruction);
+}
+mockups.get('/:id/guide',async c=>{
+ const user=userId(c),m=await mine(c.env,user,c.req.param('id'));
+ const dec=await decisionsOf(c.env,user,m),by=new Map(dec.map(x=>[x.rule+'|'+x.target_key,x.decision as string]));
+ const all=suggestions(await guideInput(c.env,user,m));
+ const items=all.filter(s=>by.get(s.rule+'|'+s.key)!=='refused').map(s=>({...s,level_word:LEVEL_WORD[s.level],decision:by.get(s.rule+'|'+s.key)||null}));
+ return c.json({items,refused_hidden:all.length-items.length,sources:'WCAG 2.2, W3C Recommendation 12 December 2024 (https://www.w3.org/TR/WCAG22/), lu le 17 novembre 2026.'});
+});
+const decideInput=z.object({rule:z.string().max(40),key:z.string().max(400),decision:z.enum(['accepted','refused'])});
+mockups.post('/:id/guide',async c=>{
+ const user=userId(c),m=await mine(c.env,user,c.req.param('id')),d=decideInput.parse(await jsonBody(c));
+ const s=suggestions(await guideInput(c.env,user,m)).find(x=>x.rule===d.rule&&x.key===d.key);
+ if(!s)fail(409,'Cette suggestion n’existe plus (la maquette a changé). Rechargez la liste.');
+ const at=now();
+ await run(c.env,`INSERT INTO mockup_suggestion_decisions(id,user_id,project_id,mockup_id,rule,target_key,decision,summary,created_at) VALUES(?,?,?,?,?,?,?,?,?)
+  ON CONFLICT(mockup_id,rule,target_key) DO UPDATE SET decision=excluded.decision,summary=excluded.summary,created_at=excluded.created_at`,uid(),user,m.project_id,m.id,d.rule,d.key,d.decision,s.title.slice(0,200),at);
+ await event(c.env,user,d.decision==='accepted'?'mockup_suggestion_accepted':'mockup_suggestion_refused',s.title.slice(0,120),m.project_id);
+ return c.json({ok:true,decision:d.decision});
 });
