@@ -14,6 +14,7 @@ export function MissionsSection({id,plan,decisions,repos}:{id:string;plan:any;de
  const [list,setList]=useState<any[]>([]),[error,setError]=useState<unknown>(null),[busy,setBusy]=useState(false),[open,setOpen]=useState<any>(null),[notice,setNotice]=useState('');
  const [features,setFeatures]=useState<any[]>([]),[form,setForm]=useState<any>({task_id:'',repository_id:'',level:'short',title:'',feature_ids:[],decision_ids:[]});
  const load=useCallback(async()=>{try{setList((await api(`/missions?project=${id}`)).items);}catch(e){setError(e);}},[id]);
+ useEffect(()=>{const on=()=>void load();window.addEventListener('atelier:missions-changed',on);return()=>window.removeEventListener('atelier:missions-changed',on);},[load]); // une mission créée ailleurs (maquette, lot 5B) apparaît tout de suite
  useEffect(()=>{void load();api(`/model/${id}/features`).then(r=>setFeatures(r.items||[])).catch(()=>setFeatures([]));},[load,id]);
  const run=async(fn:()=>Promise<any>)=>{setBusy(true);setError(null);setNotice('');try{await fn();await load();}catch(e){setError(e);}finally{setBusy(false);}};
  const openDetail=async(m:any)=>{setBusy(true);setError(null);try{setOpen(await api(`/missions/${m.id}`));}catch(e){setError(e);}finally{setBusy(false);}};

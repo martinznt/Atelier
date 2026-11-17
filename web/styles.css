@@ -172,3 +172,6 @@ input:not([type=checkbox]),select,textarea{border-radius:14px}
 .mq-sw{width:44px;height:44px;border-radius:10px;border:2px solid var(--line);cursor:pointer;padding:0;color:var(--ink);background:var(--surface);font-size:12px}.mq-sw.on{border-color:var(--ink);box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--ink)}
 .mq-sw.none{width:auto;padding:0 10px}.mq-other{display:flex;gap:8px;flex-basis:100%;align-items:center}.mq-other input{flex:1;min-width:0}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.mq-list{margin:6px 0 0;padding-left:20px;display:grid;gap:6px;overflow-wrap:anywhere}
+.mq-sheet code{overflow-wrap:anywhere}
+.mq-sheet h5{margin:10px 0 0;font-size:14px}

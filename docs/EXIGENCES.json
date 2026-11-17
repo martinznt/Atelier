@@ -5056,9 +5056,9 @@
     "section": 38,
     "source": "Lot 5B, étape 5B-1 du 16 novembre 2026 (maquette d'écran, modèle et affichage)",
     "exigence": "Fiche de mise en page, texte de mission par règles fixes, export, essai décisif de Martin sur une vraie page.",
-    "statut": "à faire",
-    "preuve": "docs/audits/RAPPORT_LOT_5B_2026-11-16.md",
-    "limite": "Étape 5B-3 puis essai de Martin."
+    "statut": "partiel",
+    "preuve": "server/mockup-sheet.ts ; web/MockupSheet.tsx ; tests/mockup-sheet.test.mjs ; tests/e2e/lot5b-sheet.spec.ts ; docs/audits/preuves/lot5b/5b3-04-mission-telechargee.md",
+    "limite": "Fiche, mission et export faits et utilisés en local (voir MAQ-38-019 à 021). Essai décisif sur une vraie page par Martin : à faire. Lecture des vraies règles du dépôt par la mission : NON PROUVÉ (jeton GitHub absent)."
   },
   {
     "id": "MAQ-38-012",
@@ -5122,5 +5122,32 @@
     "statut": "réalisé",
     "preuve": "server/mockup-core.ts ; tests/mockup-ops.test.mjs",
     "limite": "Limite de 50 requêtes par appel de l'offre gratuite : lue dans docs/LIMITES_GRATUITES.md (R), non mesurée en production."
+  },
+  {
+    "id": "MAQ-38-019",
+    "section": 38,
+    "source": "Lot 5B, étape 5B-3 du 17 novembre 2026 (fiche, mission, export)",
+    "exigence": "Fiche de mise en page par règles fixes (sans IA) : blocs dans l'ordre de lecture, groupes, couleurs nommées par les jetons du site, comportements, fonctionnalités liées, écarts avec l'écran de départ ; même maquette → même texte.",
+    "statut": "réalisé",
+    "preuve": "server/mockup-sheet.ts ; tests/mockup-sheet.test.mjs ; tests/mockups.test.ts ; docs/audits/preuves/lot5b/5b3-01-fiche-ecarts-controle.png",
+    "limite": "29 cas fixes au texte exact. Utilisé en local ; Galaxy A05s : NON PROUVÉ."
+  },
+  {
+    "id": "MAQ-38-020",
+    "section": 38,
+    "source": "Lot 5B, étape 5B-3 du 17 novembre 2026 (fiche, mission, export)",
+    "exigence": "Texte de mission produit par le générateur du lot 3 à partir de la fiche (consignes « déplace A sous B », « regroupe C et D », « couleur --accent (#…) »), fichiers probablement concernés marqués Hypothèse, liste de contrôle « maquette / résultat » dans les preuves attendues.",
+    "statut": "réalisé",
+    "preuve": "web/MockupSheet.tsx ; server/routes/mockups.ts ; tests/mockups.test.ts ; tests/e2e/lot5b-sheet.spec.ts ; docs/audits/preuves/lot5b/5b3-04-mission-telechargee.md",
+    "limite": "Mission figée « sans les règles du dépôt » dans l'essai local : la lecture des vraies règles (GitHub) est NON PROUVÉE."
+  },
+  {
+    "id": "MAQ-38-021",
+    "section": 38,
+    "source": "Lot 5B, étape 5B-3 du 17 novembre 2026 (fiche, mission, export)",
+    "exigence": "Export : copier la fiche, télécharger la fiche (.md) et l'image de la maquette (.png, capture en fond, blocs numérotés et colorés).",
+    "statut": "réalisé",
+    "preuve": "web/MockupSheet.tsx ; web/mockup-image.ts ; tests/e2e/lot5b-sheet.spec.ts ; docs/audits/preuves/lot5b/5b3-03-image-maquette.png",
+    "limite": "Copier dans le presse-papiers : non essayé dans l'essai automatique (permission du navigateur) ; télécharger : essayé."
   }
 ]

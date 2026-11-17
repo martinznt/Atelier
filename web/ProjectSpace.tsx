@@ -71,7 +71,7 @@ function Space({id}:{id:string;onOpenProject:(p:any)=>void}){
   <GithubSection gh={gh}/>
   <PlanSection id={id} plan={plan} decisions={decisions} onChanged={reload}/>
   <MissionsSection id={id} plan={plan} decisions={decisions} repos={ov.repositories}/>
-  <MockupsSection id={id}/>
+  <MockupsSection id={id} repos={ov.repositories}/>
   <HandoffSection id={id} plan={plan} decisions={decisions} repos={ov.repositories} gh={gh} onChanged={reload}/>
   <DecisionSection id={id} decisions={decisions} plan={plan} onChanged={reload}/>
   <DocumentsSection id={id}/>
