@@ -18,7 +18,7 @@ beforeAll(async()=>{
 });
 afterAll(async()=>{await mf?.dispose();});
 describe('migration 0026 sur une base remplie',()=>{
- it('ne touche à aucune donnée existante, ajoute quatre tables vides, garde les écrans de lecture identiques',async()=>{
+ it('ne touche à aucune donnée existante, ajoute une table vide, garde les écrans de lecture identiques',async()=>{
   const a=await api('/auth/register','POST',{email:'martin26@example.test',password:'phrase-de-test-solide-2026'});expect(a.status).toBe(201);
   const b=await api('/auth/register','POST',{email:'autre26@example.test',password:'autre-phrase-solide-2026'});expect(b.status).toBe(201);
   const sport=(await api('/spaces/init','POST',{template:'sport'},a.cookie)).body.project_id,libre=(await api('/projects','POST',{name:'Projet libre'},a.cookie)).body.id,bob=(await api('/projects','POST',{name:'Projet de Bob'},b.cookie)).body.id;

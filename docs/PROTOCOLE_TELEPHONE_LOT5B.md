@@ -39,3 +39,8 @@ Réponse attendue : une ligne par étape (« 5 OK », « 6 pas OK : trop long à
 26. **Refusez** un conseil. *Vous voyez :* il disparaît, et « 1 refusé(s), masqué(s) ». Rechargez : il ne revient pas.
 27. **Acceptez** un conseil, puis touchez **Préparer la fiche** : le conseil accepté y figure.
 28. Dites si un conseil vous paraît faux ou inutile (capture).
+
+## Étape 5B-5 — discussion (après la fusion de la PR de l'étape 5B-5)
+29. Dans « 4. Discussion », choisissez un bloc, écrivez une question (« si je mets ça ici, est-ce bien ? »), touchez **Demander à Atelier**. *Vous voyez :* une réponse « Atelier (sans IA) » avec des lignes [Vérifié], [Rapporté], [Hypothèse] ou [Confirmé par vous].
+30. Si vous avez une connexion Mistral, Groq ou Gemini avec votre clé : touchez **Demander l'avis d'une IA**. *Vous voyez :* une réponse « IA … Hypothèse ». Sinon, notez « pas de clé ».
+31. Touchez **Confirmer une conclusion**, écrivez-la, confirmez. *Vous voyez :* « ✔ Confirmé par vous ». Préparez la fiche : la conclusion y est.

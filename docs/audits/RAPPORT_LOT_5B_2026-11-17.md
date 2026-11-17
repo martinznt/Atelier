@@ -105,3 +105,27 @@ WCAG 2.2, **W3C Recommendation 12 December 2024**, lue le 17 novembre 2026 sur h
 - Contraste d'un bloc avec la page derrière lui (1.4.11) : non calculé (Atelier ne lit pas les couleurs de la capture).
 - Exceptions de 2.5.8 (espacement suffisant, etc.) : non vérifiées, le conseil le dit.
 - Galaxy A05s, production : NON PROUVÉ.
+
+## 6. Étape 5B-4 — mise en ligne
+Voir §8 (relevé final de la production).
+
+## 7. Étape 5B-5 — discussion liée à la maquette (migration 0027, additive)
+### Ce qui a été construit
+- Table `mockup_messages` (migration 0027, testée sur base remplie). Routes : lire la discussion ; poser une question (sur un bloc ou la page) ; demander l'avis d'une IA ; confirmer une conclusion.
+- **Réponse d'Atelier sans IA** (`server/mockup-chat.ts`) : faits du bloc [Vérifié], conseils qui le visent (avec leur niveau), fonctionnalité liée [Rapporté], décisions actuelles qui le citent (avec leur niveau), passages de l'historique importé [Rapporté], conclusions déjà confirmées [Confirmé par vous]. Si rien ne le concerne, Atelier le dit.
+- **IA facultative** : votre propre clé (Mistral, Groq ou Gemini ; une IA payante est refusée), texte seulement (la capture n'est jamais envoyée), une seule demande par question, jamais rejouée ; réponse marquée **Hypothèse** ; en cas d'échec, rien n'est ajouté.
+- **Conclusion** : « Confirmé par vous » seulement quand vous l'écrivez et la confirmez ; elle entre dans la fiche et dans la mission.
+### Preuves (application lancée en local, Chromium 360 px)
+| Fonction | Ce que j'ai vu | Preuve |
+|---|---|---|
+| Question sur un bloc, réponse sans IA | faits du bloc [Vérifié], règle WCAG 2.5.5 [Vérifié], « une décision parle de Recherche » [Hypothèse], décision « La recherche reste en haut » [Confirmé par vous] | V `5b5-01-reponse-sans-ia.png` |
+| IA avec une clé factice | message « L'IA n'a pas répondu correctement. Rien n'a été ajouté et la demande n'est pas rejouée automatiquement. » ; nombre de messages inchangé | V `5b5-02-ia-cle-factice-echec-propre.png` |
+| Conclusion confirmée | message encadré « ✔ Confirmé par vous » | V `5b5-03-conclusion-confirmee.png` |
+| Conclusion dans la fiche | section « Conclusions confirmées par vous (discussion) » | V `5b5-04-fiche-avec-conclusion.png` |
+| Réponse d'une IA | Mistral **simulé** (réponse marquée Hypothèse, une seule demande, 2ᵉ demande refusée, panne → rien d'ajouté) | `tests/mockup-chat.test.ts` (simulation) |
+### Contrôles (exécutés, résultats réels)
+`tsc` OK · vitest **206/206** (dont migrations 0026 et 0027 sur base remplie, discussion avec Mistral simulé) · `node --test tests/*.test.mjs` **492/492** · régressions OK · storage OK · core OK · bridge OK · build OK · Playwright lot5b-chat, lot5b-guide, lot5b-sheet, lot5b-edit, lot5b, lot3 : **32/32** (Android et ordinateur) · audit des exigences 624, 0 preuve cassée.
+### NON PROUVÉ / limites
+- **Réponse d'une vraie IA : NON PROUVÉ** (aucune clé ici, et vous gardez vos clés : c'est voulu).
+- Passages de l'export ChatGPT : la recherche existe, mais l'export n'est pas importé en production, donc 0 passage aujourd'hui (R : rapport 5A).
+- Galaxy A05s, production : NON PROUVÉ.

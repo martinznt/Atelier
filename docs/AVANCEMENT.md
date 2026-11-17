@@ -1,3 +1,8 @@
+# 17 novembre 2026 — Lot 5B, étape 5B-5 : discussion liée à la maquette (migration 0027 additive)
+
+**Fait (utilisé en local, captures `docs/audits/preuves/lot5b/5b5-*`) :** question sur un bloc, réponse d’Atelier sans IA sourcée, conclusion « Confirmé par vous » reprise dans la fiche et la mission, échec propre d’une IA sans clé valide. **NON PROUVÉ :** vraie IA, Galaxy A05s, production. **Le lot 5B n’est pas terminé** : l’essai décisif de Martin sur une vraie page reste à faire.
+
+---
 # 17 novembre 2026 — Lot 5B, étape 5B-4 : conseils d’ergonomie par règles vérifiables (migration 0026 additive)
 
 **Fait (utilisé en local, captures dans `docs/audits/preuves/lot5b/5b4-*`) :** huit règles sans IA, seuils WCAG 2.2 lus sur w3.org, accepter/refuser, conseil accepté repris dans la fiche et la mission, conseil refusé qui ne revient pas. **NON PROUVÉ :** Galaxy A05s, production.

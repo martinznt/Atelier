@@ -73,8 +73,8 @@ for(const width of [360,390])test(`Maquette : capture, blocs, lecture et écran 
  await expect(page.locator('.mq-block')).toHaveCount(3);
 
  // (5) le contexte du projet est montré, avec le niveau de fiabilité
- await expect(page.getByRole('heading',{name:'5. Ce qu’Atelier sait déjà de ce projet'})).toBeVisible();
- await expect(page.getByText('pas encore branchés')).toBeVisible();
+ await expect(page.getByRole('heading',{name:'6. Ce qu’Atelier sait déjà de ce projet'})).toBeVisible();
+ await expect(page.getByText(/cherche quand vous posez une question/)).toBeVisible();
  await noOverflow(page,'maquette avec blocs '+width);expect(await smallText(page),'texte sous 12 px').toEqual([]);
  await page.screenshot({path:`test-results/lot5b-maquette-${width}.png`,fullPage:true});
 
