@@ -45,7 +45,8 @@ const checks:{id:string;table:string;columns:string[]}[]=[
  {id:'0025',table:'mockups',columns:['page_name','screen_height','palette','start_state']},
  {id:'0025',table:'mockup_images',columns:['mime','bytes','sha256','data']},
  {id:'0025',table:'mockup_groups',columns:['mockup_id','name','position']},
- {id:'0025',table:'mockup_blocks',columns:['kind','label','group_id','fill','text_color','feature_id','behavior']}
+ {id:'0025',table:'mockup_blocks',columns:['kind','label','group_id','fill','text_color','feature_id','behavior']},
+ {id:'0026',table:'mockup_suggestion_decisions',columns:['mockup_id','rule','target_key','decision']}
 ];
 let cache:{at:number;value:SchemaStatus}|null=null;
 /** Cache de 60 s par instance : la page de santé est publique, elle ne doit pas solliciter D1 à chaque appel. */

@@ -290,3 +290,40 @@ describe('fiche de mise en page et mission (5B-3)',()=>{
   expect((await json('/missions','POST',{project_id:projectA,repository_id:repo,level:'short',title:'x',fields:sh.mission.fields,feature_ids:[],decision_ids:[]},b)).status).toBe(404);
  });
 });
+
+describe('guidage par règles (5B-4)',()=>{
+ const ops=(id:string,revision:number,o:any[],cookie=a)=>json(`/mockups/${id}/ops`,'POST',{revision,ops:o},cookie);
+ it('suggestions vérifiables, accepter, refuser : une refusée ne revient pas, une acceptée entre dans la fiche et la mission',async()=>{
+  const m=await newMockup('Guidage');await put(m.id,webp(720,1560));await json(`/mockups/${m.id}/palette`,'PUT',{site:'recettes'});
+  await json(`/mockups/${m.id}/blocks`,'POST',block({kind:'button',label:'Petit',x:16,y:100,w:20,h:20}));
+  await json(`/mockups/${m.id}/blocks`,'POST',block({kind:'text',label:'Pâle',x:16,y:200,w:200,h:40,fill:'#ffffff',text_color:'#777777'}));
+  let g=await json(`/mockups/${m.id}/guide`);expect(g.status).toBe(200);
+  const rules=g.body.items.map((x:any)=>x.rule).sort();expect(rules).toEqual(['off_palette','off_palette','target_min','text_contrast']);
+  const small=g.body.items.find((x:any)=>x.rule==='target_min');expect(small.level_word).toBe('Vérifié');expect(small.source.url).toBe('https://www.w3.org/TR/WCAG22/#target-size-minimum');
+  expect(g.body.sources).toMatch(/12 December 2024/);
+  // refuser : ne revient plus, même après rechargement
+  expect((await json(`/mockups/${m.id}/guide`,'POST',{rule:'text_contrast',key:g.body.items.find((x:any)=>x.rule==='text_contrast').key,decision:'refused'})).status).toBe(200);
+  g=await json(`/mockups/${m.id}/guide`);expect(g.body.items.map((x:any)=>x.rule)).not.toContain('text_contrast');expect(g.body.refused_hidden).toBe(1);
+  // accepter : reste visible, marquée, et la consigne entre dans la fiche et dans la mission
+  expect((await json(`/mockups/${m.id}/guide`,'POST',{rule:'target_min',key:small.key,decision:'accepted'})).status).toBe(200);
+  g=await json(`/mockups/${m.id}/guide`);expect(g.body.items.find((x:any)=>x.rule==='target_min').decision).toBe('accepted');
+  const sh=(await json(`/mockups/${m.id}/sheet`)).body;
+  expect(sh.markdown).toContain('## Suggestions de guidage acceptées');expect(sh.markdown).toContain('- Agrandis « Petit » à au moins 24 × 24 px (WCAG 2.2, critère 2.5.8).');
+  expect(sh.mission.fields.perimeter).toContain('Règles d’ergonomie acceptées par Martin');expect(sh.markdown).not.toContain('se lit mal');
+  // une suggestion qui n'existe plus est refusée (409) ; une règle inventée aussi
+  expect((await json(`/mockups/${m.id}/guide`,'POST',{rule:'target_min',key:'inexistant',decision:'refused'})).status).toBe(409);
+  expect((await json(`/mockups/${m.id}/guide`,'POST',{rule:'target_min',key:small.key,decision:'peut-être'})).status).toBe(400);
+  // corriger la maquette fait disparaître la suggestion (la règle ne se déclenche plus)
+  const d=(await json(`/mockups/${m.id}`)).body;await ops(m.id,d.revision,[{op:'update',id:small.block_ids[0],patch:{w:48,h:48}}]);
+  g=await json(`/mockups/${m.id}/guide`);expect(g.body.items.map((x:any)=>x.rule)).not.toContain('target_min');
+  // une NOUVELLE situation (autre couleur pâle) redonne une suggestion de contraste
+  const pale=d.blocks.find((x:any)=>x.label==='Pâle');const d2=(await json(`/mockups/${m.id}`)).body;
+  await ops(m.id,d2.revision,[{op:'update',id:pale.id,patch:{text_color:'#888888'}}]);
+  g=await json(`/mockups/${m.id}/guide`);expect(g.body.items.map((x:any)=>x.rule)).toContain('text_contrast');
+  // A contre B
+  const gb=await json(`/mockups/${m.id}/guide`,'GET',undefined,b);expect(gb.status).toBe(404);expect(JSON.stringify(gb.body)).not.toMatch(/Petit|Pâle/);
+  expect((await json(`/mockups/${m.id}/guide`,'POST',{rule:'target_min',key:small.key,decision:'refused'},b)).status).toBe(404);
+  const ex=await json('/account/export?metadata=true');expect(ex.body.mockup_suggestion_decisions.length).toBeGreaterThanOrEqual(2);
+  const exB=await json('/account/export?metadata=true','GET',undefined,b);expect(exB.body.mockup_suggestion_decisions).toEqual([]);
+ });
+});

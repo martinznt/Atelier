@@ -68,3 +68,40 @@ Les nouveaux tests ont été vérifiés par mutation (en cassant volontairement 
 - **Copier dans le presse-papiers** : non essayé automatiquement (permission du navigateur) ; « Télécharger » essayé.
 - **Essai décisif** (une vraie page de Recettes ou Sport, mission donnée à Claude Code, résultat comparé sur le téléphone) : **à faire par Martin** — le lot 5B n'est pas terminé sans lui.
 - Galaxy A05s et production : NON PROUVÉ.
+
+## 4. Étape 5B-3 — mise en ligne (V)
+PR #54 fusionnée (`a922a8d`) après CI verte. `/api/health` relu : `release_sha` = `a922a8d…`, migrations 0007 à 0025, aucune manquante. Base de production relue : mêmes nombres de lignes qu'au départ (et `missions` 0).
+
+## 5. Étape 5B-4 — guidage par règles vérifiables (migration 0026, additive)
+### Sources vérifiées (V)
+WCAG 2.2, **W3C Recommendation 12 December 2024**, lue le 17 novembre 2026 sur https://www.w3.org/TR/WCAG22/ (accès à `www.w3.org` ajouté à l'environnement avec l'accord de Martin). Extrait gardé : `docs/audits/preuves/lot5b/5b4-sources-w3c.txt`.
+- 2.5.8 Target Size (Minimum), **AA : 24 × 24 px CSS**, avec exceptions (espacement, équivalent, en ligne, navigateur, essentiel) ;
+- 2.5.5 Target Size (Enhanced), **AAA : 44 × 44 px CSS** ;
+- 1.4.3 Contrast (Minimum), **AA : 4,5:1**, gros texte (18 pt, ou 14 pt gras) **3:1** ;
+- 1.4.11 Non-text Contrast, **AA : 3:1** (non utilisé : la couleur de la page derrière un bloc n'est pas connue) ;
+- formules « contrast ratio » et « relative luminance » (seuil 0,04045), recopiées dans `server/mockup-guide.ts` et contrôlées : noir/blanc = 21:1, #767676 sur blanc = 4,54:1.
+### Les huit règles
+| Règle | Niveau | Source |
+|---|---|---|
+| Bouton, champ ou barre < 24 px | Vérifié | WCAG 2.5.8 (AA) |
+| Bouton, champ ou barre < 44 px | Vérifié | WCAG 2.5.5 (AAA) |
+| Texte/fond < 4,5:1 | Vérifié | WCAG 1.4.3 (AA) |
+| Une seule des deux couleurs choisie | Hypothèse | WCAG, définition « contrast ratio », note 4 |
+| Couleur hors palette du site | Vérifié | palette lue dans le dépôt |
+| Fonctionnalité liée abandonnée, rejetée, remplacée ou bloquée | Rapporté | suivi des fonctionnalités |
+| Une décision actuelle cite le bloc | Hypothèse | Atelier ne comprend pas le sens de la décision |
+| Deux blocs se chevauchent (hors même groupe) | Vérifié | géométrie de la maquette |
+| Plus de 8 blocs sans groupe | Hypothèse | repère d'Atelier, **sans source officielle** |
+### Preuves (application lancée en local, Chromium 360 px)
+| Fonction | Ce que j'ai vu | Preuve |
+|---|---|---|
+| Vérifier la maquette | 5 conseils : « Fermer » trop petit (20 × 20, lien WCAG 2.5.8), texte « Astuce du jour » à 2,84:1, deux couleurs hors palette, « Recette A » et « Recette B » se chevauchent (66 × 40 px) | V `5b4-01-conseils-trouves.png` |
+| Refuser / accepter | après refus : 4 conseils et « 1 refusé(s), masqué(s) » ; le conseil accepté porte « ✔ Accepté » ; rien ne change après rechargement | V `5b4-02-accepte-et-refuse.png` |
+| Conseil accepté dans la fiche | « Agrandis « Fermer » à au moins 24 × 24 px (WCAG 2.2, critère 2.5.8). » | V `5b4-03-fiche-avec-conseil-accepte.png` |
+| Correction | après avoir agrandi « Fermer » à 44 × 44, son conseil disparaît | V (parcours `lot5b-guide`) |
+### Contrôles (exécutés, résultats réels)
+`tsc` OK · vitest **199/199** (dont migration 0026 sur base remplie) · `node --test tests/*.test.mjs` **485/485** (dont 12 `mockup-guide`) · régressions OK · storage OK · core OK · bridge OK · build OK · Playwright lot5b-guide, lot5b, lot5b-edit, lot5b-sheet, lot3 : 28/28 (Android et ordinateur) · audit des exigences 621, 0 preuve cassée.
+### NON PROUVÉ / limites
+- Contraste d'un bloc avec la page derrière lui (1.4.11) : non calculé (Atelier ne lit pas les couleurs de la capture).
+- Exceptions de 2.5.8 (espacement suffisant, etc.) : non vérifiées, le conseil le dit.
+- Galaxy A05s, production : NON PROUVÉ.
