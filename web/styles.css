@@ -161,3 +161,14 @@ input:not([type=checkbox]),select,textarea{border-radius:14px}
 .mq-item.on{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
 .mq-detail{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:8px;background:var(--green-soft)}
 .mq-detail dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:6px 0 0}.mq-detail dt{color:var(--muted)}.mq-detail dd{margin:0;overflow-wrap:anywhere}
+
+/* Lot 5B (5B-2) — éditeur de maquette : boutons de déplacement, palette, glisser. */
+.mq-block.on{touch-action:none;cursor:grab}.mq-block.drag{cursor:grabbing;opacity:.85;z-index:3}
+.mq-bar{display:flex;gap:8px;flex-wrap:wrap}.mq-bar .button{flex:1 1 140px}
+.mq-panel{border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--surface)}.mq-panel h5{margin:10px 0 0;font-size:14px}
+.mq-pad{display:grid;grid-template-columns:repeat(3,minmax(44px,1fr));gap:6px;align-items:center;max-width:280px}.mq-pad .button{padding:8px}.mq-pad-c{text-align:center;color:var(--muted);font-size:12px}
+.mq-row{display:flex;gap:8px;flex-wrap:wrap}.mq-row .button{flex:1 1 120px}
+.mq-swatches{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.mq-sw{width:44px;height:44px;border-radius:10px;border:2px solid var(--line);cursor:pointer;padding:0;color:var(--ink);background:var(--surface);font-size:12px}.mq-sw.on{border-color:var(--ink);box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--ink)}
+.mq-sw.none{width:auto;padding:0 10px}.mq-other{display:flex;gap:8px;flex-basis:100%;align-items:center}.mq-other input{flex:1;min-width:0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}

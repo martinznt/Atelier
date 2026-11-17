@@ -17,3 +17,12 @@ Prérequis : la PR du lot 5B (étape 5B-1) est **fusionnée et en ligne** (la fu
 12. **Ne touchez pas** à « Fixer l'écran de départ » sauf si cette maquette est un essai : après cela, on ne peut plus rien ajouter à cette étape.
 
 Réponse attendue : une ligne par étape (« 5 OK », « 6 pas OK : trop long à régler »…).
+
+## Étape 5B-2 — modifier (après la fusion de la PR de l'étape 5B-2)
+13. Ouvrez votre maquette. Touchez un bloc : il s'entoure d'un double cadre et le panneau « Déplacer » apparaît. *Sinon : capture.*
+14. **Au doigt** : posez le doigt sur ce bloc déjà choisi et faites-le glisser. *Vous voyez :* il suit le doigt, puis reste à sa nouvelle place. Dites si c'est précis ou difficile.
+15. **Par les boutons** : touchez → puis ↓. *Vous voyez :* les chiffres au centre du pavé changent de 8 (par défaut).
+16. Touchez **Annuler**, puis **Rétablir**. *Vous voyez :* le bloc revient, puis repart.
+17. Cochez « Choisir plusieurs blocs », touchez un deuxième bloc, écrivez un nom de groupe et touchez **Grouper le choix**. *Vous voyez :* « groupe « … » » sous les deux blocs dans la liste.
+18. Choisissez « Palette du site : Livre de recettes » puis touchez une couleur pour le **Fond**. *Vous voyez :* le bloc prend cette couleur sur la capture.
+19. Notez : la page défile-t-elle bien quand votre doigt commence sur un bloc **non** choisi ? les boutons se touchent-ils sans erreur ?

@@ -20,8 +20,8 @@ export const IMAGE_MIMES = ['image/webp', 'image/jpeg', 'image/png'] as const;
 export type ImageMime = (typeof IMAGE_MIMES)[number];
 
 export class MockupError extends Error {
-  status: 400 | 413 | 422;
-  constructor(status: 400 | 413 | 422, message: string) { super(message); this.status = status; }
+  status: 400 | 409 | 413 | 422;
+  constructor(status: 400 | 409 | 413 | 422, message: string) { super(message); this.status = status; }
 }
 
 /* ───────── Couleurs ───────── */
@@ -130,4 +130,166 @@ export function cleanTitle(value: unknown, what = 'Le titre'): string {
   if (!v) throw new MockupError(400, `${what} est obligatoire.`);
   if (v.length > 160) throw new MockupError(400, `${what} est trop long (160 caractères au plus).`);
   return v;
+}
+
+/* ───────── 5B-2 : opérations de modification (pures : on valide tout en mémoire AVANT d'écrire quoi que ce soit) ───────── */
+export const MAX_OPS = 12;
+export const MAX_IDS = 50;
+export const MAX_WRITES = 40;
+export const MAX_MOVE = 4000;
+
+export interface BlockState {
+  id: string; kind: BlockKind; label: string; x: number; y: number; w: number; h: number; position: number;
+  group: string | null; fill: string; text_color: string; behavior: string; feature_id: string | null;
+}
+export type Op =
+  | { op: 'add'; block: Record<string, unknown> }
+  | { op: 'update'; id: string; patch: Record<string, unknown> }
+  | { op: 'delete'; id: string }
+  | { op: 'group'; ids: string[]; name: string }
+  | { op: 'ungroup'; ids: string[] }
+  | { op: 'move_group'; name: string; dx: number; dy: number }
+  | { op: 'delete_group'; name: string };
+export interface Layout { blocks: BlockState[]; groups: string[] }
+export interface Ctx { screen_width: number; screen_height: number; featureExists: (id: string) => boolean }
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const PATCHABLE = ['kind', 'label', 'x', 'y', 'w', 'h', 'fill', 'text_color', 'behavior', 'feature_id'] as const;
+
+function cleanGroupName(v: unknown): string {
+  const n = String(v ?? '').trim();
+  if (!n) throw new MockupError(400, 'Donnez un nom au groupe.');
+  if (n.length > 60) throw new MockupError(400, 'Le nom du groupe est trop long (60 caractères au plus).');
+  return n;
+}
+const delta = (v: unknown, what: string): number => {
+  const n = int(v, what);
+  if (Math.abs(n) > MAX_MOVE) throw new MockupError(400, `${what} : valeur trop grande.`);
+  return n;
+};
+function idList(v: unknown): string[] {
+  if (!Array.isArray(v) || !v.length) throw new MockupError(400, 'Choisissez au moins un bloc.');
+  if (v.length > MAX_IDS) throw new MockupError(400, `Trop de blocs d'un coup (${MAX_IDS} au plus).`);
+  const ids = v.map(String);
+  if (new Set(ids).size !== ids.length) throw new MockupError(400, 'Un bloc est cité deux fois.');
+  return ids;
+}
+const fits = (b: { x: number; y: number; w: number; h: number }, ctx: Ctx) => b.x >= 0 && b.y >= 0 && b.x + b.w <= ctx.screen_width && b.y + b.h <= ctx.screen_height;
+
+/** Applique les opérations dans l'ordre, sur une COPIE. Au premier défaut, tout est refusé : rien n'est partiellement appliqué. */
+export function applyOps(input: Layout, rawOps: unknown, ctx: Ctx): Layout {
+  if (!Array.isArray(rawOps) || !rawOps.length) throw new MockupError(400, 'Aucune modification demandée.');
+  if (rawOps.length > MAX_OPS) throw new MockupError(400, `Trop de modifications d'un coup (${MAX_OPS} au plus).`);
+  const blocks = new Map(input.blocks.map((b) => [b.id, { ...b }]));
+  const groups = [...input.groups];
+  const need = (id: unknown): BlockState => {
+    const b = blocks.get(String(id));
+    if (!b) throw new MockupError(400, 'Un des blocs n’existe plus. Rechargez la maquette.');
+    return b;
+  };
+  const ensureGroup = (name: string) => {
+    if (groups.includes(name)) return;
+    if (groups.length >= MAX_GROUPS) throw new MockupError(409, `Cette maquette a déjà ${MAX_GROUPS} groupes : c’est la limite.`);
+    groups.push(name);
+  };
+  for (const raw of rawOps as Record<string, any>[]) {
+    switch (raw?.op) {
+      case 'add': {
+        if (blocks.size >= MAX_BLOCKS) throw new MockupError(409, `Cette maquette a déjà ${MAX_BLOCKS} blocs : c’est la limite.`);
+        const src = (raw.block ?? {}) as Record<string, unknown>;
+        const c = cleanBlock(src, ctx.screen_height, ctx.screen_width);
+        const id = src.id === undefined ? crypto.randomUUID() : String(src.id);
+        if (!UUID.test(id)) throw new MockupError(400, 'Identifiant de bloc invalide.');
+        if (blocks.has(id)) throw new MockupError(409, 'Ce bloc existe déjà.');
+        const fid = src.feature_id ? String(src.feature_id) : null;
+        if (fid && !ctx.featureExists(fid)) throw new MockupError(400, 'Cette fonctionnalité n’appartient pas à ce projet.');
+        let g: string | null = null;
+        if (src.group_name) { g = cleanGroupName(src.group_name); ensureGroup(g); }
+        const position = Math.max(-1, ...[...blocks.values()].map((b) => b.position)) + 1;
+        blocks.set(id, { id, ...c, position, group: g, feature_id: fid });
+        break;
+      }
+      case 'update': {
+        const b = need(raw.id);
+        const patch = (raw.patch ?? {}) as Record<string, unknown>;
+        const bad = Object.keys(patch).filter((k) => !(PATCHABLE as readonly string[]).includes(k));
+        if (bad.length) throw new MockupError(400, 'Cette modification n’est pas permise.');
+        if (!Object.keys(patch).length) throw new MockupError(400, 'Aucune modification demandée.');
+        const next = cleanBlock({ ...b, ...patch }, ctx.screen_height, ctx.screen_width);
+        let fid = b.feature_id;
+        if ('feature_id' in patch) {
+          fid = patch.feature_id ? String(patch.feature_id) : null;
+          if (fid && !ctx.featureExists(fid)) throw new MockupError(400, 'Cette fonctionnalité n’appartient pas à ce projet.');
+        }
+        Object.assign(b, next, { feature_id: fid });
+        break;
+      }
+      case 'delete': { need(raw.id); blocks.delete(String(raw.id)); break; }
+      case 'group': {
+        const ids = idList(raw.ids), name = cleanGroupName(raw.name);
+        for (const id of ids) need(id);
+        ensureGroup(name);
+        for (const id of ids) need(id).group = name;
+        break;
+      }
+      case 'ungroup': { for (const id of idList(raw.ids)) need(id).group = null; break; }
+      case 'move_group': {
+        const name = cleanGroupName(raw.name);
+        if (!groups.includes(name)) throw new MockupError(400, 'Ce groupe n’existe pas.');
+        const dx = delta(raw.dx, 'Déplacement à droite'), dy = delta(raw.dy, 'Déplacement vers le bas');
+        const members = [...blocks.values()].filter((b) => b.group === name);
+        if (!members.length) throw new MockupError(400, 'Ce groupe est vide.');
+        for (const b of members) if (!fits({ x: b.x + dx, y: b.y + dy, w: b.w, h: b.h }, ctx)) throw new MockupError(400, 'Le groupe sortirait de l’écran : déplacez-le moins loin.');
+        for (const b of members) { b.x += dx; b.y += dy; }
+        break;
+      }
+      case 'delete_group': {
+        const name = cleanGroupName(raw.name);
+        if (!groups.includes(name)) throw new MockupError(400, 'Ce groupe n’existe pas.');
+        groups.splice(groups.indexOf(name), 1);
+        for (const b of blocks.values()) if (b.group === name) b.group = null;
+        break;
+      }
+      default: throw new MockupError(400, 'Modification inconnue.');
+    }
+  }
+  return { blocks: [...blocks.values()].sort((a, b) => a.position - b.position), groups };
+}
+
+/* ───────── Plan d'écriture : le moins de requêtes possible (D1 gratuit : 50 requêtes par appel) ───────── */
+export type Write =
+  | { t: 'group_add'; name: string }
+  | { t: 'block_add'; block: BlockState }
+  | { t: 'block_update'; block: BlockState }
+  | { t: 'translate'; ids: string[]; dx: number; dy: number }
+  | { t: 'set_group'; ids: string[]; name: string | null }
+  | { t: 'block_delete'; ids: string[] }
+  | { t: 'group_delete'; name: string };
+const FIELDS = ['kind', 'label', 'x', 'y', 'w', 'h', 'fill', 'text_color', 'behavior', 'feature_id', 'group'] as const;
+
+export function planWrites(before: Layout, after: Layout): Write[] {
+  const w: Write[] = [];
+  const old = new Map(before.blocks.map((b) => [b.id, b]));
+  const now = new Map(after.blocks.map((b) => [b.id, b]));
+  for (const g of after.groups) if (!before.groups.includes(g)) w.push({ t: 'group_add', name: g });
+  const translate = new Map<string, string[]>(), setGroup = new Map<string, string[]>();
+  for (const b of after.blocks) {
+    const o = old.get(b.id);
+    if (!o) { w.push({ t: 'block_add', block: b }); continue; }
+    const changed = FIELDS.filter((k) => o[k] !== b[k]);
+    if (!changed.length) continue;
+    if (changed.every((k) => k === 'x' || k === 'y')) {
+      const key = `${b.x - o.x},${b.y - o.y}`;
+      translate.set(key, [...(translate.get(key) ?? []), b.id]);
+    } else if (changed.length === 1 && changed[0] === 'group') {
+      const key = b.group ?? '';
+      setGroup.set(key, [...(setGroup.get(key) ?? []), b.id]);
+    } else w.push({ t: 'block_update', block: b });
+  }
+  for (const [k, ids] of translate) { const [dx, dy] = k.split(',').map(Number); w.push({ t: 'translate', ids, dx, dy }); }
+  for (const [k, ids] of setGroup) w.push({ t: 'set_group', ids, name: k === '' ? null : k });
+  const gone = before.blocks.filter((b) => !now.has(b.id)).map((b) => b.id);
+  if (gone.length) w.push({ t: 'block_delete', ids: gone });
+  for (const g of before.groups) if (!after.groups.includes(g)) w.push({ t: 'group_delete', name: g });
+  if (w.length > MAX_WRITES) throw new MockupError(413, `Trop de changements différents d'un coup (${MAX_WRITES} au plus). Faites-en moins à la fois.`);
+  return w;
 }

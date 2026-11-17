@@ -39,34 +39,37 @@ for(const width of [360,390])test(`Maquette : capture, blocs, lecture et écran 
  await expect(page.locator('.mq-bg')).toBeVisible();
  expect(await page.locator('.mq-bg').evaluate((i:HTMLImageElement)=>i.complete&&i.naturalWidth>0)).toBe(true);
 
- // (2) poser trois blocs par le formulaire (aucun glisser)
+ // (2) poser trois blocs : ajout, puis position exacte par les « Détails » (aucun glisser dans ce test)
  const add=async(kind:string,label:string,x:string,y:string,w:string,h:string,extra:{group?:string;fill?:string}={})=>{
-  await page.locator('.mq-add label.field:has(> span:text-is("Type")) select').selectOption(kind);await page.getByLabel('Nom du bloc').fill(label);
-  await page.getByLabel('Depuis la gauche').fill(x);await page.getByLabel('Depuis le haut').fill(y);await page.getByLabel('Largeur',{exact:true}).fill(w);await page.getByLabel('Hauteur',{exact:true}).fill(h);
-  if(extra.group)await page.getByLabel('Ou créer un nouveau groupe').fill(extra.group);
-  if(extra.fill)await page.getByLabel('Couleur de fond (facultatif)').fill(extra.fill);
-  await page.getByRole('button',{name:'Ajouter ce bloc'}).click();await expect(page.getByText('Bloc ajouté.')).toBeVisible();
+  await page.locator('.mq-add label.field:has(> span:text-is("Type")) select').selectOption(kind);await page.locator('.mq-add').getByLabel('Nom du bloc').fill(label);
+  await page.locator('.mq-add').getByRole('button',{name:'Ajouter ce bloc'}).click();
+  await expect(page.locator('.mq-panel strong').first()).toHaveText(label);
+  const d=page.locator('.mq-panel');
+  await d.getByLabel('Depuis la gauche').fill(x);await d.getByLabel('Depuis le haut').fill(y);await d.getByLabel('Largeur',{exact:true}).fill(w);await d.getByLabel('Hauteur',{exact:true}).fill(h);
+  await d.getByRole('button',{name:'Appliquer les détails'}).click();
+  await expect(d.locator('.mq-pad-c')).toHaveText(`${x} · ${y}`);
+  if(extra.group){await d.getByLabel('Nom du groupe').fill(extra.group);await d.getByRole('button',{name:'Grouper le choix'}).click();await expect(d.getByText('Groupe(s) du choix : '+extra.group)).toBeVisible();}
+  if(extra.fill){await d.getByLabel('Fond : autre couleur #rrggbb').fill(extra.fill);await d.getByRole('button',{name:'Autre couleur'}).first().click();}
  };
  await add('title','Titre de la page','16','60','328','40');
  await add('card','Carte recette','16','120','328','160',{group:'Contenu',fill:'#ffffff'});
  await add('bottom_bar','Barre du bas','0',String(mk.screen_height-60),'360','60');
  await expect(page.locator('.mq-block')).toHaveCount(3);
- // position en pourcentage de l'écran de travail : x=16/360, y=120/780
+ // position en pourcentage de l'écran de travail : x=16/360, y=120/hauteur
  const box=await page.locator('.mq-block').nth(1).evaluate((e:HTMLElement)=>({l:e.style.left,t:e.style.top,w:e.style.width,h:e.style.height}));
  expect(parseFloat(box.l)).toBeCloseTo(16/360*100,1);expect(parseFloat(box.t)).toBeCloseTo(120/mk.screen_height*100,1);expect(parseFloat(box.w)).toBeCloseTo(328/360*100,1);
- // les blocs recouvrent bien la capture : le cadre a les proportions de la capture
  const stage=await page.locator('.mq-stage').boundingBox();expect(stage!.width/stage!.height).toBeCloseTo(360/mk.screen_height,2);
  expect(stage!.width).toBeLessThanOrEqual(width);
 
- // (3) lecture d'un bloc : au toucher sur le bloc, et par la liste (sans viser un petit rectangle)
+ // (3) choisir un bloc : par la liste (sans viser un petit rectangle) puis au toucher ; le panneau montre ses réglages
  await page.locator('.mq-item',{hasText:'Carte recette'}).click();
- await expect(page.locator('.mq-detail')).toContainText('Carte');await expect(page.locator('.mq-detail')).toContainText('16 depuis la gauche, 120 depuis le haut');await expect(page.locator('.mq-detail')).toContainText('Contenu');await expect(page.locator('.mq-detail')).toContainText('#ffffff');
- await page.locator('.mq-block').first().click();await expect(page.locator('.mq-detail')).toContainText('Titre de la page');
+ await expect(page.locator('.mq-panel strong').first()).toHaveText('Carte recette');await expect(page.locator('.mq-panel').getByText('Groupe(s) du choix : Contenu')).toBeVisible();
+ await page.locator('.mq-block').first().click();await expect(page.locator('.mq-panel strong').first()).toHaveText('Titre de la page');
  const tap=await page.locator('.mq-item').first().boundingBox();expect(tap!.height).toBeGreaterThanOrEqual(44);
 
- // (4) refus lisibles, en français : un bloc qui sort de l'écran
- await page.getByLabel('Nom du bloc').fill('Trop large');await page.getByLabel('Depuis la gauche').fill('100');await page.getByLabel('Largeur',{exact:true}).fill('300');
- await page.getByRole('button',{name:'Ajouter ce bloc'}).click();await expect(page.getByRole('alert')).toContainText('dépasse à droite');
+ // (4) refus lisible, en français : un bloc qui sort de l'écran
+ const d2=page.locator('.mq-panel');await d2.getByLabel('Depuis la gauche').fill('100');await d2.getByLabel('Largeur',{exact:true}).fill('300');
+ await d2.getByRole('button',{name:'Appliquer les détails'}).click();await expect(page.getByRole('alert')).toContainText('dépasse à droite');
  await expect(page.locator('.mq-block')).toHaveCount(3);
 
  // (5) le contexte du projet est montré, avec le niveau de fiabilité
@@ -75,10 +78,10 @@ for(const width of [360,390])test(`Maquette : capture, blocs, lecture et écran 
  await noOverflow(page,'maquette avec blocs '+width);expect(await smallText(page),'texte sous 12 px').toEqual([]);
  await page.screenshot({path:`test-results/lot5b-maquette-${width}.png`,fullPage:true});
 
- // (6) fixer l'écran de départ : une seule fois, puis plus d'ajout
- await page.getByRole('button',{name:'Fixer l’écran de départ'}).click();await page.getByRole('button',{name:/^Confirmer|^Fixer|^Oui|^Continuer/}).last().click();
+ // (6) fixer l'écran de départ : une seule fois ; la capture ne change plus, les blocs restent modifiables
+ await page.getByRole('button',{name:'Fixer l’écran de départ'}).click();await page.getByRole('button',{name:/^Confirmer/}).last().click();
  await expect(page.getByText(/Écran de départ fixé le /)).toBeVisible();
- await expect(page.getByRole('button',{name:'Ajouter ce bloc'})).toHaveCount(0);await expect(page.getByLabel('Remplacer la capture')).toHaveCount(0);
+ await expect(page.getByLabel('Remplacer la capture')).toHaveCount(0);await expect(page.locator('.mq-add').getByRole('button',{name:'Ajouter ce bloc'})).toBeVisible();
  await noOverflow(page,'écran de départ fixé '+width);
  await page.reload();await expect(page.getByText('aucune maquette')).toHaveCount(0);
 });
