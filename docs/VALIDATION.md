@@ -1,3 +1,8 @@
+# Lot 5B (5B-5) — contrôles du 17 novembre 2026 (exécutés en local)
+
+- Voir `docs/audits/RAPPORT_LOT_5B_2026-11-17.md` §7 et §8. **NON PROUVÉ** : vraie IA, Galaxy A05s, production.
+
+---
 # Lot 5B (5B-4) — contrôles du 17 novembre 2026 (exécutés en local)
 
 - Voir `docs/audits/RAPPORT_LOT_5B_2026-11-17.md` §5 ; Playwright lot5b-guide 2/2 et tous les parcours lot5b et lot3 (28/28, Android et ordinateur). **NON PROUVÉ** : Galaxy A05s, production.

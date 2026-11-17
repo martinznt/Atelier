@@ -16,7 +16,8 @@ const tables={
  missions:['repo_full_name','rules_commit','executor_family','verdict','verdict_evidence'],
  mockups:['page_name','screen_height','palette','start_state'],mockup_images:['mime','bytes','sha256','data'],mockup_groups:['mockup_id','name','position'],
  mockup_blocks:['kind','label','group_id','fill','text_color','feature_id','behavior'],
- mockup_suggestion_decisions:['mockup_id','rule','target_key','decision']
+ mockup_suggestion_decisions:['mockup_id','rule','target_key','decision'],
+ mockup_messages:['mockup_id','author','kind','body','level','reply_to']
 };
 const fake=(t)=>({prepare:sql=>({all:async()=>{const m=/table_info\((\w+)\)/.exec(sql);return {results:(t[m[1]]||[]).map(name=>({name}))};}})});
 test('toutes les migrations présentes : complet, liste appliquée, rien de manquant',async()=>{
@@ -92,4 +93,8 @@ test('0025 : tout présent → appliquée ; une table ou une colonne manquante �
 test('0026 : table présente → appliquée ; absente → seule 0026 manquante, 0025 intacte',async()=>{
  let s=await status(tables);assert.ok(s.applied.includes('0026'));assert.equal(s.complete,true);
  s=await status({...tables,mockup_suggestion_decisions:undefined});assert.deepEqual(s.missing,['0026']);assert.ok(s.applied.includes('0025'));
+});
+test('0027 : table présente → appliquée ; absente → seule 0027 manquante, 0026 intacte',async()=>{
+ let s=await status(tables);assert.ok(s.applied.includes('0027'));assert.equal(s.complete,true);
+ s=await status({...tables,mockup_messages:undefined});assert.deepEqual(s.missing,['0027']);assert.ok(s.applied.includes('0026'));
 });

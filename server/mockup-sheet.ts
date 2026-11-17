@@ -13,6 +13,8 @@ export interface SheetInput {
   features: Record<string, { code: string; name: string }>;
   /** Consignes des suggestions de guidage acceptées par Martin (5B-4). */
   accepted?: string[];
+  /** Conclusions confirmées par Martin dans la discussion (5B-5). */
+  conclusions?: string[];
 }
 export type Change =
   | { t: 'added'; id: string; label: string }
@@ -152,6 +154,7 @@ export function buildSheet(input: SheetInput): Sheet {
     '## Écarts par rapport à l’écran de départ', '',
     ...(changes === null ? ['L’écran de départ n’a pas été fixé : Atelier ne peut pas dire ce qui a changé. La fiche décrit la mise en page visée.']
       : changes.length ? [`Écran de départ fixé le ${input.start_at}.`, '', ...instructions.map((s, i) => `${i + 1}. ${s}`)] : ['Aucun écart : la maquette est identique à l’écran de départ.']), '',
+    '## Conclusions confirmées par vous (discussion)', '', ...((input.conclusions ?? []).length ? input.conclusions!.map((x) => `- ${x}`) : ['Aucune.']), '',
     '## Suggestions de guidage acceptées', '', ...((input.accepted ?? []).length ? input.accepted!.map((x) => `- ${x}`) : ['Aucune.']), '',
     '## Fichiers probablement concernés (Hypothèse)', '',
     ...(files.length ? [...files.map((f) => `- ${f}`), '', 'Déduit de la liste des fichiers du dépôt au commit indiqué, pas de leur contenu : à confirmer en lisant le dépôt.'] : ['Aucune hypothèse : choisissez la palette du site pour qu’Atelier lise la liste de ses fichiers.']), '',
@@ -172,7 +175,7 @@ export function missionFields(input: SheetInput, sheet: Sheet): Record<'objectiv
     objective: `Sur la page ${input.page_name ? q(input.page_name) : 'concernée'} du site ${site}, reproduire la mise en page de la maquette ${q(input.title)} faite dans Atelier (fiche de mise en page jointe).`,
     perimeter: cap(sheet.changes === null
       ? ['Écran de départ non fixé : reproduire la mise en page visée ci-dessous.', ...target]
-      : sheet.instructions.length ? [...sheet.instructions.map((s, i) => `${i + 1}. ${s}`), '', 'Mise en page visée (ordre de lecture) :', ...target] : ['Aucun écart avec l’écran de départ : rien à changer.']).concat((input.accepted ?? []).length ? '\n\nRègles d’ergonomie acceptées par Martin :\n' + input.accepted!.map((x) => `- ${x}`).join('\n') : '').slice(0, 3000),
+      : sheet.instructions.length ? [...sheet.instructions.map((s, i) => `${i + 1}. ${s}`), '', 'Mise en page visée (ordre de lecture) :', ...target] : ['Aucun écart avec l’écran de départ : rien à changer.']).concat((input.conclusions ?? []).length ? '\n\nDécisions de mise en page confirmées par Martin :\n' + input.conclusions!.map((x) => `- ${x}`).join('\n') : '').concat((input.accepted ?? []).length ? '\n\nRègles d’ergonomie acceptées par Martin :\n' + input.accepted!.map((x) => `- ${x}`).join('\n') : '').slice(0, 3000),
     forbidden: ['Ne modifier que cette page : les autres pages restent identiques.', 'Ne pas toucher aux données enregistrées ni à leur format.', 'Ne pas ajouter de couleur hors de la palette du site, sauf celles indiquées « hors palette ».'].join('\n'),
     files: sheet.files.length ? `Hypothèse (liste des fichiers du dépôt au commit ${input.palette!.commit.slice(0, 7)}, contenu non lu) : ${sheet.files.join(', ')}. À confirmer en lisant le dépôt.` : 'À repérer dans le dépôt (Atelier n’a pas d’hypothèse).',
     tests: 'Lancer les tests du dépôt indiqués dans ses règles ; vérifier l’affichage à 360 px de large.',

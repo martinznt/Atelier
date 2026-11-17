@@ -6,6 +6,7 @@ import {api,post,put} from './api';
 import {MockupEditor} from './MockupEditor';
 import {MockupSheet} from './MockupSheet';
 import {MockupGuide} from './MockupGuide';
+import {MockupChat} from './MockupChat';
 import type {Entry} from './mockup-edit';
 import {Button,Confirm,ErrorBox,Field,Loading} from './ui';
 import {CaptureError,MAX_CAPTURE_BYTES,blobToBase64,compressCapture} from './mockup-image';
@@ -81,13 +82,14 @@ function MockupView({mockupId,onChanged,projectId,repos}:{mockupId:string;onChan
   {m.has_image&&<><h4>2. Modifier la maquette</h4>
    <MockupEditor m={m} img={img} busy={busy} locked={locked} onEntry={e=>void apply(e)} onUndo={()=>void undo()} onRedo={()=>void redo()} undoLabel={hist.undo.at(-1)?.label||''} redoLabel={hist.redo.at(-1)?.label||''} onPalette={s=>void choosePalette(s)} palettes={palettes} onError={setError}/></>}
   {m.has_image&&<><h4>3. Conseils d’ergonomie</h4><MockupGuide m={m}/></>}
-  {m.has_image&&<><h4>4. Fiche de mise en page et mission</h4><MockupSheet m={m} img={img} projectId={projectId} repos={repos}/></>}
-  <h4>5. Ce qu’Atelier sait déjà de ce projet</h4>
+  {m.has_image&&<><h4>4. Discussion</h4><MockupChat m={m}/></>}
+  {m.has_image&&<><h4>5. Fiche de mise en page et mission</h4><MockupSheet m={m} img={img} projectId={projectId} repos={repos}/></>}
+  <h4>6. Ce qu’Atelier sait déjà de ce projet</h4>
   <p className="muted">Lecture seule : ce sont les décisions « actuelles » et les fonctionnalités du suivi. Rien n’est inventé ; chaque ligne garde son niveau de fiabilité.</p>
   {m.context.decisions.length?<ul className="plain">{m.context.decisions.map((d:any)=><li key={d.id}><strong>{d.title}</strong> <small className="muted">{d.reliability_symbol} {d.reliability_word}{d.source_ref?' · source : '+d.source_ref:''}</small></li>)}</ul>:<p className="muted">Aucune décision actuelle enregistrée pour ce projet.</p>}
   {m.context.features.length?<details><summary>{m.context.features.length} fonctionnalité(s) du suivi</summary><ul className="plain">{m.context.features.slice(0,60).map((f:any)=><li key={f.id}>{f.code} — {f.name}</li>)}</ul>{m.context.features.length>60&&<p className="muted">… et {m.context.features.length-60} autres (liste complète dans « Suivi des fonctionnalités »).</p>}</details>:<p className="muted">Aucune fonctionnalité dans le suivi.</p>}
-  <p className="muted">Passages utiles de l’export ChatGPT : <strong>pas encore branchés</strong> (prévu avec l’espace de discussion, étape 5B-5).</p>
-  {m.has_image&&<div className="stack"><h4>6. Fixer l’écran de départ</h4>
+  <p className="muted">Passages utiles de l’historique importé (export ChatGPT) : Atelier les cherche quand vous posez une question dans la « Discussion » (niveau Rapporté). Sans import, il n’y en a aucun.</p>
+  {m.has_image&&<div className="stack"><h4>7. Fixer l’écran de départ</h4>
    {locked?<p className="notice">Écran de départ fixé le {new Date(m.start_at).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'})} ({m.start.blocks} bloc(s)). Il sert de point de comparaison : vous pouvez continuer à modifier la maquette, la copie de départ ne bouge plus.</p>
     :<><p className="muted">Quand les blocs recouvrent bien la capture, fixez l’écran de départ : c’est la référence pour montrer, plus tard, ce qui a changé. <strong>Après cela, la capture ne peut plus être remplacée.</strong> Les blocs restent modifiables.</p>
      <Button kind="secondary" disabled={busy||!m.blocks.length} onClick={()=>setConfirm(true)}>Fixer l’écran de départ</Button></>}</div>}

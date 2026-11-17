@@ -180,3 +180,8 @@ input:not([type=checkbox]),select,textarea{border-radius:14px}
 .mq-tip{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--surface);display:grid;gap:6px;overflow-wrap:anywhere}.mq-tip.ok{border-color:var(--ink)}
 .mq-tip p{margin:0}.mq-level{font-size:13px;font-weight:600;color:var(--ink)}
 .mq-guide a{color:var(--ink)}
+/* Lot 5B (5B-5) — discussion. */
+.mq-msgs{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.mq-msg{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--surface);display:grid;gap:6px;overflow-wrap:anywhere}
+.mq-msg.martin{background:var(--green-soft)}.mq-msg.concl{border-color:var(--ink);border-width:2px}
+.mq-body{white-space:pre-wrap;line-height:1.5}

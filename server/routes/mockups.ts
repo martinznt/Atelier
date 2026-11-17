@@ -8,6 +8,11 @@ import {BLOCK_KINDS,BLOCK_LABEL,MAX_BLOCKS,MAX_GROUPS,MAX_MOCKUPS_PER_PROJECT,MA
 import {SITE_PALETTES} from '../site-palettes.ts';
 import {SHEET_VERSION,buildSheet,missionFields,type SheetInput} from '../mockup-sheet.ts';
 import {LEVEL_WORD,suggestions,type GuideInput} from '../mockup-guide.ts';
+import {aiPrompt,contextAnswer,keywords} from '../mockup-chat.ts';
+import {credentialsFor} from './connections.ts';
+import {generate} from '../connectors/ai.ts';
+import {secretFindings} from '../handoff-core.ts';
+import {FEATURE_STATE_LABEL} from '../lifecycle-core.ts';
 import {sha256Hex} from '../mission-core.ts';
 import type {AppEnv,Env,Row} from '../types.ts';
 export const mockups=new Hono<AppEnv>();
@@ -224,7 +229,8 @@ mockups.get('/:id/sheet',async c=>{
   start:m.start_state?parse<any[]>(m.start_state,[]).map(b=>({id:b.id,kind:b.kind,label:b.label,x:b.x,y:b.y,w:b.w,h:b.h,group_name:b.group_name??null,fill:b.fill||'',text_color:b.text_color||'',behavior:b.behavior||'',feature_id:b.feature_id??null})):null,
   blocks:d.blocks.map((b:any)=>({id:b.id,kind:b.kind,label:b.label,x:b.x,y:b.y,w:b.w,h:b.h,group:b.group_name||'',fill:b.fill,text_color:b.text_color,behavior:b.behavior,feature:b.feature?{code:b.feature.code,name:b.feature.name}:null}))};
  const accepted=await acceptedInstructions(c.env,user,m);
- const sheet=buildSheet({...input,accepted}),fields=missionFields({...input,accepted},sheet);
+ const conclusions=(await many<Row>(c.env,"SELECT body FROM mockup_messages WHERE user_id=? AND mockup_id=? AND kind='conclusion' AND level='confirmed' ORDER BY created_at",user,m.id)).map(r=>r.body as string);
+ const sheet=buildSheet({...input,accepted,conclusions}),fields=missionFields({...input,accepted,conclusions},sheet);
  const feature_ids=[...new Set(d.blocks.filter((b:any)=>b.feature).map((b:any)=>b.feature.id as string))].slice(0,10);
  return c.json({version:SHEET_VERSION,title:m.title,page_name:m.page_name,start_fixed:Boolean(m.start_at),...sheet,mission:{title:('Maquette : '+m.title).slice(0,160),fields,feature_ids},content_hash:await sha256Hex(sheet.markdown)});
 });
@@ -265,4 +271,78 @@ mockups.post('/:id/guide',async c=>{
   ON CONFLICT(mockup_id,rule,target_key) DO UPDATE SET decision=excluded.decision,summary=excluded.summary,created_at=excluded.created_at`,uid(),user,m.project_id,m.id,d.rule,d.key,d.decision,s.title.slice(0,200),at);
  await event(c.env,user,d.decision==='accepted'?'mockup_suggestion_accepted':'mockup_suggestion_refused',s.title.slice(0,120),m.project_id);
  return c.json({ok:true,decision:d.decision});
+});
+
+/* ───────── 5B-5 : discussion liée à la maquette ───────── */
+const FREE_AI=['mistral','gemini','groq'];
+const msgView=(r:Row)=>({id:r.id,block_id:r.block_id||null,block_label:r.block_label,author:r.author,kind:r.kind,body:r.body,sources:parse<any[]>(r.sources,[]),level:r.level,level_word:r.level?({verified:'Vérifié',reported:'Rapporté',hypothesis:'Hypothèse',confirmed:'Confirmé par vous'} as Record<string,string>)[r.level]:'',ai_provider:r.ai_provider,ai_model:r.ai_model,reply_to:r.reply_to||null,created_at:r.created_at});
+mockups.get('/:id/discussion',async c=>{
+ const user=userId(c),m=await mine(c.env,user,c.req.param('id'));
+ const rows=await many<Row>(c.env,'SELECT * FROM mockup_messages WHERE user_id=? AND mockup_id=? ORDER BY created_at,rowid',user,m.id);
+ const conns=(await many<Row>(c.env,"SELECT id,provider,label,models,status,api_consent FROM connections WHERE user_id=? AND status='connected'",user)).filter(x=>FREE_AI.includes(x.provider as string)&&x.api_consent).map(x=>({id:x.id,provider:x.provider,label:x.label,models:parse<string[]>(x.models,[])}));
+ return c.json({items:rows.map(msgView),ai_connections:conns});
+});
+async function buildContext(env:Env,user:string,m:Row,blockId:string|null,question:string){
+ const d=await detail(env,user,m),b=blockId?d.blocks.find((x:any)=>x.id===blockId):null;
+ if(blockId&&!b)fail(400,'Ce bloc n’existe plus dans la maquette.');
+ const all=suggestions(await guideInput(env,user,m)),refused=new Set((await decisionsOf(env,user,m)).filter(x=>x.decision==='refused').map(x=>x.rule+'|'+x.target_key));
+ const sugg=all.filter(s=>!refused.has(s.rule+'|'+s.key)&&(!b||s.block_ids.includes(b.id))).slice(0,6);
+ let feature=null;
+ if(b?.feature){const f=await one<Row>(env,'SELECT id,code,name,state FROM project_features WHERE id=? AND user_id=?',b.feature.id,user);
+  if(f){const lc=await one<Row>(env,"SELECT status FROM item_lifecycle WHERE user_id=? AND kind='feature' AND item_id=?",user,f.id);feature={code:f.code as string,name:f.name as string,state_label:FEATURE_STATE_LABEL[f.state as keyof typeof FEATURE_STATE_LABEL]||String(f.state),life_label:LIFE_LABEL[((lc?.status as string)||'current') as keyof typeof LIFE_LABEL]};}}
+ const words=keywords(question+' '+(b?.label||''));const nb=(s:string)=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+ const decisions=d.context.decisions.filter((x:any)=>{const t=nb(x.title+' '+(x.reason||''));return (b&&b.label.length>=4&&t.includes(nb(b.label)))||words.some(w=>t.includes(w));}).slice(0,5)
+  .map((x:any)=>({title:x.title,reason:x.reason||'',reliability_word:x.reliability_word,source_ref:x.source_ref||''}));
+ const passages:{title:string;excerpt:string;date:string}[]=[];
+ for(const w of words.slice(0,3)){
+  const like='%'+w.replace(/[\\%_]/g,(x:string)=>'\\'+x)+'%';
+  const rows=await many<Row>(env,"SELECT bc.title,m.content,m.original_date FROM bridge_messages m JOIN bridge_conversations bc ON bc.id=m.conversation_id JOIN bridge_project_spaces bps ON bps.space_id=bc.space_id AND bps.user_id=m.owner_id WHERE m.owner_id=? AND bps.project_id=? AND m.content LIKE ? ESCAPE '\\' LIMIT 2",user,m.project_id,like);
+  for(const r of rows){const t=String(r.content||''),i=Math.max(0,nb(t).indexOf(w)-80);if(passages.length<3&&!passages.some(p=>p.title===r.title))passages.push({title:String(r.title||'Conversation'),excerpt:t.slice(i,i+220).replace(/\s+/g,' ').trim(),date:String(r.original_date||'')});}
+ }
+ const conclusions=(await many<Row>(env,"SELECT body FROM mockup_messages WHERE user_id=? AND mockup_id=? AND kind='conclusion' AND level='confirmed' AND (?='' OR block_id=?) ORDER BY created_at",user,m.id,b?.id||'',b?.id||'')).map(r=>r.body as string);
+ return {b,ctx:{question,block:b?{id:b.id,label:b.label,kind_label:b.kind_label,x:b.x,y:b.y,w:b.w,h:b.h,group:b.group_name||'',fill:b.fill,text_color:b.text_color,behavior:b.behavior}:null,
+  group_mates:b?.group_name?d.blocks.filter((x:any)=>x.group_name===b.group_name&&x.id!==b.id).map((x:any)=>x.label as string):[],suggestions:sugg,feature,decisions,passages,conclusions}};
+}
+const askInput=z.object({block_id:z.string().uuid().nullable().default(null),question:z.string().max(2000)});
+mockups.post('/:id/discussion',async c=>{
+ const user=userId(c),m=await mine(c.env,user,c.req.param('id')),d=askInput.parse(await jsonBody(c));
+ const question=d.question.trim();if(!question)fail(400,'Écrivez votre question.');
+ if(secretFindings(question).length)fail(400,'Votre question semble contenir une clé ou un mot de passe : retirez-le.');
+ const n=await one<Row>(c.env,'SELECT COUNT(*) AS n FROM mockup_messages WHERE user_id=? AND mockup_id=?',user,m.id);if(Number(n?.n||0)>=400)fail(409,'Cette discussion a atteint 400 messages : c’est la limite.');
+ const {b,ctx}=await buildContext(c.env,user,m,d.block_id,question),ans=contextAnswer(ctx),at=now(),qid=uid(),aid=uid(),later=new Date(Date.parse(at)+1).toISOString();
+ await c.env.DB.batch([
+  c.env.DB.prepare("INSERT INTO mockup_messages(id,user_id,project_id,mockup_id,block_id,block_label,author,kind,body,created_at) VALUES(?,?,?,?,?,?,'martin','question',?,?)").bind(qid,user,m.project_id,m.id,b?.id??null,b?.label??'',question,at),
+  c.env.DB.prepare("INSERT INTO mockup_messages(id,user_id,project_id,mockup_id,block_id,block_label,author,kind,body,sources,level,reply_to,created_at) VALUES(?,?,?,?,?,?,'atelier','answer',?,?,'',?,?)").bind(aid,user,m.project_id,m.id,b?.id??null,b?.label??'',ans.body,JSON.stringify(ans.sources),qid,later)
+ ]);
+ const rows=await many<Row>(c.env,'SELECT * FROM mockup_messages WHERE user_id=? AND id IN (?,?) ORDER BY created_at',user,qid,aid);
+ return c.json({items:rows.map(msgView)},201);
+});
+const aiInput=z.object({connection_id:z.string().uuid(),model:z.string().min(1).max(160)});
+mockups.post('/:id/discussion/:msg/ai',async c=>{
+ const user=userId(c),m=await mine(c.env,user,c.req.param('id')),d=aiInput.parse(await jsonBody(c));
+ const ans=await one<Row>(c.env,"SELECT * FROM mockup_messages WHERE id=? AND user_id=? AND mockup_id=? AND author='atelier'",c.req.param('msg'),user,m.id);if(!ans)fail(404,'Réponse introuvable.');
+ if(await one(c.env,"SELECT id FROM mockup_messages WHERE user_id=? AND reply_to=? AND author='ai'",user,ans.id))fail(409,'Une IA a déjà répondu à cette question : une seule demande, jamais rejouée.');
+ const qm=await one<Row>(c.env,'SELECT body FROM mockup_messages WHERE id=? AND user_id=?',ans.reply_to,user);
+ const {conn,secret}=await credentialsFor(c.env,d.connection_id,user,'chat');
+ if(!FREE_AI.includes(conn.provider)||!conn.api_consent||conn.status!=='connected')fail(403,'Seules vos connexions Gemini, Groq ou Mistral autorisées et testées peuvent répondre ici.');
+ if(!parse<string[]>(conn.models,[]).includes(d.model))fail(400,'Modèle non confirmé : testez la connexion.');
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),45000);let out='';
+ try{for await(const x of generate(conn.provider,secret,d.model,[{role:'user',content:aiPrompt(String(qm?.body||''),String(ans.body))}],900,controller.signal)){out+=x.text||'';if(out.length>6000)break;}}
+ catch{fail(502,'L’IA n’a pas répondu correctement. Rien n’a été ajouté et la demande n’est pas rejouée automatiquement.');}finally{clearTimeout(timer);}
+ out=out.trim().slice(0,6000);if(!out)fail(422,'L’IA n’a rien répondu. Rien n’a été ajouté.');
+ if(secretFindings(out).length)fail(422,'La réponse de l’IA contient ce qui ressemble à un secret. Rien n’a été ajouté.');
+ const id=uid();
+ await run(c.env,"INSERT INTO mockup_messages(id,user_id,project_id,mockup_id,block_id,block_label,author,kind,body,sources,level,ai_provider,ai_model,reply_to,created_at) VALUES(?,?,?,?,?,?,'ai','answer',?,'[]','hypothesis',?,?,?,?)",id,user,m.project_id,m.id,ans.block_id,ans.block_label,out,conn.provider,d.model,ans.id,now());
+ return c.json(msgView((await one<Row>(c.env,'SELECT * FROM mockup_messages WHERE id=? AND user_id=?',id,user))!),201);
+});
+const conclInput=z.object({reply_to:z.string().uuid(),text:z.string().max(1000)});
+mockups.post('/:id/discussion/conclusion',async c=>{
+ const user=userId(c),m=await mine(c.env,user,c.req.param('id')),d=conclInput.parse(await jsonBody(c));
+ const src=await one<Row>(c.env,"SELECT * FROM mockup_messages WHERE id=? AND user_id=? AND mockup_id=? AND kind='answer'",d.reply_to,user,m.id);if(!src)fail(404,'Réponse introuvable.');
+ const text=d.text.trim();if(!text)fail(400,'Écrivez la conclusion que vous confirmez.');
+ if(secretFindings(text).length)fail(400,'Ce texte semble contenir une clé ou un mot de passe : retirez-le.');
+ const id=uid();
+ await run(c.env,"INSERT INTO mockup_messages(id,user_id,project_id,mockup_id,block_id,block_label,author,kind,body,sources,level,reply_to,created_at) VALUES(?,?,?,?,?,?,'martin','conclusion',?,?,'confirmed',?,?)",id,user,m.project_id,m.id,src.block_id,src.block_label,text,JSON.stringify([{kind:'decision',label:src.author==='ai'?'Réponse d’une IA (Hypothèse) relue par vous':'Réponse d’Atelier',level:'confirmed',ref:src.id}]),src.id,now());
+ await event(c.env,user,'mockup_conclusion_confirmed',text.slice(0,120),m.project_id);
+ return c.json(msgView((await one<Row>(c.env,'SELECT * FROM mockup_messages WHERE id=? AND user_id=?',id,user))!),201);
 });

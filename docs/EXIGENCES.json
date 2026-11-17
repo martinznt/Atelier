@@ -5072,11 +5072,11 @@
   {
     "id": "MAQ-38-013",
     "section": 38,
-    "source": "Lot 5B, étape 5B-1 du 16 novembre 2026 (maquette d'écran, modèle et affichage)",
+    "source": "Lot 5B, étape 5B-5 du 17 novembre 2026 (discussion liée à la maquette)",
     "exigence": "Espace de discussion lié à la maquette.",
-    "statut": "à faire",
-    "preuve": "docs/audits/RAPPORT_LOT_5B_2026-11-16.md",
-    "limite": "Étape 5B-5."
+    "statut": "réalisé",
+    "preuve": "migrations/0027_mockup_discussion.sql ; server/mockup-chat.ts ; web/MockupChat.tsx ; tests/mockup-chat.test.mjs ; tests/mockup-chat.test.ts ; tests/migration-0027.test.ts ; tests/e2e/lot5b-chat.spec.ts ; docs/audits/preuves/lot5b/5b5-01-reponse-sans-ia.png",
+    "limite": "Réponse d'une VRAIE IA : NON PROUVÉ (aucune clé ; seulement Mistral simulé et l'échec propre avec une clé factice). Passages de l'export ChatGPT : 0 tant que l'export n'est pas importé. Galaxy A05s et production : NON PROUVÉ."
   },
   {
     "id": "MAQ-38-014",
@@ -5167,5 +5167,32 @@
     "statut": "réalisé",
     "preuve": "migrations/0026_mockup_guidance.sql ; server/routes/mockups.ts ; tests/mockups.test.ts ; tests/migration-0026.test.ts ; tests/e2e/lot5b-guide.spec.ts ; docs/audits/preuves/lot5b/5b4-02-accepte-et-refuse.png ; docs/audits/preuves/lot5b/5b4-03-fiche-avec-conseil-accepte.png",
     "limite": "Utilisé en local ; production : NON PROUVÉ (migration appliquée par la fusion)."
+  },
+  {
+    "id": "MAQ-38-024",
+    "section": 38,
+    "source": "Lot 5B, étape 5B-5 du 17 novembre 2026 (discussion liée à la maquette)",
+    "exigence": "Réponse d'Atelier sans IA dans la discussion : faits du bloc, conseils qui le visent, fonctionnalité liée, décisions qui le citent, passages de l'historique importé, conclusions déjà confirmées ; chaque élément avec sa source et son niveau ; Atelier dit quand il ne sait rien.",
+    "statut": "réalisé",
+    "preuve": "server/mockup-chat.ts ; tests/mockup-chat.test.mjs ; tests/mockup-chat.test.ts ; docs/audits/preuves/lot5b/5b5-01-reponse-sans-ia.png",
+    "limite": "Utilisé en local."
+  },
+  {
+    "id": "MAQ-38-025",
+    "section": 38,
+    "source": "Lot 5B, étape 5B-5 du 17 novembre 2026 (discussion liée à la maquette)",
+    "exigence": "Avis d'une IA avec la clé de l'utilisateur (Mistral, Groq, Gemini ; IA payante refusée) : texte seulement, jamais la capture, une seule demande par question, jamais rejouée ; réponse marquée Hypothèse ; en cas d'échec rien n'est ajouté.",
+    "statut": "réalisé",
+    "preuve": "server/routes/mockups.ts ; tests/mockup-chat.test.ts ; tests/e2e/lot5b-chat.spec.ts ; docs/audits/preuves/lot5b/5b5-02-ia-cle-factice-echec-propre.png",
+    "limite": "Fournisseur réel : NON PROUVÉ (simulation Mistral et clé factice seulement)."
+  },
+  {
+    "id": "MAQ-38-026",
+    "section": 38,
+    "source": "Lot 5B, étape 5B-5 du 17 novembre 2026 (discussion liée à la maquette)",
+    "exigence": "Conclusion « Confirmé par vous » seulement quand Martin l'écrit et la confirme ; elle entre dans la fiche et la mission.",
+    "statut": "réalisé",
+    "preuve": "server/routes/mockups.ts ; server/mockup-sheet.ts ; tests/mockup-chat.test.ts ; tests/e2e/lot5b-chat.spec.ts ; docs/audits/preuves/lot5b/5b5-03-conclusion-confirmee.png ; docs/audits/preuves/lot5b/5b5-04-fiche-avec-conclusion.png",
+    "limite": "Utilisé en local."
   }
 ]
