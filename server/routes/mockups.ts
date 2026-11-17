@@ -6,6 +6,7 @@ import {event,fail,jsonBody,many,now,one,owned,run,uid,userId} from '../core.ts'
 import {legacyDecision,effectiveReliability,RELIABILITY_VIEW,LIFE_LABEL} from '../lifecycle-core.ts';
 import {BLOCK_KINDS,BLOCK_LABEL,MAX_BLOCKS,MAX_GROUPS,MAX_MOCKUPS_PER_PROJECT,MAX_OPS,MAX_USER_IMAGE_BYTES,MockupError,SCREEN_WIDTH,applyOps,cleanBlock,cleanTitle,planWrites,screenHeightFor,validateImage,type BlockState,type Layout} from '../mockup-core.ts';
 import {SITE_PALETTES} from '../site-palettes.ts';
+import {SHEET_VERSION,buildSheet,missionFields,type SheetInput} from '../mockup-sheet.ts';
 import {sha256Hex} from '../mission-core.ts';
 import type {AppEnv,Env,Row} from '../types.ts';
 export const mockups=new Hono<AppEnv>();
@@ -209,4 +210,19 @@ mockups.post('/:id/ops',async c=>{
   if(!res[0].meta.changes)fail(409,stale);
   return c.json(await detail(c.env,user,await mine(c.env,user,m.id)));
  });
+});
+
+/* ───────── 5B-3 : fiche de mise en page + champs de mission (règles fixes, sans IA) ───────── */
+mockups.get('/:id/sheet',async c=>{
+ const user=userId(c),m=await mine(c.env,user,c.req.param('id')),d=await detail(c.env,user,m);
+ const feats=await many<Row>(c.env,'SELECT id,code,name FROM project_features WHERE user_id=? AND project_id=?',user,m.project_id);
+ const fmap:Record<string,{code:string;name:string}>={};for(const f of feats)fmap[f.id as string]={code:f.code as string,name:f.name as string};
+ const pal=d.palette as any;
+ const input:SheetInput={title:m.title,page_name:m.page_name,screen_width:m.screen_width,screen_height:m.screen_height,start_at:m.start_at||null,
+  palette:pal?{key:pal.key,label:pal.label,file:pal.file,commit:pal.commit,colors:pal.colors||[],files:pal.files||SITE_PALETTES.find(p=>p.key===pal.key)?.files||[]}:null,features:fmap,
+  start:m.start_state?parse<any[]>(m.start_state,[]).map(b=>({id:b.id,kind:b.kind,label:b.label,x:b.x,y:b.y,w:b.w,h:b.h,group_name:b.group_name??null,fill:b.fill||'',text_color:b.text_color||'',behavior:b.behavior||'',feature_id:b.feature_id??null})):null,
+  blocks:d.blocks.map((b:any)=>({id:b.id,kind:b.kind,label:b.label,x:b.x,y:b.y,w:b.w,h:b.h,group:b.group_name||'',fill:b.fill,text_color:b.text_color,behavior:b.behavior,feature:b.feature?{code:b.feature.code,name:b.feature.name}:null}))};
+ const sheet=buildSheet(input),fields=missionFields(input,sheet);
+ const feature_ids=[...new Set(d.blocks.filter((b:any)=>b.feature).map((b:any)=>b.feature.id as string))].slice(0,10);
+ return c.json({version:SHEET_VERSION,title:m.title,page_name:m.page_name,start_fixed:Boolean(m.start_at),...sheet,mission:{title:('Maquette : '+m.title).slice(0,160),fields,feature_ids},content_hash:await sha256Hex(sheet.markdown)});
 });

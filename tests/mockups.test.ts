@@ -245,3 +245,48 @@ describe('modifier la maquette (5B-2)',()=>{
   const after=await cur();expect(JSON.stringify(after.blocks)).toBe(snap);expect(after.revision).toBe(d.revision);
  });
 });
+
+describe('fiche de mise en page et mission (5B-3)',()=>{
+ const ops=(id:string,revision:number,o:any[],cookie=a)=>json(`/mockups/${id}/ops`,'POST',{revision,ops:o},cookie);
+ it('fiche par règles fixes : écarts exacts, liste de contrôle, fichiers en hypothèse ; même maquette → même texte',async()=>{
+  const m=await newMockup('Accueil du livre');await put(m.id,webp(720,1560));
+  await json(`/mockups/${m.id}/palette`,'PUT',{site:'recettes'});
+  for(const [label,y,kind] of [['Titre',40,'title'],['Recherche',300,'field'],['Ajouter',600,'button'],['Partager',600,'button']] as [string,number,string][])
+   await json(`/mockups/${m.id}/blocks`,'POST',block({label,y,kind,h:40,w:label==='Partager'?100:160,x:label==='Partager'?200:16}));
+  await json(`/mockups/${m.id}/lock-start`,'POST',{});
+  let d=(await json(`/mockups/${m.id}`)).body;const id=(l:string)=>d.blocks.find((x:any)=>x.label===l).id;
+  const r=await ops(m.id,d.revision,[{op:'update',id:id('Recherche'),patch:{y:88}},{op:'group',ids:[id('Ajouter'),id('Partager')],name:'Actions'},{op:'update',id:id('Ajouter'),patch:{fill:'#d39a62'}},{op:'update',id:id('Titre'),patch:{feature_id:featA}}]);
+  expect(r.status).toBe(200);
+  const s1=await json(`/mockups/${m.id}/sheet`);expect(s1.status).toBe(200);
+  expect(s1.body.instructions).toEqual([ // ordre de lecture : « Titre » est en haut de l'écran
+   '« Titre » sert la fonctionnalité F-0001 « Liste de courses ».',
+   'Déplace « Recherche » juste sous « Titre » (position visée : 16 px du bord gauche, 88 px du haut ; avant : 16, 300).',
+   'Regroupe « Ajouter » avec les autres éléments du groupe « Actions » : ils restent ensemble, côte à côte, et se déplacent ensemble.',
+   'Couleur de fond de « Ajouter » : --accent (#d39a62), utilise la variable CSS du site plutôt que le code (avant : aucune).',
+   'Regroupe « Partager » avec les autres éléments du groupe « Actions » : ils restent ensemble, côte à côte, et se déplacent ensemble.']);
+  expect(s1.body.checklist).toContain('« Ajouter » et « Partager » sont ensemble (groupe « Actions »).');
+  expect(s1.body.checklist).toContain('« Recherche » est juste sous « Titre ».');
+  expect(s1.body.files[0]).toBe('public/css/app.css');
+  expect(s1.body.mission.fields.files).toMatch(/^Hypothèse/);expect(s1.body.mission.feature_ids).toEqual([featA]);
+  expect(s1.body.markdown).toMatch(/règles fixes, sans IA/);
+  const s2=await json(`/mockups/${m.id}/sheet`);expect(s2.body.markdown).toBe(s1.body.markdown);expect(s2.body.content_hash).toBe(s1.body.content_hash);
+  // B ne lit pas la fiche de A
+  const sb=await json(`/mockups/${m.id}/sheet`,'GET',undefined,b);expect(sb.status).toBe(404);expect(JSON.stringify(sb.body)).not.toMatch(/Recherche|Titre/);
+ });
+ it('la mission est créée par le générateur du lot 3 avec les champs de la fiche, et son aperçu contient les consignes',async()=>{
+  const m=await newMockup('Mission');await put(m.id,webp(720,1560));await json(`/mockups/${m.id}/palette`,'PUT',{site:'recettes'});
+  await json(`/mockups/${m.id}/blocks`,'POST',block({label:'Bouton',y:300}));await json(`/mockups/${m.id}/blocks`,'POST',block({label:'Titre',y:40,h:40}));
+  await json(`/mockups/${m.id}/lock-start`,'POST',{});let d=(await json(`/mockups/${m.id}`)).body;
+  await ops(m.id,d.revision,[{op:'update',id:d.blocks.find((x:any)=>x.label==='Bouton').id,patch:{y:88}}]);
+  const sh=(await json(`/mockups/${m.id}/sheet`)).body;
+  const at=new Date().toISOString(),conn=crypto.randomUUID(),repo=crypto.randomUUID();
+  await db.prepare("INSERT INTO connections(id,user_id,provider,label,secret,created_at) VALUES(?,?,?,?,?,?)").bind(conn,ownerA,'github','gh essai','x',at).run();
+  await db.prepare('INSERT INTO repositories(id,user_id,project_id,connection_id,full_name,branch,head_sha,created_at,default_branch) VALUES(?,?,?,?,?,?,?,?,?)').bind(repo,ownerA,projectA,conn,'martinznt/Livre-de-recettes','main','0'.repeat(40),at,'main').run();
+  const mi=await json('/missions','POST',{project_id:projectA,repository_id:repo,level:'short',title:sh.mission.title,fields:sh.mission.fields,feature_ids:sh.mission.feature_ids,decision_ids:[]});
+  expect(mi.status).toBe(201);expect(mi.body.title).toBe('Maquette : Mission');expect(mi.body.fields.perimeter).toMatch(/Déplace « Bouton » juste sous « Titre »/);
+  const full=await json(`/missions/${mi.body.id}`);expect(full.status).toBe(200);
+  expect(String(full.body.rendered)).toMatch(/Déplace « Bouton » juste sous « Titre »/);expect(String(full.body.rendered)).toMatch(/Hypothèse \(liste des fichiers du dépôt/);
+  // B ne peut pas créer de mission dans le projet de A
+  expect((await json('/missions','POST',{project_id:projectA,repository_id:repo,level:'short',title:'x',fields:sh.mission.fields,feature_ids:[],decision_ids:[]},b)).status).toBe(404);
+ });
+});

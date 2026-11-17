@@ -4,6 +4,7 @@
 import {useCallback,useEffect,useState} from 'react';
 import {api,post,put} from './api';
 import {MockupEditor} from './MockupEditor';
+import {MockupSheet} from './MockupSheet';
 import type {Entry} from './mockup-edit';
 import {Button,Confirm,ErrorBox,Field,Loading} from './ui';
 import {CaptureError,MAX_CAPTURE_BYTES,blobToBase64,compressCapture} from './mockup-image';
@@ -11,7 +12,7 @@ import {CaptureError,MAX_CAPTURE_BYTES,blobToBase64,compressCapture} from './moc
 /** Kilo-octets décimaux (1 Ko = 1 000 octets), comme les messages du serveur : la limite s'affiche « 180 Ko ». */
 const ko=(n:number)=>(n/1000).toFixed(1).replace('.',',')+' Ko';
 
-export function MockupsSection({id}:{id:string}){
+export function MockupsSection({id,repos=[]}:{id:string;repos?:any[]}){
  const [list,setList]=useState<any[]>([]),[error,setError]=useState<unknown>(null),[busy,setBusy]=useState(false),[open,setOpen]=useState<string>(''),[form,setForm]=useState({title:'',page_name:''});
  const load=useCallback(async()=>{try{setList((await api(`/mockups?project=${id}`)).items);}catch(e){setError(e);}},[id]);
  useEffect(()=>{void load();},[load]);
@@ -26,7 +27,7 @@ export function MockupsSection({id}:{id:string}){
    <ErrorBox error={error}/>
    {list.map(m=><details className="fold" key={m.id} open={open===m.id} onToggle={e=>{const o=(e.target as HTMLDetailsElement).open;if(o&&open!==m.id)setOpen(m.id);if(!o&&open===m.id)setOpen('');}}>
     <summary className="fold-summary"><strong>{m.title}</strong><small className="muted">{m.page_name?m.page_name+' · ':''}{m.has_image?'capture déposée':'sans capture'} · {m.block_count} bloc(s){m.start_fixed?' · écran de départ fixé':''}</small></summary>
-    <div className="fold-body stack">{open===m.id&&<MockupView mockupId={m.id} onChanged={load}/>}</div></details>)}
+    <div className="fold-body stack">{open===m.id&&<MockupView mockupId={m.id} onChanged={load} projectId={id} repos={repos}/>}</div></details>)}
    <details className="fold"><summary className="fold-summary"><strong>Nouvelle maquette</strong><small className="muted">un écran de votre site</small></summary><div className="fold-body stack">
     <Field label="Nom de la maquette"><input value={form.title} maxLength={160} onChange={e=>setForm({...form,title:e.target.value})} placeholder="Ex. Accueil du livre"/></Field>
     <Field label="Page du site concernée (facultatif)" hint="Ce que vous voyez sur la capture, par exemple « Accueil » ou « Liste de courses ».">
@@ -36,7 +37,7 @@ export function MockupsSection({id}:{id:string}){
   </div></details>;
 }
 
-function MockupView({mockupId,onChanged}:{mockupId:string;onChanged:()=>Promise<void>}){
+function MockupView({mockupId,onChanged,projectId,repos}:{mockupId:string;onChanged:()=>Promise<void>;projectId:string;repos:any[]}){
  const [m,setM]=useState<any>(null),[img,setImg]=useState<string>(''),[error,setError]=useState<unknown>(null),[busy,setBusy]=useState(false),[notice,setNotice]=useState('');
  const [confirm,setConfirm]=useState(false),[hist,setHist]=useState<{undo:Entry[];redo:Entry[]}>({undo:[],redo:[]}),[palettes,setPalettes]=useState<any[]>([]);
  useEffect(()=>{api('/mockups/palettes').then(r=>setPalettes(r.palettes||[])).catch(()=>setPalettes([]));},[]);
@@ -78,12 +79,13 @@ function MockupView({mockupId,onChanged}:{mockupId:string;onChanged:()=>Promise<
   {m.has_image&&<p className="muted">Capture : {m.image.width} × {m.image.height} px · {ko(m.image.bytes)} · {m.image.mime.replace('image/','').toUpperCase()}. Écran de travail : {sc} × {sh}.</p>}
   {m.has_image&&<><h4>2. Modifier la maquette</h4>
    <MockupEditor m={m} img={img} busy={busy} locked={locked} onEntry={e=>void apply(e)} onUndo={()=>void undo()} onRedo={()=>void redo()} undoLabel={hist.undo.at(-1)?.label||''} redoLabel={hist.redo.at(-1)?.label||''} onPalette={s=>void choosePalette(s)} palettes={palettes} onError={setError}/></>}
-  <h4>3. Ce qu’Atelier sait déjà de ce projet</h4>
+  {m.has_image&&<><h4>3. Fiche de mise en page et mission</h4><MockupSheet m={m} img={img} projectId={projectId} repos={repos}/></>}
+  <h4>4. Ce qu’Atelier sait déjà de ce projet</h4>
   <p className="muted">Lecture seule : ce sont les décisions « actuelles » et les fonctionnalités du suivi. Rien n’est inventé ; chaque ligne garde son niveau de fiabilité.</p>
   {m.context.decisions.length?<ul className="plain">{m.context.decisions.map((d:any)=><li key={d.id}><strong>{d.title}</strong> <small className="muted">{d.reliability_symbol} {d.reliability_word}{d.source_ref?' · source : '+d.source_ref:''}</small></li>)}</ul>:<p className="muted">Aucune décision actuelle enregistrée pour ce projet.</p>}
   {m.context.features.length?<details><summary>{m.context.features.length} fonctionnalité(s) du suivi</summary><ul className="plain">{m.context.features.slice(0,60).map((f:any)=><li key={f.id}>{f.code} — {f.name}</li>)}</ul>{m.context.features.length>60&&<p className="muted">… et {m.context.features.length-60} autres (liste complète dans « Suivi des fonctionnalités »).</p>}</details>:<p className="muted">Aucune fonctionnalité dans le suivi.</p>}
   <p className="muted">Passages utiles de l’export ChatGPT : <strong>pas encore branchés</strong> (prévu avec l’espace de discussion, étape 5B-5).</p>
-  {m.has_image&&<div className="stack"><h4>4. Fixer l’écran de départ</h4>
+  {m.has_image&&<div className="stack"><h4>5. Fixer l’écran de départ</h4>
    {locked?<p className="notice">Écran de départ fixé le {new Date(m.start_at).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'})} ({m.start.blocks} bloc(s)). Il sert de point de comparaison : vous pouvez continuer à modifier la maquette, la copie de départ ne bouge plus.</p>
     :<><p className="muted">Quand les blocs recouvrent bien la capture, fixez l’écran de départ : c’est la référence pour montrer, plus tard, ce qui a changé. <strong>Après cela, la capture ne peut plus être remplacée.</strong> Les blocs restent modifiables.</p>
      <Button kind="secondary" disabled={busy||!m.blocks.length} onClick={()=>setConfirm(true)}>Fixer l’écran de départ</Button></>}</div>}

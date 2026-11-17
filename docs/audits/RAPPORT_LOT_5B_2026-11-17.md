@@ -41,3 +41,30 @@ Les nouveaux tests ont été vérifiés par mutation (en cassant volontairement 
 - Annuler / Rétablir se perd au rechargement de la page (historique gardé dans l'écran, 50 gestes au plus).
 - Un bloc non choisi ne se glisse pas : il faut d'abord le toucher (choix voulu, pour que la page puisse défiler au doigt).
 - Seul le thème sombre par défaut de chaque site est repris dans les palettes.
+
+## 2. Étape 5B-2 — mise en ligne (V)
+- PR #53 fusionnée (`cc49346`) après CI verte (`check` et build Cloudflare). `/api/health` relu : `release_sha` = `cc49346…`, migrations 0007 à 0025, aucune manquante.
+- Base de production relue après la fusion : **mêmes nombres de lignes** qu'au relevé de départ (users 1, projects 5, conversations 5, messages 6, files 14, file_versions 17, file_contents 17, tasks 3, repositories 1, connections 4, project_decisions 1, project_features 1, item_lifecycle 2, lifecycle_events 3, events 17, mockups 0, d1_migrations 25).
+
+## 3. Étape 5B-3 — fiche, mission, export (aucune migration)
+### Ce qui a été construit
+- `server/mockup-sheet.ts` : règles fixes, sans IA. Ordre de lecture (haut → bas, gauche → droite, même ligne à 8 px près) ; écarts avec l'écran de départ (ajouté, retiré, déplacé — « juste sous » si un bloc est au-dessus à 24 px au plus et le chevauche —, redimensionné, regroupé, séparé, recoloré, renommé, changé de type, comportement, fonctionnalité) ; couleurs nommées par le jeton du site (ex. `--accent (#d39a62)`), sinon « hors palette » ; liste de contrôle « maquette / résultat » ; fichiers probablement concernés **(Hypothèse)** d'après la liste des fichiers du dépôt au commit épinglé, jamais leur contenu.
+- `GET /api/mockups/:id/sheet` : fiche + champs de mission + empreinte.
+- Écran « 3. Fiche de mise en page et mission » : Préparer la fiche, Copier, Télécharger la fiche (.md), Télécharger l'image (.png), Créer la mission (générateur du lot 3 : ensuite lire les règles du dépôt, figer, copier dans « Missions pour Claude Code »).
+### Défauts trouvés en utilisant l'application, et corrigés
+1. Les titres de la fiche faisaient 11,6 px (sous la règle des 12 px) : corrigés à 14 px. (V : mesure du navigateur avant/après)
+2. Une mission créée depuis la maquette n'apparaissait pas dans « Missions pour Claude Code » sans recharger la page : la liste se met maintenant à jour aussitôt. (V)
+### Preuves (application lancée en local, Chromium, 360 px)
+| Fonction | Ce que j'ai vu | Preuve |
+|---|---|---|
+| Fiche à l'écran | 4 consignes exactes (dont « Déplace « Recherche » juste sous « Titre » »), liste de contrôle, fichiers `public/css/app.css`, `public/index.html` marqués Hypothèse | V `5b3-01-fiche-ecarts-controle.png` |
+| Fiche téléchargée | fichier `fiche-accueil-du-livre.md`, mêmes consignes, cases à cocher | V `5b3-02-fiche-telechargee.md` |
+| Image de la maquette | PNG 720 × (2 × hauteur), capture en fond, blocs numérotés, bloc 3 coloré `--accent` | V `5b3-03-image-maquette.png` |
+| Mission (générateur du lot 3) | créée, visible tout de suite dans « Missions », figée, téléchargée ; contient consignes, mise en page visée, fichiers en Hypothèse, liste de contrôle | V `5b3-04-mission-telechargee.md`, `5b3-05-mission-figee.png` |
+### Contrôles (exécutés, résultats réels)
+`tsc` OK · vitest **197/197** · `node --test tests/*.test.mjs` **472/472** (dont 29 `mockup-sheet`) · régressions OK · `test:storage` 11/11 · `test:core` OK · `test:bridge` OK · build OK · Playwright `lot5b-sheet` 2/2, `lot5b` 3/3, `lot5b-edit` 5/5, `lot3` 2/2 (Android et ordinateur) · audit des exigences 619, 0 preuve cassée. Un test trop faible (ordre de lecture) a été renforcé après une mutation non détectée.
+### NON PROUVÉ / limites
+- **Lecture des règles réelles du dépôt** par la mission : NON PROUVÉ (aucun jeton GitHub ici ; la mission a été figée « sans les règles », et le texte le dit).
+- **Copier dans le presse-papiers** : non essayé automatiquement (permission du navigateur) ; « Télécharger » essayé.
+- **Essai décisif** (une vraie page de Recettes ou Sport, mission donnée à Claude Code, résultat comparé sur le téléphone) : **à faire par Martin** — le lot 5B n'est pas terminé sans lui.
+- Galaxy A05s et production : NON PROUVÉ.

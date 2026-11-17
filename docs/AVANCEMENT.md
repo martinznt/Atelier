@@ -1,3 +1,8 @@
+# 17 novembre 2026 — Lot 5B, étape 5B-3 : fiche, mission, export (aucune migration)
+
+**Fait (utilisé en local, captures et fichiers dans `docs/audits/preuves/lot5b/`) :** fiche par règles fixes (écarts, liste de contrôle, fichiers en Hypothèse), téléchargement de la fiche et de l’image, mission créée par le générateur du lot 3 puis figée et téléchargée. Deux défauts trouvés en utilisant l’écran et corrigés. **NON PROUVÉ :** lecture des vraies règles du dépôt (jeton GitHub), Galaxy A05s, production. **À faire par Martin :** l’essai décisif sur une vraie page.
+
+---
 # 17 novembre 2026 — Lot 5B, étape 5B-2 : modifier la maquette (aucune migration)
 
 **Fait (utilisé en vrai dans l’application lancée en local, captures dans `docs/audits/preuves/lot5b/`) :** glisser à la souris et au doigt, pavé de flèches, placer sous un bloc, taille, grouper/séparer/déplacer un groupe, couleurs des palettes lues dans les dépôts des deux sites, supprimer, annuler/rétablir, protection contre deux écrans. **NON PROUVÉ :** Galaxy A05s, usage en production. Sauvegarde : point de restauration Time Travel 2026-11-17T15:52:54Z, aucun export SQL (jeton refusé par Martin). Rapport : `docs/audits/RAPPORT_LOT_5B_2026-11-17.md`.

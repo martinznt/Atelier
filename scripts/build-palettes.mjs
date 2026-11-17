@@ -1,5 +1,5 @@
 /* Lot 5B (5B-2) — palettes de couleurs des deux sites, lues EN LECTURE SEULE dans les dépôts (git show à un commit épinglé).
-   Aucune écriture dans Livre-de-recettes ni Sport. Écrit server/site-palettes.ts. Usage : node scripts/build-palettes.mjs [--check]
+   Aucune écriture dans Livre-de-recettes ni Sport. Écrit server/site-palettes.ts (couleurs et liste des fichiers public/*.html|js|css, pour proposer des fichiers « probablement concernés », toujours en hypothèse). Usage : node scripts/build-palettes.mjs [--check]
    Sans les clones (CI GitHub), --check ne vérifie que la forme du fichier versionné. */
 import {execFileSync} from 'node:child_process';
 import {existsSync,readFileSync,writeFileSync} from 'node:fs';
@@ -18,12 +18,13 @@ function build(){
   const head=execFileSync('git',['-C',s.dir,'rev-parse','HEAD'],{encoding:'utf8'}).trim();
   const byToken=new Map();
   for(const [a,b] of s.ranges)for(let n=a;n<=b;n++){for(const m of (text[n-1]||'').matchAll(DECL))byToken.set(m[1],{token:'--'+m[1],hex:norm(m[2]),line:n});}
-  return {key:s.key,label:s.label,repo:s.repo,commit:s.commit,file:s.file,theme:s.theme,colors:[...byToken.values()].sort((x,y)=>x.line-y.line||x.token.localeCompare(y.token)),_head:head};
+  const files=execFileSync('git',['-C',s.dir,'ls-tree','-r','--name-only',s.commit],{encoding:'utf8'}).split('\n').filter(f=>/^public\/.*\.(html|js|css)$/.test(f)).sort();
+  return {key:s.key,label:s.label,repo:s.repo,commit:s.commit,file:s.file,theme:s.theme,colors:[...byToken.values()].sort((x,y)=>x.line-y.line||x.token.localeCompare(y.token)),files,_head:head};
  });
 }
 const render=(sites)=>`/* GÉNÉRÉ par scripts/build-palettes.mjs — ne pas modifier à la main. Couleurs lues en lecture seule dans les dépôts des sites, à un commit épinglé. */
 export interface SiteColor{token:string;hex:string;line:number}
-export interface SitePalette{key:string;label:string;repo:string;commit:string;file:string;theme:string;colors:SiteColor[]}
+export interface SitePalette{key:string;label:string;repo:string;commit:string;file:string;theme:string;colors:SiteColor[];files:string[]}
 export const SITE_PALETTES:SitePalette[]=${JSON.stringify(sites.map(({_head,...s})=>s),null,1)};
 `;
 if(process.argv.includes('--check')){

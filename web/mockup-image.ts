@@ -49,3 +49,19 @@ export function blobToBase64(blob:Blob):Promise<string>{
   r.readAsDataURL(blob);
  });
 }
+
+/** 5B-3 — image de la maquette : la capture en fond, chaque bloc avec sa couleur, son contour et son numéro (ordre de la liste). Rien n'est envoyé. */
+export async function renderMockupPng(src:string,m:{screen_width:number;screen_height:number;blocks:{x:number;y:number;w:number;h:number;fill:string;label:string}[]}):Promise<Blob>{
+ const k=2,W=m.screen_width*k,H=m.screen_height*k,c=document.createElement('canvas');c.width=W;c.height=H;
+ const ctx=c.getContext('2d');if(!ctx)throw new CaptureError('Ce navigateur ne sait pas dessiner l’image.');
+ ctx.fillStyle='#ffffff';ctx.fillRect(0,0,W,H);
+ if(src){const img=new Image();img.src=src;await img.decode();ctx.drawImage(img,0,0,W,H);}
+ m.blocks.forEach((b,i)=>{
+  const x=b.x*k,y=b.y*k,w=b.w*k,h=b.h*k;
+  if(b.fill){ctx.globalAlpha=.6;ctx.fillStyle=b.fill;ctx.fillRect(x,y,w,h);ctx.globalAlpha=1;}
+  ctx.lineWidth=6;ctx.strokeStyle='#ffffff';ctx.strokeRect(x,y,w,h);ctx.lineWidth=3;ctx.strokeStyle='#0b0b0c';ctx.strokeRect(x,y,w,h);
+  const t=String(i+1);ctx.font='bold 24px sans-serif';const tw=ctx.measureText(t).width+12;
+  ctx.fillStyle='#0b0b0c';ctx.fillRect(x,y,tw,30);ctx.fillStyle='#ffffff';ctx.fillText(t,x+6,y+23);
+ });
+ return new Promise((res,rej)=>c.toBlob(b=>b?res(b):rej(new CaptureError('Image impossible à fabriquer.')),'image/png'));
+}

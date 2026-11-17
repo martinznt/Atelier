@@ -26,3 +26,10 @@ Réponse attendue : une ligne par étape (« 5 OK », « 6 pas OK : trop long à
 17. Cochez « Choisir plusieurs blocs », touchez un deuxième bloc, écrivez un nom de groupe et touchez **Grouper le choix**. *Vous voyez :* « groupe « … » » sous les deux blocs dans la liste.
 18. Choisissez « Palette du site : Livre de recettes » puis touchez une couleur pour le **Fond**. *Vous voyez :* le bloc prend cette couleur sur la capture.
 19. Notez : la page défile-t-elle bien quand votre doigt commence sur un bloc **non** choisi ? les boutons se touchent-ils sans erreur ?
+
+## Étape 5B-3 — fiche et mission (après la fusion de la PR de l'étape 5B-3) — c'est aussi l'**essai décisif**
+20. Prenez une **vraie page** de Livre de recettes ou de Sport, faites sa maquette (capture, blocs), **fixez l'écran de départ**, puis faites vos changements.
+21. Touchez **Préparer la fiche**. *Vous voyez :* les consignes (« Déplace … juste sous … »), la liste de contrôle, les fichiers en Hypothèse. Dites si une consigne est fausse ou floue.
+22. Touchez **Télécharger l'image** puis **Télécharger la fiche** : les deux fichiers arrivent dans « Téléchargements ».
+23. Choisissez le dépôt et touchez **Créer la mission**. Ouvrez « Missions pour Claude Code », lisez les règles du dépôt, figez, copiez, puis donnez le texte (avec l'image et la fiche) à Claude Code.
+24. Quand la PR existe, comparez le résultat sur votre téléphone avec la **liste de contrôle**, point par point. Notez : conforme en une passe ? sinon, combien d'allers-retours.

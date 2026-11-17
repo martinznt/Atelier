@@ -1,3 +1,9 @@
+# Lot 5B (5B-3) — contrôles du 17 novembre 2026 (exécutés en local, Node 22)
+
+- Voir le rapport `docs/audits/RAPPORT_LOT_5B_2026-11-17.md` §3 pour les résultats chiffrés ; Playwright `lot5b-sheet` 2/2, `lot5b` 3/3, `lot5b-edit` 5/5, `lot3` 2/2 (Android et ordinateur).
+- **NON PROUVÉ** : règles réelles du dépôt (GitHub), Galaxy A05s, production.
+
+---
 # Lot 5B (5B-2) — contrôles du 17 novembre 2026 (exécutés en local, Node 22)
 
 - `tsc` OK ; vitest **195/195** ; `node --test tests/*.test.mjs` **443/443** ; régressions OK ; `test:storage` 11/11 ; `test:core` OK ; `test:bridge` 7/7 ; build OK ; Playwright `lot5b-edit` 5/5 (Android et ordinateur), `lot5b` 3/3 ; audit des exigences 616, 0 preuve cassée.
