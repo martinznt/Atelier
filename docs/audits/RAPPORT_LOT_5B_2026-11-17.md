@@ -129,3 +129,20 @@ Voir §8 (relevé final de la production).
 - **Réponse d'une vraie IA : NON PROUVÉ** (aucune clé ici, et vous gardez vos clés : c'est voulu).
 - Passages de l'export ChatGPT : la recherche existe, mais l'export n'est pas importé en production, donc 0 passage aujourd'hui (R : rapport 5A).
 - Galaxy A05s, production : NON PROUVÉ.
+
+## 8. Relevé final de la production (V, 17 novembre 2026)
+| Étape | PR | Commit de fusion | Migration | `/api/health` relu |
+|---|---|---|---|---|
+| 5B-2 | #53 | `cc49346` | aucune | 0007–0025, aucune manquante |
+| 5B-3 | #54 | `a922a8d` | aucune | 0007–0025, aucune manquante |
+| 5B-4 | #55 | `8ebf360` | 0026 (additive) | 0007–0026, aucune manquante |
+| 5B-5 | #56 | `9f01aac` | 0027 (additive) | 0007–0027, aucune manquante |
+Base relue après la dernière fusion (lecture seule) : users 1, projects 5, conversations 5, messages 6, files 14, file_versions 17, file_contents 17, tasks 3, repositories 1, connections 4, project_decisions 1, project_features 1, item_lifecycle 2, lifecycle_events 3, events 17 — **identiques au relevé de départ** ; mockups 0, mockup_suggestion_decisions 0, mockup_messages 0 ; d1_migrations 25 → 27 (les deux nouvelles migrations).
+Point de restauration Time Travel noté avant tout : `2026-11-17T15:52:54Z` (7 jours sur l'offre gratuite).
+
+## 9. Ce que Martin doit tester lui-même (NON PROUVÉ par moi)
+- Toutes les étapes sur le **Galaxy A05s** : `docs/PROTOCOLE_TELEPHONE_LOT5B.md` (étapes 1 à 31).
+- **L'essai décisif** : une vraie page de Livre de recettes ou de Sport, mission donnée à Claude Code, résultat comparé sur le téléphone ; noter « conforme en une passe » ou le nombre d'allers-retours.
+- Lecture des **vraies règles du dépôt** par la mission (jeton GitHub enregistré dans Atelier).
+- **Avis d'une vraie IA** dans la discussion (votre clé Mistral, Groq ou Gemini).
+- Si vous voulez une sauvegarde indépendante : `npx wrangler d1 export atelier-db --remote --output=sauvegarde.sql` sur votre ordinateur (je n'ai pas eu de jeton, c'était votre choix).
